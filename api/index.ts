@@ -31,13 +31,21 @@ async function startServer() {
     try {
       const { rifa_id, cliente, numeros } = req.body;
       
+      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return res.status(500).json({ 
+          error: "Variáveis de ambiente do Supabase não configuradas no Vercel.",
+          detalhes: "Verifique VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY"
+        });
+      }
+
       if (!rifa_id || !cliente || !numeros) {
         return res.status(400).json({ error: "Dados incompletos para o checkout" });
       }
 
-      const supabaseUrl = process.env.VITE_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
       // 1. Identificar ou Criar Cliente (Bypassing RLS)
       const cpfLimpo = cliente.cpf.replace(/\D/g, "");
