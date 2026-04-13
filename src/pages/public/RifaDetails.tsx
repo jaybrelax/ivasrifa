@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
+import Logo from "@/src/img/ivas_logo.png";
 
 export default function RifaDetails() {
   const { id } = useParams();
@@ -595,10 +596,10 @@ export default function RifaDetails() {
               </div>
             )}
 
-            {/* ── STEP 4: Sucesso ── */}
             {checkoutStep === 4 && (
               <div className="flex flex-col items-center space-y-4 text-center py-2">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <img src={Logo} alt="IVAS Logo" className="h-16 w-auto mb-2" />
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
                   <CheckCircle2 className="h-10 w-10 text-green-600" />
                 </div>
                 <div>

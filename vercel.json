@@ -8,6 +8,14 @@
     {
       "source": "/api-seo/:id",
       "destination": "/api/index.ts"
+    },
+    {
+      "source": "/((?!api|admin|minhas-compras|sucesso|cancelado|pendente).*\\..*)",
+      "destination": "/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/router.ts"
     }
   ]
 }
