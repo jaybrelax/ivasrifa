@@ -194,9 +194,9 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
           if (!numErr) {
             console.log(`[WEBHOOK] Sucesso! Pedido ${p.id} pago e números VENDIDOS.`);
           } else {
-            console.error(`[WEBHOOK] Erro ao vender números do pedido ${p.id}:`, numErr);
           }
         }
+      }
     }
   } catch (e) {
     console.error(`[WEBHOOK] Falha crítica:`, e);

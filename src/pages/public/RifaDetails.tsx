@@ -473,19 +473,30 @@ export default function RifaDetails() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
                 <CheckCircle2 className="h-10 w-10 text-green-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Pagamento Confirmado!</h3>
-              <p className="text-gray-600">
-                Seus números foram garantidos com sucesso. Boa sorte!
-              </p>
-              <div className="bg-gray-50 p-4 rounded-lg w-full mt-4 space-y-2 text-left">
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Resumo do Pedido:</p>
-                  <p className="text-sm text-gray-700">Pedido: #{pedidoId?.substring(0, 8)}</p>
-                  <p className="text-sm text-gray-700">Transação: {pixData?.payment_id}</p>
+              <div className="bg-gray-50 p-6 rounded-xl w-full mt-4 space-y-4 text-left border border-gray-100 shadow-inner">
+                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Código do Pedido</p>
+                    <p className="text-sm font-mono font-bold text-gray-700">#{pedidoId?.substring(0, 8).toUpperCase()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">ID Transação</p>
+                    <p className="text-sm font-mono text-blue-600 font-bold">{pixData?.payment_id}</p>
+                  </div>
                 </div>
-                <div className="pt-2 border-t border-gray-200">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold">Seus números:</p>
-                  <p className="font-mono text-lg font-bold text-blue-600 break-all">{selectedNumbers.join(", ")}</p>
+                
+                <div className="pt-2">
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-3 text-center">Meus Números da Sorte</p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {selectedNumbers.map(num => (
+                      <div 
+                        key={num} 
+                        className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-lg shadow-lg border-2 border-white ring-2 ring-blue-100 transform hover:scale-110 transition-transform"
+                      >
+                        {num.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, '0')}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
