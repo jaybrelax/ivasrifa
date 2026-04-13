@@ -133,26 +133,28 @@ export default function Home() {
 
               return (
                 <Card key={rifa.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-md">
-                  <div className="relative h-64 w-full bg-gray-200">
-                    {rifa.imagem_url ? (
-                      <img
-                        src={rifa.imagem_url}
-                        alt={rifa.titulo}
-                        className="object-cover w-full h-full"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                        Sem imagem
+                  <Link to={`/rifa/${rifa.slug || rifa.id}`} className="block overflow-hidden group">
+                    <div className="relative h-64 w-full bg-gray-200">
+                      {rifa.imagem_url ? (
+                        <img
+                          src={rifa.imagem_url}
+                          alt={rifa.titulo}
+                          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                          Sem imagem
+                        </div>
+                      )}
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-green-500 text-sm px-3 py-1">Adquira já</Badge>
                       </div>
-                    )}
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-green-500 text-sm px-3 py-1">Adquira já</Badge>
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <h3 className="text-2xl font-bold text-white group-hover:text-blue-200 transition-colors">{rifa.titulo}</h3>
+                      </div>
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                      <h3 className="text-2xl font-bold text-white">{rifa.titulo}</h3>
-                    </div>
-                  </div>
+                  </Link>
                   <CardContent className="p-6">
                     <p className="text-gray-600 mb-6 line-clamp-2">{rifa.descricao}</p>
                     

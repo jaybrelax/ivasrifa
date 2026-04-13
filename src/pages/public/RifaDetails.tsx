@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 
 export default function RifaDetails() {
@@ -26,11 +26,37 @@ export default function RifaDetails() {
   const [formData, setFormData] = useState({ nome: "", cpf: "", email: "", telefone: "" });
   const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
+  const [config, setConfig] = useState({ 
+    nome_sistema: "Sorteios Online", 
+    logo_url: "",
+    hero_enabled: true,
+    hero_titulo: "Realize seus sonhos com nossos sorteios",
+    hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
+    hero_imagem_url: ""
+  });
 
   useEffect(() => {
     async function fetchRifaData() {
       if (!id) return;
       try {
+        // Fetch Config
+        const { data: configData } = await supabase
+          .from('vw_configuracoes_publicas')
+          .select('*')
+          .eq('id', 1)
+          .single();
+          
+        if (configData) {
+          setConfig({
+            nome_sistema: configData.nome_sistema || "Sorteios Online",
+            logo_url: configData.logo_url || "",
+            hero_enabled: configData.hero_enabled !== false,
+            hero_titulo: configData.hero_titulo || "Realize seus sonhos com nossos sorteios",
+            hero_descricao: configData.hero_descricao || "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
+            hero_imagem_url: configData.hero_imagem_url || ""
+          });
+        }
+
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         let query = supabase.from("rifas").select("*");
         query = isUuid ? query.eq("id", id) : query.eq("slug", id);
@@ -59,6 +85,38 @@ export default function RifaDetails() {
     }
     fetchRifaData();
   }, [id]);
+
+  // Atualizar Metadados para Compartilhamento (SEO / Social)
+  useEffect(() => {
+    if (rifa) {
+      document.title = `${rifa.titulo} - ${config.nome_sistema}`;
+      
+      const updateMeta = (name: string, content: string, isProperty: boolean = false) => {
+        const attr = isProperty ? 'property' : 'name';
+        let element = document.querySelector(`meta[${attr}="${name}"]`);
+        if (!element) {
+          element = document.createElement('meta');
+          element.setAttribute(attr, name);
+          document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
+      };
+
+      const description = rifa.descricao?.substring(0, 160) || "Participe desta rifa e concorra a prêmios incríveis!";
+      const shareUrl = window.location.href;
+
+      updateMeta('description', description);
+      updateMeta('og:title', rifa.titulo, true);
+      updateMeta('og:description', description, true);
+      updateMeta('og:image', rifa.imagem_url || '', true);
+      updateMeta('og:url', shareUrl, true);
+      updateMeta('og:type', 'website', true);
+      updateMeta('twitter:card', 'summary_large_image');
+      updateMeta('twitter:title', rifa.titulo);
+      updateMeta('twitter:description', description);
+      updateMeta('twitter:image', rifa.imagem_url || '');
+    }
+  }, [rifa, config.nome_sistema]);
 
   // Poll de pagamento
   useEffect(() => {
@@ -157,7 +215,23 @@ export default function RifaDetails() {
   const padNum = (n: number) => n.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, "0");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 md:pb-8">
+    <div className="min-h-screen bg-gray-50 pb-28 md:pb-0">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            {config.logo_url ? (
+              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
+            ) : (
+              <Ticket className="h-6 w-6 text-blue-600 mr-2" />
+            )}
+            <span className="text-xl font-bold text-gray-900">{config.nome_sistema}</span>
+          </Link>
+          <nav>
+            <Button variant="ghost" render={<Link to="/minhas-compras" />} nativeButton={false}>Minhas Compras</Button>
+          </nav>
+        </div>
+      </header>
 
       {/* ── HERO ── */}
       <div className="relative h-56 sm:h-64 md:h-80 w-full bg-gray-900">
@@ -514,6 +588,22 @@ export default function RifaDetails() {
 
         </DialogContent>
       </Dialog>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-12 text-center mt-12 pb-32 md:pb-12">
+        <div className="max-w-7xl mx-auto px-4">
+          {config.logo_url ? (
+            <img src={config.logo_url} alt={config.nome_sistema} className="h-10 object-contain mx-auto mb-4 grayscale opacity-50" />
+          ) : (
+            <Ticket className="h-8 w-8 text-blue-500 mx-auto mb-4" />
+          )}
+          <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
+          <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
+          
+          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors">
+            Área Restrita
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, Loader2, Ticket, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
+import { useEffect } from "react";
 
 export default function MinhasCompras() {
   const [cpf, setCpf] = useState("");
@@ -14,6 +15,40 @@ export default function MinhasCompras() {
   const [searched, setSearched] = useState(false);
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [clienteNome, setClienteNome] = useState("");
+  const [config, setConfig] = useState({ 
+    nome_sistema: "Sorteios Online", 
+    logo_url: "",
+    hero_enabled: true,
+    hero_titulo: "Realize seus sonhos com nossos sorteios",
+    hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
+    hero_imagem_url: ""
+  });
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const { data: configData } = await supabase
+          .from('vw_configuracoes_publicas')
+          .select('*')
+          .eq('id', 1)
+          .single();
+          
+        if (configData) {
+          setConfig({
+            nome_sistema: configData.nome_sistema || "Sorteios Online",
+            logo_url: configData.logo_url || "",
+            hero_enabled: configData.hero_enabled !== false,
+            hero_titulo: configData.hero_titulo || "Realize seus sonhos com nossos sorteios",
+            hero_descricao: configData.hero_descricao || "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
+            hero_imagem_url: configData.hero_imagem_url || ""
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao buscar config:", error);
+      }
+    }
+    fetchConfig();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,14 +123,19 @@ export default function MinhasCompras() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center">
-            <Button variant="ghost" size="icon" render={<Link to="/" />} nativeButton={false} className="mr-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-bold text-gray-900">Minhas Compras</h1>
-          </div>
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            {config.logo_url ? (
+              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
+            ) : (
+              <Ticket className="h-6 w-6 text-blue-600 mr-2" />
+            )}
+            <span className="text-xl font-bold text-gray-900">{config.nome_sistema}</span>
+          </Link>
+          <nav>
+            <Button variant="ghost" render={<Link to="/" />} nativeButton={false}>Ver Rifas</Button>
+          </nav>
         </div>
       </header>
 
@@ -200,6 +240,22 @@ export default function MinhasCompras() {
           </div>
         )}
       </main>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 py-12 text-center mt-12 pb-12">
+        <div className="max-w-7xl mx-auto px-4">
+          {config.logo_url ? (
+            <img src={config.logo_url} alt={config.nome_sistema} className="h-10 object-contain mx-auto mb-4 grayscale opacity-50" />
+          ) : (
+            <Ticket className="h-8 w-8 text-blue-500 mx-auto mb-4" />
+          )}
+          <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
+          <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
+          
+          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors">
+            Área Restrita
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
