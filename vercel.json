@@ -1,7 +1,10 @@
 {
   "rewrites": [
-    { "source": "/api-seo/:id", "destination": "/api/index.ts" },
-    { "source": "/api/(.*)", "destination": "/api/index.ts" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    { "source": "/(.*)", "destination": "/api/index.ts" }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "dist/**"
+    }
+  }
 }

@@ -275,6 +275,106 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
   res.send("OK");
 });
 
+// ── LISTA DE BOTS ──
+const BOT_USER_AGENTS = [
+  'baiduspider', 'bingbot', 'discordapp.com', 'embedly', 'facebookexternalhit',
+  'googlebot', 'linkedinbot', 'outbrain', 'pinterest', 'quora link preview',
+  'rogerbot', 'showyoubot', 'slackbot', 'twitterbot', 'vkshare',
+  'w3c_validator', 'whatsapp'
+];
+
+function isBot(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  return BOT_USER_AGENTS.some(bot => ua.includes(bot));
+}
+
+// ── SERVIR ARQUIVOS ESTÁTICOS DO BUILD (Vercel) ──
+if (process.env.VERCEL) {
+  const distPath = path.join(process.cwd(), "dist");
+  app.use(express.static(distPath, { index: false }));
+}
+
+// ── CATCH-ALL: SPA Fallback + SEO ──
+app.get("*", async (req, res) => {
+  const reqPath = req.path;
+  const userAgent = req.headers["user-agent"] || "";
+
+  // Ignorar requisições de arquivos estáticos que não foram encontrados
+  if (reqPath.includes(".")) {
+    return res.status(404).send("Not found");
+  }
+
+  // Se for BOT e a rota parece ser uma rifa (não é /, /admin, etc)
+  const isRifaRoute = reqPath !== "/" && !reqPath.startsWith("/admin") && !reqPath.startsWith("/minhas-compras");
+  
+  if (isBot(userAgent) && isRifaRoute) {
+    try {
+      const slug = reqPath.substring(1).split("/")[0];
+      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        let query = supabaseAdmin.from("rifas").select("*");
+        query = isUuid ? query.eq("id", slug) : query.eq("slug", slug);
+        const { data: rifa } = await query.single();
+
+        if (rifa) {
+          const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
+          const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
+          const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
+          const image = rifa.imagem_url || "";
+          const siteUrl = `https://${req.get("host")}/${rifa.slug || rifa.id}`;
+
+          return res.send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <meta name="description" content="${description}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${image}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${siteUrl}" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${image}" />
+</head>
+<body>
+  <h1>${title}</h1>
+  <p>${description}</p>
+</body>
+</html>`);
+        }
+      }
+    } catch (err) {
+      console.error("[SEO Catch-all] Erro:", err);
+    }
+  }
+
+  // ── HUMANO (ou bot sem rifa encontrada): Servir index.html ──
+  try {
+    const distIndex = path.join(process.cwd(), "dist", "index.html");
+    if (fs.existsSync(distIndex)) {
+      return res.sendFile(distIndex);
+    }
+    // Fallback: index.html na raiz (dev)
+    const rootIndex = path.join(process.cwd(), "index.html");
+    if (fs.existsSync(rootIndex)) {
+      return res.sendFile(rootIndex);
+    }
+    return res.status(404).send("index.html not found");
+  } catch (err) {
+    console.error("[SPA Fallback] Erro:", err);
+    return res.status(500).send("Erro interno");
+  }
+});
+
 // INICIALIZAÇÃO LOCAL (Vite somente aqui)
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 3000;
