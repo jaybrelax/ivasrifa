@@ -157,7 +157,9 @@ app.get("/api/pagamento/status/:pedido_id", async (req, res) => {
 app.post("/api/webhooks/mercadopago", async (req, res) => {
   try {
     const { action, data } = req.body;
-    if (action === "payment.updated") {
+    console.log(`[WEBHOOK] Recebido: ${action} | ID: ${data?.id}`, req.body);
+
+    if (action === "payment.updated" || action === "payment.created") {
       const paymentId = data?.id;
       const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").single();
