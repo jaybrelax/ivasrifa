@@ -179,18 +179,24 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
         const { data: p } = await supabaseAdmin.from("pedidos").select("id").eq("mp_payment_id", paymentId.toString()).single();
         
         if (p) {
-          // 1. Marcar pedido como pago
-          await supabaseAdmin.from("pedidos").update({ status: "pago", pago_em: new Date().toISOString() }).eq("id", p.id);
+          // 1. Marcar pedido como pago e salvar o ID do comprovante
+          const updateData: any = { 
+            status: "pago", 
+            pago_em: new Date().toISOString(),
+            mp_payment_id: paymentId.toString()
+          };
+
+          await supabaseAdmin.from("pedidos").update(updateData).eq("id", p.id);
+          
           // 2. Marcar números como vendidos
           const { error: numErr } = await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
           
           if (!numErr) {
-            console.log(`[WEBHOOK] Sucesso! Pedido ${p.id} e números marcados como VENDIDOS.`);
+            console.log(`[WEBHOOK] Sucesso! Pedido ${p.id} pago e números VENDIDOS.`);
           } else {
             console.error(`[WEBHOOK] Erro ao vender números do pedido ${p.id}:`, numErr);
           }
         }
-      }
     }
   } catch (e) {
     console.error(`[WEBHOOK] Falha crítica:`, e);
