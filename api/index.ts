@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
-// Rota de Teste Health (Para saber se o servidor está vivo)
+// Rota de Teste Health
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
@@ -24,7 +24,6 @@ app.get("/api/health", (req, res) => {
 });
 
 // --- INJEÇÃO DE SEO PARA CRAWLERS (Chamado pelo Middleware) ---
-// Esta rota agora é focada APENAS em bots. O Middleware garante que humanos não cheguem aqui.
 app.get("/api-seo/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -38,7 +37,6 @@ app.get("/api-seo/:id", async (req, res) => {
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // 1. Buscar dados da Rifa
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     let query = supabaseAdmin.from("rifas").select("*");
     query = isUuid ? query.eq("id", id) : query.eq("slug", id);
@@ -48,7 +46,6 @@ app.get("/api-seo/:id", async (req, res) => {
       return res.status(404).send("Rifa não encontrada.");
     }
 
-    // 2. Buscar Configurações
     const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
 
     const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
@@ -56,8 +53,6 @@ app.get("/api-seo/:id", async (req, res) => {
     const image = rifa.imagem_url || "";
     const siteUrl = `https://${req.get('host')}/${rifa.slug || rifa.id}`;
 
-    // Para BOTs, não precisamos do index.html real com JS. 
-    // Basta um HTML minimalista com as Meta Tags que eles precisam.
     const botHtml = `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -93,26 +88,19 @@ app.get("/api-seo/:id", async (req, res) => {
   }
 });
 
-// Checkout Unificado (Lida com Cliente, Pedido e Pix)
+// Checkout Unificado
 app.post("/api/pagamento/pix", async (req, res) => {
   try {
     const { rifa_id, cliente, numeros } = req.body;
-    
-    // 1. Validar Configuração
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return res.status(500).json({ error: "Configuração do Supabase ausente no servidor." });
-    }
-
-    if (!rifa_id || !cliente || !numeros) {
-      return res.status(400).json({ error: "Dados incompletos para o checkout." });
+      return res.status(500).json({ error: "Configuração do Supabase ausente." });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 2. Identificar ou Criar Cliente (Bypass RLS)
     const cpfLimpo = cliente.cpf.replace(/\D/g, "");
     let clienteId;
 
@@ -139,7 +127,6 @@ app.post("/api/pagamento/pix", async (req, res) => {
       clienteId = newCliente.id;
     }
 
-    // 3. Buscar Dados da Rifa e Criar Pedido
     const { data: rifa } = await supabaseAdmin
       .from("rifas")
       .select("valor_numero, timeout_reserva")
@@ -147,7 +134,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
       .single();
     
     const valorTotal = numeros.length * (rifa?.valor_numero || 0);
-    const timeout = rifa?.timeout_reserva || 15; // Padrão 15 min
+    const timeout = rifa?.timeout_reserva || 15;
     const expiraEm = new Date();
     expiraEm.setMinutes(expiraEm.getMinutes() + timeout);
 
@@ -167,7 +154,6 @@ app.post("/api/pagamento/pix", async (req, res) => {
     
     if (pedidoError) throw pedidoError;
 
-    // 4. Reservar Números (UPSERT para garantir que o registro exista)
     const numerosParaReservar = numeros.map((num: number) => ({
       rifa_id,
       numero: num,
@@ -175,15 +161,12 @@ app.post("/api/pagamento/pix", async (req, res) => {
       pedido_id: pedido.id
     }));
 
-    const { error: upsertError } = await supabaseAdmin
+    await supabaseAdmin
       .from("numeros_rifa")
       .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
 
-    if (upsertError) throw upsertError;
-
-    // 5. Mercado Pago Checkout
     const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
-    if (!config?.mp_access_token) throw new Error("Mercado Pago não configurado no banco.");
+    if (!config?.mp_access_token) throw new Error("Mercado Pago não configurado.");
 
     const mpClient = new MercadoPagoConfig({ accessToken: config.mp_access_token });
     const payment = new Payment(mpClient);
@@ -202,7 +185,6 @@ app.post("/api/pagamento/pix", async (req, res) => {
       }
     });
 
-    // 6. Atualizar Pedido com Pix
     await supabaseAdmin.from("pedidos").update({
       mp_payment_id: mpResponse.id?.toString(),
       mp_qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
@@ -217,7 +199,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
     });
 
   } catch (error: any) {
-    console.error("ERRO CRITICO NO CHECKOUT:", error);
+    console.error("ERRO CRITICO:", error);
     res.status(500).json({ error: error.message || "Erro interno" });
   }
 });
@@ -235,163 +217,101 @@ app.get("/api/pagamento/status/:pedido_id", async (req, res) => {
 app.post("/api/webhooks/mercadopago", async (req, res) => {
   try {
     const { action, data } = req.body;
-    console.log(`[WEBHOOK] Evento: ${action} | ID: ${data?.id}`);
-
     if (action === "payment.updated" || action === "payment.created") {
       const paymentId = data?.id;
       const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-      
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").single();
       const payment = new Payment(new MercadoPagoConfig({ accessToken: config!.mp_access_token }));
       const info = await payment.get({ id: paymentId });
 
       if (info.status === "approved") {
-        console.log(`[WEBHOOK] Pagamento ${paymentId} APROVADO. Atualizando banco...`);
         const { data: p } = await supabaseAdmin.from("pedidos").select("id").eq("mp_payment_id", paymentId.toString()).single();
-        
         if (p) {
-          // 1. Marcar pedido como pago e salvar o ID do comprovante
-          const updateData: any = { 
+          await supabaseAdmin.from("pedidos").update({ 
             status: "pago", 
-            pago_em: new Date().toISOString(),
-            mp_payment_id: paymentId.toString()
-          };
-
-          await supabaseAdmin.from("pedidos").update(updateData).eq("id", p.id);
-          
-          // 2. Marcar números como vendidos
-          const { error: numErr } = await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
-          
-          if (!numErr) {
-            console.log(`[WEBHOOK] Sucesso! Pedido ${p.id} pago e números VENDIDOS.`);
-          } else {
-          }
+            pago_em: new Date().toISOString() 
+          }).eq("id", p.id);
+          await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
         }
       }
     }
   } catch (e) {
-    console.error(`[WEBHOOK] Falha crítica:`, e);
+    console.error(`[WEBHOOK] Erro:`, e);
   }
   res.send("OK");
 });
 
-// ── LISTA DE BOTS ──
-const BOT_USER_AGENTS = [
-  'baiduspider', 'bingbot', 'discordapp.com', 'embedly', 'facebookexternalhit',
-  'googlebot', 'linkedinbot', 'outbrain', 'pinterest', 'quora link preview',
-  'rogerbot', 'showyoubot', 'slackbot', 'twitterbot', 'vkshare',
-  'w3c_validator', 'whatsapp'
-];
-
+// ── AUXILIARES ──
+const BOT_USER_AGENTS = ['googlebot', 'bingbot', 'facebookexternalhit', 'whatsapp', 'twitterbot', 'discordapp.com'];
 function isBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase();
   return BOT_USER_AGENTS.some(bot => ua.includes(bot));
 }
 
-// ── SERVIR ARQUIVOS ESTÁTICOS DO BUILD (Vercel) ──
+// ── CONFIGURAÇÃO DE AMBIENTE ──
+
+// 1. Estáticos do Build (Apenas em Produção Vercel)
 if (process.env.VERCEL) {
   const distPath = path.join(process.cwd(), "dist");
   app.use(express.static(distPath, { index: false }));
 }
 
-// ── CATCH-ALL: SPA Fallback + SEO ──
-app.get("*", async (req, res) => {
-  const reqPath = req.path;
-  const userAgent = req.headers["user-agent"] || "";
-
-  // Ignorar requisições de arquivos estáticos que não foram encontrados
-  if (reqPath.includes(".")) {
-    return res.status(404).send("Not found");
-  }
-
-  // Se for BOT e a rota parece ser uma rifa (não é /, /admin, etc)
-  const isRifaRoute = reqPath !== "/" && !reqPath.startsWith("/admin") && !reqPath.startsWith("/minhas-compras");
-  
-  if (isBot(userAgent) && isRifaRoute) {
-    try {
-      const slug = reqPath.substring(1).split("/")[0];
-      const supabaseUrl = process.env.VITE_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
-        let query = supabaseAdmin.from("rifas").select("*");
-        query = isUuid ? query.eq("id", slug) : query.eq("slug", slug);
-        const { data: rifa } = await query.single();
-
-        if (rifa) {
-          const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
-          const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
-          const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
-          const image = rifa.imagem_url || "";
-          const siteUrl = `https://${req.get("host")}/${rifa.slug || rifa.id}`;
-
-          return res.send(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>${title}</title>
-  <meta name="description" content="${description}" />
-  <meta property="og:title" content="${title}" />
-  <meta property="og:description" content="${description}" />
-  <meta property="og:image" content="${image}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="${siteUrl}" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${title}" />
-  <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />
-</head>
-<body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-</body>
-</html>`);
-        }
-      }
-    } catch (err) {
-      console.error("[SEO Catch-all] Erro:", err);
-    }
-  }
-
-  // ── HUMANO (ou bot sem rifa encontrada): Servir index.html ──
-  try {
-    const distIndex = path.join(process.cwd(), "dist", "index.html");
-    if (fs.existsSync(distIndex)) {
-      return res.sendFile(distIndex);
-    }
-    // Fallback: index.html na raiz (dev)
-    const rootIndex = path.join(process.cwd(), "index.html");
-    if (fs.existsSync(rootIndex)) {
-      return res.sendFile(rootIndex);
-    }
-    return res.status(404).send("index.html not found");
-  } catch (err) {
-    console.error("[SPA Fallback] Erro:", err);
-    return res.status(500).send("Erro interno");
-  }
-});
-
-// INICIALIZAÇÃO LOCAL (Vite somente aqui)
+// 2. Vite Middleware (Apenas Local)
 if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 3000;
-  
-  // Importação dinâmica do Vite para não quebrar o Vercel
   const { createServer: createViteServer } = await import("vite");
-  
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: "spa",
   });
-  
   app.use(vite.middlewares);
+}
+
+// ── CATCH-ALL (SPA + SEO) ──
+// Deve ficar por último para não interceptar arquivos estáticos ou rotas de API
+app.get("*", async (req, res) => {
+  const reqPath = req.path;
+  const userAgent = req.headers["user-agent"] || "";
+
+  // Se for um pedido de arquivo (contém ponto) e chegou aqui, é 404
+  if (reqPath.includes(".") && !reqPath.endsWith(".html")) {
+    return res.status(404).send("Not found");
+  }
+
+  // SEO para Bots em rotas de rifa
+  const isRifaRoute = reqPath !== "/" && !reqPath.startsWith("/admin") && !reqPath.startsWith("/minhas-compras") && !reqPath.startsWith("/api");
+  if (isBot(userAgent) && isRifaRoute) {
+    try {
+      const slug = reqPath.substring(1).split("/")[0];
+      const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      let query = supabaseAdmin.from("rifas").select("*");
+      query = isUuid ? query.eq("id", slug) : query.eq("slug", slug);
+      const { data: rifa } = await query.single();
+
+      if (rifa) {
+        const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
+        const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
+        const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
+        const image = rifa.imagem_url || "";
+        return res.send(`<!DOCTYPE html><html><head><title>${title}</title><meta property="og:image" content="${image}"></head><body><h1>${title}</h1></body></html>`);
+      }
+    } catch (e) {}
+  }
+
+  // Fallback para index.html
+  const distIndex = path.join(process.cwd(), "dist", "index.html");
+  const rootIndex = path.join(process.cwd(), "index.html");
   
-  app.listen(PORT, () => {
-    console.log(`[LOCAL] Servidor rodando em http://localhost:${PORT}`);
-  });
+  if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
+  if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  
+  res.status(404).send("Página não encontrada");
+});
+
+// Inicialização Local
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`[LOCAL] Servidor em http://localhost:${PORT}`));
 }
 
 export default app;
