@@ -8,10 +8,6 @@
     {
       "source": "/api-seo/:id",
       "destination": "/api/index.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }
