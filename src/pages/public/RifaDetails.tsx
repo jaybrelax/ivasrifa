@@ -392,6 +392,24 @@ export default function RifaDetails() {
               </CardContent>
             </Card>
 
+            {/* Preço da Cota (Mobile) */}
+            <Card className="md:hidden border-blue-200 bg-blue-50/50">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner">
+                    <Ticket className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 leading-tight">Por apenas</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Valor da cota</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-black text-green-600 drop-shadow-sm">R$ {Number(rifa.valor_numero).toFixed(2)}</p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Grade de Números */}
             <Card id="numeros">
               <CardContent className="p-4 sm:p-6">
