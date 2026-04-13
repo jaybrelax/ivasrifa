@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +15,11 @@ export default function RifaDetails() {
   const [premios, setPremios] = useState<any[]>([]);
   const [numerosVendidos, setNumerosVendidos] = useState<number[]>([]);
   const [numerosReservados, setNumerosReservados] = useState<number[]>([]);
+  const [numerosEmSelecao, setNumerosEmSelecao] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 12));
+  const channelRef = useRef<any>(null);
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,6 +122,49 @@ export default function RifaDetails() {
     }
   }, [rifa, config.nome_sistema]);
 
+  // Sincronizar as seleções em tempo real usando Supabase Presence
+  useEffect(() => {
+    if (!rifa?.id) return;
+
+    const room = supabase.channel(`rifa-${rifa.id}`, {
+      config: { presence: { key: sessionId } }
+    });
+
+    channelRef.current = room;
+
+    room.on('presence', { event: 'sync' }, () => {
+      const newState = room.presenceState();
+      let othersNumbers: number[] = [];
+      
+      for (const id in newState) {
+        if (id === sessionId) continue;
+        for (const presence of (newState[id] as any)) {
+          if (presence.selected && Array.isArray(presence.selected)) {
+            othersNumbers.push(...presence.selected);
+          }
+        }
+      }
+      setNumerosEmSelecao(othersNumbers);
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        room.track({ selected: selectedNumbers }).catch(() => {});
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(room);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rifa?.id, sessionId]);
+
+  // Informar aos outros toda vez que a nossa seleção mudar
+  useEffect(() => {
+    if (channelRef.current && channelRef.current.state === 'joined') {
+      channelRef.current.track({ selected: selectedNumbers }).catch(() => {});
+    }
+  }, [selectedNumbers]);
+
   // Poll de pagamento
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -138,7 +185,7 @@ export default function RifaDetails() {
   }, [checkoutStep, pedidoId]);
 
   const handleNumberClick = (num: number) => {
-    if (numerosVendidos.includes(num) || numerosReservados.includes(num)) return;
+    if (numerosVendidos.includes(num) || numerosReservados.includes(num) || numerosEmSelecao.includes(num)) return;
     setSelectedNumbers((prev) =>
       prev.includes(num) ? prev.filter((n) => n !== num) : [...prev, num]
     );
@@ -147,14 +194,14 @@ export default function RifaDetails() {
   const selectRandom = (qtd: number) => {
     if (!rifa) return;
     const available = Array.from({ length: rifa.total_numeros }, (_, i) => i + 1)
-      .filter((n) => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !selectedNumbers.includes(n));
+      .filter((n) => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !selectedNumbers.includes(n) && !numerosEmSelecao.includes(n));
     const selected = available.sort(() => 0.5 - Math.random()).slice(0, qtd);
     setSelectedNumbers((prev) => [...prev, ...selected]);
   };
 
   const getNumberStatusClass = (num: number) => {
     if (numerosVendidos.includes(num)) return "bg-green-500 text-white border-green-600 cursor-not-allowed";
-    if (numerosReservados.includes(num)) return "bg-yellow-400 text-yellow-900 border-yellow-500 cursor-not-allowed";
+    if (numerosReservados.includes(num) || numerosEmSelecao.includes(num)) return "bg-yellow-400 text-yellow-900 border-yellow-500 cursor-not-allowed";
     if (selectedNumbers.includes(num)) return "bg-blue-600 text-white border-blue-700 shadow-md scale-105";
     return "bg-white text-gray-700 border-gray-300 active:scale-95 cursor-pointer hover:border-blue-400 hover:bg-blue-50";
   };
@@ -327,7 +374,7 @@ export default function RifaDetails() {
                 <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 mb-4 text-xs text-gray-600">
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-white border border-gray-300 shrink-0" /> Disponível</div>
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-blue-600 shrink-0" /> Selecionado</div>
-                  <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-yellow-400 shrink-0" /> Reservado</div>
+                  <div className="flex items-center gap-1.5" title="Reservado no sistema ou sendo escolhido por alguém agora"><div className="w-3.5 h-3.5 rounded bg-yellow-400 shrink-0" /> Reservado</div>
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-green-500 shrink-0" /> Vendido</div>
                 </div>
 
