@@ -24,7 +24,6 @@ app.get("/api/health", (req, res) => {
 });
 
 // --- INJEÇÃO DE SEO PARA CRAWLERS (WhatsApp, Facebook, etc) ---
-// Agora atende na raiz /:id para links curtos
 app.get("/:id", async (req, res, next) => {
   const { id } = req.params;
   
@@ -35,43 +34,49 @@ app.get("/:id", async (req, res, next) => {
     "manifest.json", "assets", "sitemap.xml"
   ];
 
-  // Se for uma rota reservada ou um arquivo estático (com ponto), pula para o próximo handler (React/Static)
+  const indexPath = process.env.VERCEL 
+    ? path.join(process.cwd(), "index.html") 
+    : path.join(__dirname, "../index.html");
+
+  const serveFallback = () => {
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Not found");
+    }
+  };
+
+  // Se for uma rota reservada ou um arquivo estático (com ponto)
   if (excludedRoutes.includes(id) || id.includes(".")) {
-    return next();
+    return serveFallback();
   }
 
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    if (!supabaseUrl || !supabaseServiceKey) throw new Error("Configuração do Supabase ausente.");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn("[SEO] Configuração ausente.");
+      return serveFallback();
+    }
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // 1. Buscar dados da Rifa
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     let query = supabaseAdmin.from("rifas").select("*");
     query = isUuid ? query.eq("id", id) : query.eq("slug", id);
     const { data: rifa } = await query.single();
     
-    // Se a rifa não existir, deixa o React lidar com o 404 ou página inicial
-    if (!rifa) return next();
+    if (!rifa) return serveFallback();
 
-    // 2. Buscar Configurações do Sistema
     const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
 
-    // 3. Carregar o index.html original
-    const indexPath = process.env.VERCEL 
-      ? path.join(process.cwd(), "index.html") 
-      : path.join(__dirname, "../index.html");
-      
     if (!fs.existsSync(indexPath)) {
-      return next();
+      return serveFallback();
     }
 
     let html = fs.readFileSync(indexPath, "utf8");
 
-    // 4. Injetar Metadados Dinâmicos
     const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
     const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
     const image = rifa.imagem_url || "";
@@ -87,7 +92,7 @@ app.get("/:id", async (req, res, next) => {
     res.send(html);
   } catch (error) {
     console.error("[SEO] Erro ao injetar metadados:", error);
-    next();
+    return serveFallback();
   }
 });
 
