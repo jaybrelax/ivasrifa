@@ -6,31 +6,7 @@
       "destination": "/api/index.ts"
     },
     {
-      "source": "/",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/minhas-compras",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/sucesso",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/cancelado",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/pendente",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/:id",
+      "source": "/api-seo/:id",
       "destination": "/api/index.ts"
     },
     {

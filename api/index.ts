@@ -23,76 +23,73 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// --- INJEÇÃO DE SEO PARA CRAWLERS (WhatsApp, Facebook, etc) ---
-app.get("/:id", async (req, res, next) => {
+// --- INJEÇÃO DE SEO PARA CRAWLERS (Chamado pelo Middleware) ---
+// Esta rota agora é focada APENAS em bots. O Middleware garante que humanos não cheguem aqui.
+app.get("/api-seo/:id", async (req, res) => {
   const { id } = req.params;
-  
-  // Lista de rotas que NÃO devem ser tratadas como rifas
-  const excludedRoutes = [
-    "api", "admin", "minhas-compras", "sucesso", 
-    "cancelado", "pendente", "favicon.ico", "robots.txt",
-    "manifest.json", "assets", "sitemap.xml"
-  ];
-
-  const indexPath = process.env.VERCEL 
-    ? path.join(process.cwd(), "index.html") 
-    : path.join(__dirname, "../index.html");
-
-  const serveFallback = () => {
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send("Not found");
-    }
-  };
-
-  // Se for uma rota reservada ou um arquivo estático (com ponto)
-  if (excludedRoutes.includes(id) || id.includes(".")) {
-    return serveFallback();
-  }
 
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.warn("[SEO] Configuração ausente.");
-      return serveFallback();
+      return res.status(500).send("Configuração ausente.");
     }
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
+    // 1. Buscar dados da Rifa
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     let query = supabaseAdmin.from("rifas").select("*");
     query = isUuid ? query.eq("id", id) : query.eq("slug", id);
     const { data: rifa } = await query.single();
     
-    if (!rifa) return serveFallback();
-
-    const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
-
-    if (!fs.existsSync(indexPath)) {
-      return serveFallback();
+    if (!rifa) {
+      return res.status(404).send("Rifa não encontrada.");
     }
 
-    let html = fs.readFileSync(indexPath, "utf8");
+    // 2. Buscar Configurações
+    const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
 
     const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
     const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
     const image = rifa.imagem_url || "";
-    const siteUrl = `https://${req.get('host')}/${id}`;
+    const siteUrl = `https://${req.get('host')}/${rifa.slug || rifa.id}`;
 
-    html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
-    html = html.replace(/<meta property="og:title" content=".*?" \/>/g, `<meta property="og:title" content="${title}" />`);
-    html = html.replace(/<meta property="og:description" content=".*?" \/>/g, `<meta property="og:description" content="${description}" />`);
-    html = html.replace(/<meta property="og:image" content=".*?" \/>/g, `<meta property="og:image" content="${image}" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />`);
-    html = html.replace(/<meta name="description" content=".*?" \/>/g, `<meta name="description" content="${description}" />`);
-    html = html.replace(/<meta property="og:url" content=".*?" \/>/g, `<meta property="og:url" content="${siteUrl}" />`);
+    // Para BOTs, não precisamos do index.html real com JS. 
+    // Basta um HTML minimalista com as Meta Tags que eles precisam.
+    const botHtml = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+        <meta name="description" content="${description}" />
+        <meta property="og:title" content="${title}" />
+        <meta property="og:description" content="${description}" />
+        <meta property="og:image" content="${image}" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content="${siteUrl}" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="${title}" />
+        <meta name="twitter:description" content="${description}" />
+        <meta name="twitter:image" content="${image}" />
+      </head>
+      <body>
+        <h1>${title}</h1>
+        <p>${description}</p>
+        <img src="${image}" alt="${title}" />
+        <script>window.location.href = "/${id}";</script>
+      </body>
+      </html>
+    `.trim();
 
-    res.send(html);
+    res.send(botHtml);
   } catch (error) {
-    console.error("[SEO] Erro ao injetar metadados:", error);
-    return serveFallback();
+    console.error("[SEO] Erro:", error);
+    res.status(500).send("Erro interno.");
   }
 });
 
