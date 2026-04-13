@@ -233,8 +233,11 @@ export default function PedidosList() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Detalhes do Pedido</DialogTitle>
-            <DialogDescription>
-              ID: {selectedPedido?.id}
+            <DialogDescription className="flex flex-col gap-1">
+              <span>ID Pedido: {selectedPedido?.id}</span>
+              {selectedPedido?.mp_payment_id && (
+                <span className="text-blue-600 font-semibold">ID Transação: {selectedPedido.mp_payment_id}</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           
@@ -254,13 +257,16 @@ export default function PedidosList() {
               </div>
 
               <div className="border-t pt-4">
-                <p className="text-sm text-gray-500 mb-1">Rifa</p>
-                <p className="font-medium text-gray-900">{selectedPedido.rifa?.titulo}</p>
-                <div className="mt-2 bg-gray-50 p-3 rounded-md border">
-                  <p className="text-xs text-gray-500 mb-1">Números Escolhidos ({selectedPedido.quantidade}):</p>
-                  <p className="font-mono text-blue-700 break-words">
-                    {selectedPedido.numeros.join(", ")}
-                  </p>
+                <p className="text-sm text-gray-500 mb-3">Números Escolhidos ({selectedPedido.quantidade})</p>
+                <div className="bg-gray-50 p-4 rounded-lg border flex flex-wrap gap-2 justify-center">
+                  {selectedPedido.numeros.map((num: any) => (
+                    <div 
+                      key={num} 
+                      className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm border border-blue-700"
+                    >
+                      {num.toString().padStart(2, '0')}
+                    </div>
+                  ))}
                 </div>
               </div>
 
