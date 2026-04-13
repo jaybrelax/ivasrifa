@@ -209,7 +209,7 @@ export default function Home() {
             <Ticket className="h-8 w-8 text-blue-500 mx-auto mb-4" />
           )}
           <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
-          <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
+          <p className="text-sm mb-6">Este site é destinado exclusivamente para uso de pessoas maiores de 18 anos. Ao acessar e utilizar os serviços oferecidos, você confirma que possui 18 anos ou mais.</p>
           
           <div className="flex flex-wrap justify-center gap-4 text-xs mb-6">
             <Link to="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
