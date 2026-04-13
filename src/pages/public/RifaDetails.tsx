@@ -528,47 +528,70 @@ export default function RifaDetails() {
 
             {/* ── STEP 3: PIX ── */}
             {checkoutStep === 3 && (
-              <div className="flex flex-col items-center space-y-5">
-                <div className="bg-gray-100 p-3 rounded-xl shadow-inner">
+              <div className="flex flex-col items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 to-[#0a192f] p-5 sm:p-7 shadow-2xl w-full border border-blue-500/20">
+                <div className="text-center mb-5 sm:mb-6">
+                  <h3 className="text-blue-200/80 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1.5 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Pagamento via PIX
+                  </h3>
+                  <div className="text-white text-3xl sm:text-5xl font-black tracking-tighter drop-shadow-md">
+                    <span className="text-blue-400 text-2xl sm:text-3xl mr-1">R$</span>{totalValue.toFixed(2)}
+                  </div>
+                </div>
+
+                <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-xl shadow-black/20 mb-6 relative group transition-transform duration-500 hover:scale-[1.02]">
+                  {/* Badge animado */}
+                  <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 py-1 px-3 bg-yellow-400 text-yellow-900 text-[10px] sm:text-xs font-bold rounded-full shadow-lg transform rotate-6 animate-pulse">
+                    Pague Agora
+                  </div>
+                  
                   {pixData?.qr_code_base64 ? (
                     <img
                       src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
                       alt="QR Code PIX"
-                      className="w-52 h-52 sm:w-60 sm:h-60 object-contain"
+                      className="w-48 h-48 sm:w-60 sm:h-60 object-contain rounded-xl mix-blend-multiply"
                     />
                   ) : (
-                    <div className="w-52 h-52 bg-white border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="text-xs">Gerando QR Code...</span>
+                    <div className="w-48 h-48 sm:w-60 sm:h-60 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200 flex flex-col items-center justify-center text-blue-500 gap-3">
+                      <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin" />
+                      <span className="text-xs sm:text-sm font-medium">Gerando PIX...</span>
                     </div>
                   )}
                 </div>
 
-                <div className="w-full space-y-2">
-                  <p className="text-xs text-gray-500 text-center">Ou copie o código Pix abaixo:</p>
+                <div className="w-full space-y-3 bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-xl border border-white/10 shadow-inner">
+                  <p className="text-xs text-blue-100 text-center font-medium">Ou copie o código Pix copia e cola:</p>
                   <div className="flex gap-2">
-                    <Input readOnly value={pixData?.qr_code || "Aguarde..."} className="font-mono text-[11px] h-11 flex-1" />
-                    <Button variant="secondary" onClick={copyPix} disabled={!pixData?.qr_code} className="h-11 shrink-0 px-3">
-                      {pixCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    <Input 
+                      readOnly 
+                      value={pixData?.qr_code || "Aguarde..."} 
+                      className="font-mono text-[10px] sm:text-xs h-12 flex-1 bg-white/95 border-0 focus-visible:ring-2 focus-visible:ring-yellow-400 text-blue-950 shadow-inner" 
+                    />
+                    <Button 
+                      variant="secondary" 
+                      onClick={copyPix} 
+                      disabled={!pixData?.qr_code} 
+                      className="h-12 border-0 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold px-4 sm:px-5 shadow-lg transition-transform active:scale-95"
+                    >
+                      {pixCopied ? <CheckCircle2 className="h-5 w-5 sm:mr-1" /> : <Copy className="h-5 w-5 sm:mr-1" />}
+                      <span className="hidden sm:inline">Copiar</span>
                     </Button>
                   </div>
-                  {pixCopied && <p className="text-xs text-green-600 text-center font-medium">✓ Código copiado!</p>}
+                  {pixCopied && <p className="text-xs text-yellow-400 text-center font-bold animate-in fade-in slide-in-from-bottom-1">✓ Código copiado para a área de transferência!</p>}
                 </div>
 
-                <div className="text-center space-y-1 w-full bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    <p className="text-sm font-semibold text-blue-800">Aguardando confirmação...</p>
+                <div className="text-center space-y-2 w-full mt-6">
+                  <div className="inline-flex items-center justify-center gap-2.5 bg-black/40 backdrop-blur-sm py-2 px-5 rounded-full border border-white/5 shadow-2xl">
+                    <div className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-medium text-blue-50">Pronto para confirmar o pagamento...</p>
                   </div>
+                  
                   {pixData?.payment_id && (
-                    <p className="text-xs text-gray-500">ID Transação: <span className="font-mono">{pixData.payment_id}</span></p>
+                    <p className="text-[10px] sm:text-xs text-blue-200/50 pt-3">ID Transação: <span className="font-mono opacity-80">{pixData.payment_id}</span></p>
                   )}
-                  <p className="text-xs text-gray-400">A confirmação é automática após o pagamento.</p>
                 </div>
-
-                <Button variant="ghost" size="sm" onClick={() => setCheckoutStep(4)} className="text-[10px] text-gray-300 hover:text-gray-400">
-                  (Simular Sucesso)
-                </Button>
               </div>
             )}
 
