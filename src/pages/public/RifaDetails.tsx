@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 
 export default function RifaDetails() {
@@ -16,171 +16,121 @@ export default function RifaDetails() {
   const [numerosVendidos, setNumerosVendidos] = useState<number[]>([]);
   const [numerosReservados, setNumerosReservados] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState(1); // 1: Identificação, 2: Resumo, 3: PIX, 4: Sucesso
+  const [checkoutStep, setCheckoutStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pixCopied, setPixCopied] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    nome: "",
-    cpf: "",
-    email: "",
-    telefone: ""
-  });
+  const [formData, setFormData] = useState({ nome: "", cpf: "", email: "", telefone: "" });
+  const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
+  const [pedidoId, setPedidoId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRifaData() {
       if (!id) return;
-      
       try {
-        // 1. Fetch Rifa (by ID or Slug)
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        
-        let query = supabase.from('rifas').select('*');
-        if (isUuid) {
-          query = query.eq('id', id);
-        } else {
-          query = query.eq('slug', id);
-        }
+        let query = supabase.from("rifas").select("*");
+        query = isUuid ? query.eq("id", id) : query.eq("slug", id);
 
         const { data: rifaData, error: rifaError } = await query.single();
-          
         if (rifaError) throw rifaError;
         setRifa(rifaData);
 
-        const realId = rifaData.id; // Use o ID real para as próximas consultas
+        const realId = rifaData.id;
 
-        // 2. Fetch Premios
-        const { data: premiosData, error: premiosError } = await supabase
-          .from('premios')
-          .select('*')
-          .eq('rifa_id', realId)
-          .order('posicao', { ascending: true });
-          
-        if (premiosError) throw premiosError;
+        const { data: premiosData } = await supabase
+          .from("premios").select("*").eq("rifa_id", realId).order("posicao", { ascending: true });
         setPremios(premiosData || []);
 
-        // 3. Fetch Numeros (Vendidos e Reservados)
-        const { data: numerosData, error: numerosError } = await supabase
-          .from('numeros_rifa')
-          .select('numero, status')
-          .eq('rifa_id', realId);
-          
-        if (numerosError) throw numerosError;
-        
+        const { data: numerosData } = await supabase
+          .from("numeros_rifa").select("numero, status").eq("rifa_id", realId);
         if (numerosData) {
-          setNumerosVendidos(numerosData.filter(n => n.status === 'vendido').map(n => n.numero));
-          setNumerosReservados(numerosData.filter(n => n.status === 'reservado').map(n => n.numero));
+          setNumerosVendidos(numerosData.filter((n) => n.status === "vendido").map((n) => n.numero));
+          setNumerosReservados(numerosData.filter((n) => n.status === "reservado").map((n) => n.numero));
         }
-
       } catch (error) {
         console.error("Erro ao buscar detalhes da rifa:", error);
       } finally {
         setLoading(false);
       }
     }
-
     fetchRifaData();
   }, [id]);
 
-  const handleNumberClick = (num: number) => {
-    if (numerosVendidos.includes(num) || numerosReservados.includes(num)) {
-      return; // Cannot select sold or reserved
+  // Poll de pagamento
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (checkoutStep === 3 && pedidoId) {
+      interval = setInterval(async () => {
+        try {
+          const { data, error } = await supabase.from("pedidos").select("status").eq("id", pedidoId).single();
+          if (!error && data && data.status === "pago") {
+            setCheckoutStep(4);
+            clearInterval(interval);
+          }
+        } catch (err) {
+          console.error("Erro ao verificar status:", err);
+        }
+      }, 5000);
     }
+    return () => { if (interval) clearInterval(interval); };
+  }, [checkoutStep, pedidoId]);
 
-    if (selectedNumbers.includes(num)) {
-      setSelectedNumbers(selectedNumbers.filter(n => n !== num));
-    } else {
-      setSelectedNumbers([...selectedNumbers, num]);
-    }
+  const handleNumberClick = (num: number) => {
+    if (numerosVendidos.includes(num) || numerosReservados.includes(num)) return;
+    setSelectedNumbers((prev) =>
+      prev.includes(num) ? prev.filter((n) => n !== num) : [...prev, num]
+    );
   };
 
   const selectRandom = (qtd: number) => {
     if (!rifa) return;
     const available = Array.from({ length: rifa.total_numeros }, (_, i) => i + 1)
-      .filter(n => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !selectedNumbers.includes(n));
-    
-    const shuffled = available.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, qtd);
-    setSelectedNumbers([...selectedNumbers, ...selected]);
+      .filter((n) => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !selectedNumbers.includes(n));
+    const selected = available.sort(() => 0.5 - Math.random()).slice(0, qtd);
+    setSelectedNumbers((prev) => [...prev, ...selected]);
   };
 
   const getNumberStatusClass = (num: number) => {
-    if (numerosVendidos.includes(num)) return "bg-green-500 text-white border-green-600 cursor-not-allowed opacity-80";
-    if (numerosReservados.includes(num)) return "bg-yellow-400 text-yellow-900 border-yellow-500 cursor-not-allowed opacity-80";
-    if (selectedNumbers.includes(num)) return "bg-blue-600 text-white border-blue-700 shadow-md transform scale-105";
-    return "bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer";
+    if (numerosVendidos.includes(num)) return "bg-green-500 text-white border-green-600 cursor-not-allowed";
+    if (numerosReservados.includes(num)) return "bg-yellow-400 text-yellow-900 border-yellow-500 cursor-not-allowed";
+    if (selectedNumbers.includes(num)) return "bg-blue-600 text-white border-blue-700 shadow-md scale-105";
+    return "bg-white text-gray-700 border-gray-300 active:scale-95 cursor-pointer hover:border-blue-400 hover:bg-blue-50";
   };
-
-  const [pixData, setPixData] = useState<{ qr_code_base64?: string, qr_code?: string, payment_id?: string } | null>(null);
-  const [pedidoId, setPedidoId] = useState<string | null>(null);
-
-  // Poll for payment status when on PIX step
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (checkoutStep === 3 && pedidoId) {
-      interval = setInterval(async () => {
-        try {
-          const { data, error } = await supabase
-            .from('pedidos')
-            .select('status')
-            .eq('id', pedidoId)
-            .single();
-            
-          if (!error && data && data.status === 'pago') {
-            setCheckoutStep(4);
-            clearInterval(interval);
-          }
-        } catch (err) {
-          console.error("Erro ao verificar status do pedido:", err);
-        }
-      }, 5000); // Verifica a cada 5 segundos
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [checkoutStep, pedidoId]);
 
   const handleCheckout = async () => {
     if (!rifa) return;
     setIsSubmitting(true);
     try {
-      // Chamada unificada para o Backend (O servidor cuida do cliente e do pedido via Admin Key)
-      const response = await fetch('/api/pagamento/pix', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/pagamento/pix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rifa_id: rifa.id,
-          cliente: {
-            nome: formData.nome,
-            cpf: formData.cpf,
-            email: formData.email,
-            telefone: formData.telefone
-          },
-          numeros: selectedNumbers
+          cliente: { nome: formData.nome, cpf: formData.cpf, email: formData.email, telefone: formData.telefone },
+          numeros: selectedNumbers,
         }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao processar pedido");
-      }
-
+      if (!response.ok) throw new Error(data.error || "Erro ao processar pedido");
       setPedidoId(data.pedido_id);
       setPixData(data);
       setCheckoutStep(3);
     } catch (error: any) {
-      console.error("Erro no checkout:", error);
-      alert(error.message || "Ocorreu um erro ao processar seu pedido. Tente novamente.");
+      alert(error.message || "Ocorreu um erro. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const copyPix = () => {
+    if (pixData?.qr_code) {
+      navigator.clipboard.writeText(pixData.qr_code);
+      setPixCopied(true);
+      setTimeout(() => setPixCopied(false), 3000);
     }
   };
 
@@ -194,339 +144,374 @@ export default function RifaDetails() {
 
   if (!rifa) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Rifa não encontrada</h2>
-        <Button render={<Link to="/" />} nativeButton={false}>Voltar para o Início</Button>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 p-4">
+        <h2 className="text-2xl font-bold text-gray-900 text-center">Rifa não encontrada</h2>
+        <Link to="/">
+          <Button>Voltar para o Início</Button>
+        </Link>
       </div>
     );
   }
 
   const totalValue = selectedNumbers.length * rifa.valor_numero;
+  const padNum = (n: number) => n.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, "0");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Hero Section */}
-      <div className="relative h-64 md:h-80 w-full bg-gray-900">
+    <div className="min-h-screen bg-gray-50 pb-28 md:pb-8">
+
+      {/* ── HERO ── */}
+      <div className="relative h-56 sm:h-64 md:h-80 w-full bg-gray-900">
         {rifa.imagem_url ? (
-          <img
-            src={rifa.imagem_url}
-            alt={rifa.titulo}
-            className="object-cover w-full h-full opacity-60"
-            referrerPolicy="no-referrer"
-          />
+          <img src={rifa.imagem_url} alt={rifa.titulo} className="object-cover w-full h-full opacity-60" referrerPolicy="no-referrer" />
         ) : (
-          <div className="w-full h-full bg-gray-800 opacity-60"></div>
+          <div className="w-full h-full bg-gradient-to-br from-blue-900 to-indigo-900 opacity-80" />
         )}
-        <div className="absolute top-4 left-4">
-          <Button variant="secondary" size="sm" render={<Link to="/" />} nativeButton={false} className="bg-white/90 hover:bg-white text-gray-900">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Button>
+        <div className="absolute top-3 left-3">
+          <Link to="/">
+            <Button variant="secondary" size="sm" className="bg-white/90 hover:bg-white text-gray-900 shadow">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar
+            </Button>
+          </Link>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 to-transparent">
           <div className="max-w-5xl mx-auto">
-            <Badge className="bg-green-500 mb-2">Sorteio Ativo</Badge>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{rifa.titulo}</h1>
-            <div className="flex items-center text-gray-300 text-sm">
-              <Clock className="h-4 w-4 mr-2" />
-              Sorteio: {new Date(rifa.data_sorteio).toLocaleDateString('pt-BR')}
+            <Badge className="bg-green-500 mb-2 text-xs">Sorteio Ativo</Badge>
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-white mb-1 leading-tight">{rifa.titulo}</h1>
+            <div className="flex items-center text-gray-300 text-xs sm:text-sm">
+              <Clock className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              Sorteio: {new Date(rifa.data_sorteio).toLocaleDateString("pt-BR")}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid md:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="md:col-span-2 space-y-8">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold mb-4">Sobre a Rifa</h2>
-              <p className="text-gray-600 whitespace-pre-line">{rifa.descricao || "Sem descrição disponível."}</p>
-              
-              {premios.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-semibold flex items-center mb-3">
-                    <Trophy className="h-5 w-5 text-yellow-500 mr-2" /> Prêmios
-                  </h3>
-                  <div className="space-y-2">
-                    {premios.map(premio => (
-                      <div key={premio.id} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100 gap-4">
-                        <div className="flex-shrink-0 w-16 h-16 rounded-md bg-white border border-gray-200 overflow-hidden">
-                          {premio.imagem_url ? (
-                            <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                              <Trophy className="h-6 w-6" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                             <span className="font-bold text-blue-600 text-sm">{premio.posicao}º PRÊMIO</span>
-                             {premio.valor_estimado && <span className="text-xs text-gray-500">Valor: R$ {Number(premio.valor_estimado).toLocaleString('pt-BR')}</span>}
+      {/* ── CONTEÚDO ── */}
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-5 md:py-8">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-5 md:gap-8">
+
+          {/* Coluna principal */}
+          <div className="md:col-span-2 space-y-5">
+
+            {/* Sobre a Rifa */}
+            <Card>
+              <CardContent className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3">Sobre a Rifa</h2>
+                <p className="text-gray-600 whitespace-pre-line text-sm sm:text-base">{rifa.descricao || "Sem descrição disponível."}</p>
+
+                {premios.length > 0 && (
+                  <div className="mt-5">
+                    <h3 className="font-semibold flex items-center mb-3 text-sm sm:text-base">
+                      <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-2 shrink-0" /> Prêmios
+                    </h3>
+                    <div className="space-y-2">
+                      {premios.map((premio) => (
+                        <div key={premio.id} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100 gap-3">
+                          <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-md bg-white border border-gray-200 overflow-hidden">
+                            {premio.imagem_url ? (
+                              <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                <Trophy className="h-5 w-5" />
+                              </div>
+                            )}
                           </div>
-                          <h4 className="font-medium text-gray-900">{premio.titulo}</h4>
-                          {premio.descricao && <p className="text-xs text-gray-500 line-clamp-1">{premio.descricao}</p>}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2 flex-wrap">
+                              <span className="font-bold text-blue-600 text-xs">{premio.posicao}º PRÊMIO</span>
+                              {premio.valor_estimado && (
+                                <span className="text-xs text-gray-500">R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}</span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-gray-900 text-sm truncate">{premio.titulo}</h4>
+                            {premio.descricao && <p className="text-xs text-gray-500 line-clamp-1">{premio.descricao}</p>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card id="numeros">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold">Escolha seus números</h2>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => selectRandom(1)}>+1 Aleatório</Button>
-                  <Button variant="outline" size="sm" onClick={() => selectRandom(5)}>+5 Aleatórios</Button>
-                </div>
-              </div>
-
-              <div className="flex gap-4 mb-6 text-sm">
-                <div className="flex items-center"><div className="w-4 h-4 rounded bg-white border border-gray-300 mr-2"></div> Disponível</div>
-                <div className="flex items-center"><div className="w-4 h-4 rounded bg-blue-600 mr-2"></div> Selecionado</div>
-                <div className="flex items-center"><div className="w-4 h-4 rounded bg-yellow-400 mr-2"></div> Reservado</div>
-                <div className="flex items-center"><div className="w-4 h-4 rounded bg-green-500 mr-2"></div> Vendido</div>
-              </div>
-
-              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                {Array.from({ length: rifa.total_numeros }, (_, i) => i + 1).map(num => (
-                  <button
-                    key={num}
-                    onClick={() => handleNumberClick(num)}
-                    className={`h-10 rounded-md border font-medium text-sm transition-all flex items-center justify-center ${getNumberStatusClass(num)}`}
-                  >
-                    {num.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, '0')}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar / Sticky Checkout */}
-        <div className="md:col-span-1">
-          <div className="sticky top-24">
-            <Card className="border-blue-200 shadow-lg">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4">Resumo da Compra</h3>
-                
-                <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100">
-                  <span className="text-gray-600">Valor por número</span>
-                  <span className="font-bold text-gray-900">R$ {Number(rifa.valor_numero).toFixed(2)}</span>
-                </div>
-
-                <div className="mb-6">
-                  <span className="text-sm text-gray-500 block mb-2">Números selecionados ({selectedNumbers.length}):</span>
-                  {selectedNumbers.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {selectedNumbers.map(n => (
-                        <Badge key={n} variant="secondary" className="bg-blue-100 text-blue-800">
-                          {n.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, '0')}
-                        </Badge>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">Nenhum número selecionado</p>
-                  )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Grade de Números */}
+            <Card id="numeros">
+              <CardContent className="p-4 sm:p-6">
+                {/* Cabeçalho */}
+                <div className="flex justify-between items-center mb-4 gap-3">
+                  <h2 className="text-lg sm:text-xl font-bold">Escolha seus números</h2>
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => selectRandom(1)} className="text-xs px-2.5">
+                      <Shuffle className="h-3.5 w-3.5 mr-1" />+1
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => selectRandom(5)} className="text-xs px-2.5">
+                      <Shuffle className="h-3.5 w-3.5 mr-1" />+5
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-100">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
+                {/* Legenda em 2 colunas no mobile */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 mb-4 text-xs text-gray-600">
+                  <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-white border border-gray-300 shrink-0" /> Disponível</div>
+                  <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-blue-600 shrink-0" /> Selecionado</div>
+                  <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-yellow-400 shrink-0" /> Reservado</div>
+                  <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-green-500 shrink-0" /> Vendido</div>
                 </div>
 
-                <Button 
-                  className="w-full h-12 text-lg bg-green-600 hover:bg-green-700" 
-                  disabled={selectedNumbers.length === 0}
-                  onClick={() => {
-                    setCheckoutStep(1);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  Participar Agora
-                </Button>
+                {/* Números: 5 cols no mobile, 8 no sm, 10 no md+ */}
+                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5 sm:gap-2">
+                  {Array.from({ length: rifa.total_numeros }, (_, i) => i + 1).map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => handleNumberClick(num)}
+                      className={`h-9 sm:h-10 rounded-md border font-semibold text-xs sm:text-sm transition-all flex items-center justify-center select-none ${getNumberStatusClass(num)}`}
+                    >
+                      {padNum(num)}
+                    </button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* ── SIDEBAR (desktop) ── */}
+          <div className="md:col-span-1 hidden md:block">
+            <div className="sticky top-24">
+              <Card className="border-blue-200 shadow-lg">
+                <CardContent className="p-5">
+                  <h3 className="text-lg font-bold mb-4">Resumo da Compra</h3>
+                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100 text-sm">
+                    <span className="text-gray-600">Valor por número</span>
+                    <span className="font-bold">R$ {Number(rifa.valor_numero).toFixed(2)}</span>
+                  </div>
+                  <div className="mb-5">
+                    <span className="text-xs text-gray-500 block mb-2">Selecionados ({selectedNumbers.length}):</span>
+                    {selectedNumbers.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedNumbers.map((n) => (
+                          <Badge key={n} variant="secondary" className="bg-blue-100 text-blue-800 text-xs">{padNum(n)}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Nenhum selecionado</p>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center mb-5 pt-4 border-t border-gray-100">
+                    <span className="font-bold text-gray-900">Total</span>
+                    <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
+                  </div>
+                  <Button
+                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+                    disabled={selectedNumbers.length === 0}
+                    onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
+                  >
+                    Participar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* Checkout Modal */}
+      {/* ── BARRA FIXA MOBILE (rodapé) ── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">
+              {selectedNumbers.length > 0
+                ? `${selectedNumbers.length} número${selectedNumbers.length > 1 ? "s" : ""} selecionado${selectedNumbers.length > 1 ? "s" : ""}`
+                : "Nenhum selecionado"}
+            </p>
+            <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
+          </div>
+          <Button
+            className="h-12 px-6 text-base bg-green-600 hover:bg-green-700 shrink-0"
+            disabled={selectedNumbers.length === 0}
+            onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
+          >
+            Participar Agora
+          </Button>
+        </div>
+      </div>
+
+      {/* ── MODAL DE CHECKOUT ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              {checkoutStep === 1 && "Seus Dados"}
-              {checkoutStep === 2 && "Confirmar Pedido"}
-              {checkoutStep === 3 && "Pagamento PIX"}
-              {checkoutStep === 4 && "Sucesso!"}
-            </DialogTitle>
-            <DialogDescription>
-              {checkoutStep === 1 && "Preencha seus dados para garantir seus números."}
-              {checkoutStep === 2 && "Revise seus números antes de gerar o pagamento."}
-              {checkoutStep === 3 && "Escaneie o QR Code ou copie o código PIX."}
-            </DialogDescription>
-          </DialogHeader>
+        {/* full-screen no mobile, centralizado no desktop */}
+        <DialogContent className="w-full max-w-none h-full sm:h-auto sm:max-w-[500px] sm:rounded-xl rounded-none p-0 sm:p-6 flex flex-col sm:block overflow-y-auto">
 
-          {checkoutStep === 1 && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome Completo</Label>
-                <Input id="nome" value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} placeholder="João da Silva" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
-                <Input id="cpf" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} placeholder="000.000.000-00" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">WhatsApp</Label>
-                <Input id="telefone" value={formData.telefone} onChange={e => setFormData({...formData, telefone: e.target.value})} placeholder="(00) 00000-0000" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="joao@email.com" />
-              </div>
-            </div>
-          )}
+          <div className="p-5 sm:p-0">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-lg sm:text-xl">
+                {checkoutStep === 1 && "Seus Dados"}
+                {checkoutStep === 2 && "Confirmar Pedido"}
+                {checkoutStep === 3 && "Pagamento PIX"}
+                {checkoutStep === 4 && "Pagamento Confirmado! 🎉"}
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                {checkoutStep === 1 && "Preencha seus dados para garantir seus números."}
+                {checkoutStep === 2 && "Revise antes de gerar o pagamento."}
+                {checkoutStep === 3 && "Escaneie o QR Code ou copie o código Pix."}
+              </DialogDescription>
+            </DialogHeader>
 
-          {checkoutStep === 2 && (
-            <div className="space-y-4 py-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-2">Resumo</h4>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Quantidade:</span>
-                  <span className="font-medium">{selectedNumbers.length} números</span>
-                </div>
-                <div className="flex justify-between text-sm mb-4">
-                  <span className="text-gray-600">Números:</span>
-                  <span className="font-medium text-right max-w-[200px] truncate">
-                    {selectedNumbers.join(", ")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <span className="font-bold text-gray-900">Total a pagar:</span>
-                  <span className="text-xl font-bold text-green-600">R$ {totalValue.toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="flex items-start text-sm text-yellow-800 bg-yellow-50 p-3 rounded-md">
-                <AlertCircle className="h-5 w-5 mr-2 shrink-0" />
-                <p>Seus números ficarão reservados por {rifa.timeout_reserva} minutos após gerar o PIX.</p>
-              </div>
-            </div>
-          )}
-
-          {checkoutStep === 3 && (
-            <div className="flex flex-col items-center py-6 space-y-6">
-              <div className="bg-gray-100 p-4 rounded-xl">
-                {pixData?.qr_code_base64 ? (
-                  <img 
-                    src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} 
-                    alt="QR Code PIX" 
-                    className="w-48 h-48 object-contain"
-                  />
-                ) : (
-                  <div className="w-48 h-48 bg-white border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">
-                    Gerando QR Code...
-                  </div>
-                )}
-              </div>
-              <div className="w-full space-y-2 text-center">
-                <p className="text-sm text-gray-600">Ou copie o código abaixo:</p>
-                <div className="flex gap-2">
-                  <Input 
-                    readOnly 
-                    value={pixData?.qr_code || "Aguarde..."} 
-                    className="font-mono text-xs" 
-                  />
-                  <Button 
-                    variant="secondary"
-                    onClick={() => {
-                      if (pixData?.qr_code) {
-                        navigator.clipboard.writeText(pixData.qr_code);
-                        alert("Código PIX copiado!");
-                      }
-                    }}
-                    disabled={!pixData?.qr_code}
-                  >
-                    Copiar
-                  </Button>
-                </div>
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-900">Aguardando pagamento...</p>
-                <p className="text-xs text-gray-500">ID da Transação: {pixData?.payment_id}</p>
-                <p className="text-xs text-gray-500">Tempo restante: {String((rifa.timeout_reserva || 15) - 1).padStart(2, '0')}:59</p>
-              </div>
-              {/* Simulate payment success for demo */}
-              <Button variant="ghost" size="sm" onClick={() => setCheckoutStep(4)} className="mt-4 text-[10px] text-gray-300 hover:text-gray-500">
-                (Simular Sucesso)
-              </Button>
-            </div>
-          )}
-
-          {checkoutStep === 4 && (
-            <div className="flex flex-col items-center py-8 space-y-4 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle2 className="h-10 w-10 text-green-600" />
-              </div>
-              <div className="bg-gray-50 p-6 rounded-xl w-full mt-4 space-y-4 text-left border border-gray-100 shadow-inner">
-                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                  <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Código do Pedido</p>
-                    <p className="text-sm font-mono font-bold text-gray-700">#{pedidoId?.substring(0, 8).toUpperCase()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">ID Transação</p>
-                    <p className="text-sm font-mono text-blue-600 font-bold">{pixData?.payment_id}</p>
-                  </div>
-                </div>
-                
-                <div className="pt-2">
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-3 text-center">Meus Números da Sorte</p>
-                  <div className="flex flex-wrap justify-center gap-3">
-                    {selectedNumbers.map(num => (
-                      <div 
-                        key={num} 
-                        className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-lg shadow-lg border-2 border-white ring-2 ring-blue-100 transform hover:scale-110 transition-transform"
-                      >
-                        {num.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, '0')}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {/* ── STEP 1: Dados ── */}
             {checkoutStep === 1 && (
-              <Button className="w-full sm:w-auto" onClick={() => setCheckoutStep(2)}>Continuar</Button>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="nome">Nome Completo</Label>
+                  <Input id="nome" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} placeholder="João da Silva" className="h-11" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input id="cpf" value={formData.cpf} onChange={(e) => setFormData({ ...formData, cpf: e.target.value })} placeholder="000.000.000-00" className="h-11" inputMode="numeric" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="telefone">WhatsApp</Label>
+                  <Input id="telefone" value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} placeholder="(00) 00000-0000" className="h-11" inputMode="tel" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="joao@email.com" className="h-11" />
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: Resumo ── */}
+            {checkoutStep === 2 && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Quantidade:</span>
+                    <span className="font-semibold">{selectedNumbers.length} números</span>
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-sm text-gray-600 block mb-1.5">Números:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedNumbers.map((n) => (
+                        <Badge key={n} variant="secondary" className="bg-blue-100 text-blue-800 text-xs">{padNum(n)}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span className="font-bold text-gray-900">Total a pagar:</span>
+                    <span className="text-xl font-bold text-green-600">R$ {totalValue.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="flex items-start text-sm text-yellow-800 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                  <AlertCircle className="h-5 w-5 mr-2 shrink-0 mt-0.5" />
+                  <p>Seus números ficam reservados por <strong>{rifa.timeout_reserva} minutos</strong> após gerar o PIX.</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: PIX ── */}
+            {checkoutStep === 3 && (
+              <div className="flex flex-col items-center space-y-5">
+                <div className="bg-gray-100 p-3 rounded-xl shadow-inner">
+                  {pixData?.qr_code_base64 ? (
+                    <img
+                      src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="w-52 h-52 sm:w-60 sm:h-60 object-contain"
+                    />
+                  ) : (
+                    <div className="w-52 h-52 bg-white border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="text-xs">Gerando QR Code...</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full space-y-2">
+                  <p className="text-xs text-gray-500 text-center">Ou copie o código Pix abaixo:</p>
+                  <div className="flex gap-2">
+                    <Input readOnly value={pixData?.qr_code || "Aguarde..."} className="font-mono text-[11px] h-11 flex-1" />
+                    <Button variant="secondary" onClick={copyPix} disabled={!pixData?.qr_code} className="h-11 shrink-0 px-3">
+                      {pixCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {pixCopied && <p className="text-xs text-green-600 text-center font-medium">✓ Código copiado!</p>}
+                </div>
+
+                <div className="text-center space-y-1 w-full bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                    <p className="text-sm font-semibold text-blue-800">Aguardando confirmação...</p>
+                  </div>
+                  {pixData?.payment_id && (
+                    <p className="text-xs text-gray-500">ID Transação: <span className="font-mono">{pixData.payment_id}</span></p>
+                  )}
+                  <p className="text-xs text-gray-400">A confirmação é automática após o pagamento.</p>
+                </div>
+
+                <Button variant="ghost" size="sm" onClick={() => setCheckoutStep(4)} className="text-[10px] text-gray-300 hover:text-gray-400">
+                  (Simular Sucesso)
+                </Button>
+              </div>
+            )}
+
+            {/* ── STEP 4: Sucesso ── */}
+            {checkoutStep === 4 && (
+              <div className="flex flex-col items-center space-y-4 text-center py-2">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="h-10 w-10 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Pagamento Confirmado!</h3>
+                  <p className="text-gray-500 text-sm mt-1">Seus números foram garantidos. Boa sorte! 🍀</p>
+                </div>
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-xl w-full space-y-4 text-left border border-gray-100 shadow-inner">
+                  <div className="flex justify-between items-start flex-wrap gap-3 border-b border-gray-200 pb-3">
+                    <div>
+                      <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Pedido</p>
+                      <p className="text-sm font-mono font-bold text-gray-700">#{pedidoId?.substring(0, 8).toUpperCase()}</p>
+                    </div>
+                    {pixData?.payment_id && (
+                      <div className="text-right">
+                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">ID Transação</p>
+                        <p className="text-sm font-mono text-blue-600 font-bold">{pixData.payment_id}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-3 text-center">Meus Números da Sorte</p>
+                    <div className="flex flex-wrap justify-center gap-2.5">
+                      {selectedNumbers.map((num) => (
+                        <div
+                          key={num}
+                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-lg border-2 border-white ring-2 ring-blue-100"
+                        >
+                          {padNum(num)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── RODAPÉ DO MODAL ── */}
+          <div className="p-4 sm:p-0 sm:pt-5 mt-auto sm:mt-4 border-t sm:border-t-0 bg-white sm:bg-transparent">
+            {checkoutStep === 1 && (
+              <Button className="w-full h-12 text-base" onClick={() => setCheckoutStep(2)}>Continuar</Button>
             )}
             {checkoutStep === 2 && (
-              <>
-                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCheckoutStep(1)} disabled={isSubmitting}>Voltar</Button>
-                <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" onClick={handleCheckout} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Gerar PIX
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setCheckoutStep(1)} disabled={isSubmitting}>Voltar</Button>
+                <Button className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-base" onClick={handleCheckout} disabled={isSubmitting}>
+                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Aguarde...</> : "Gerar PIX"}
                 </Button>
-              </>
+              </div>
             )}
             {checkoutStep === 4 && (
-              <Button className="w-full" onClick={() => {
-                setIsModalOpen(false);
-                setSelectedNumbers([]);
-                setCheckoutStep(1);
-                // Reload data to show numbers as sold/reserved
-                window.location.reload();
-              }}>
+              <Button className="w-full h-12 text-base" onClick={() => { setIsModalOpen(false); setSelectedNumbers([]); setCheckoutStep(1); window.location.reload(); }}>
                 Fechar
               </Button>
             )}
-          </DialogFooter>
+          </div>
+
         </DialogContent>
       </Dialog>
     </div>
