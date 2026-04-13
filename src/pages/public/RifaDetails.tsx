@@ -152,31 +152,29 @@ export default function RifaDetails() {
     try {
       let clienteId;
       
-      const { data: clienteData, error: clienteError } = await supabase
+      const cpfLimpo = formData.cpf.replace(/\D/g, '');
+      const { data: existingCliente } = await supabase
         .from('clientes')
-        .insert({
-          nome_completo: formData.nome,
-          cpf: formData.cpf.replace(/\D/g, ''),
-          email: formData.email,
-          telefone: formData.telefone
-        })
-        .select()
-        .single();
-        
-      if (clienteError) {
-        // Se o cliente já existir (CPF único), vamos buscar o ID dele
-        if (clienteError.code === '23505') {
-          const { data: existingCliente } = await supabase
-            .from('clientes')
-            .select('id')
-            .eq('cpf', formData.cpf.replace(/\D/g, ''))
-            .single();
-          clienteId = existingCliente?.id;
-        } else {
-          throw clienteError;
-        }
+        .select('id')
+        .eq('cpf', cpfLimpo)
+        .maybeSingle();
+
+      if (existingCliente) {
+        clienteId = existingCliente.id;
       } else {
-        clienteId = clienteData.id;
+        const { data: newCliente, error: insertError } = await supabase
+          .from('clientes')
+          .insert({
+            nome_completo: formData.nome,
+            cpf: cpfLimpo,
+            email: formData.email,
+            telefone: formData.telefone
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        clienteId = newCliente.id;
       }
 
       if (!clienteId) throw new Error("Não foi possível identificar o cliente.");
