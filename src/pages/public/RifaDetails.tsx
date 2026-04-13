@@ -458,11 +458,12 @@ export default function RifaDetails() {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-900">Aguardando pagamento...</p>
-                <p className="text-xs text-gray-500">Tempo restante: {String(rifa.timeout_reserva - 1).padStart(2, '0')}:59</p>
+                <p className="text-xs text-gray-500">ID da Transação: {pixData?.payment_id}</p>
+                <p className="text-xs text-gray-500">Tempo restante: {String((rifa.timeout_reserva || 15) - 1).padStart(2, '0')}:59</p>
               </div>
               {/* Simulate payment success for demo */}
-              <Button variant="outline" size="sm" onClick={() => setCheckoutStep(4)} className="mt-4 text-xs">
-                (Simular Pagamento Aprovado)
+              <Button variant="ghost" size="sm" onClick={() => setCheckoutStep(4)} className="mt-4 text-[10px] text-gray-300 hover:text-gray-500">
+                (Simular Sucesso)
               </Button>
             </div>
           )}
@@ -476,9 +477,16 @@ export default function RifaDetails() {
               <p className="text-gray-600">
                 Seus números foram garantidos com sucesso. Boa sorte!
               </p>
-              <div className="bg-gray-50 p-4 rounded-lg w-full mt-4">
-                <p className="text-sm text-gray-500 mb-1">Seus números:</p>
-                <p className="font-mono text-lg font-bold text-blue-600">{selectedNumbers.join(", ")}</p>
+              <div className="bg-gray-50 p-4 rounded-lg w-full mt-4 space-y-2 text-left">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Resumo do Pedido:</p>
+                  <p className="text-sm text-gray-700">Pedido: #{pedidoId?.substring(0, 8)}</p>
+                  <p className="text-sm text-gray-700">Transação: {pixData?.payment_id}</p>
+                </div>
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Seus números:</p>
+                  <p className="font-mono text-lg font-bold text-blue-600 break-all">{selectedNumbers.join(", ")}</p>
+                </div>
               </div>
             </div>
           )}
