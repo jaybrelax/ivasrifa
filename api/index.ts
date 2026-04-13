@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { MercadoPagoConfig, Payment } from "mercadopago";
@@ -20,6 +21,60 @@ app.get("/api/health", (req, res) => {
     mode: process.env.VERCEL ? "serverless" : "local",
     time: new Date().toISOString()
   });
+});
+
+// --- INJEÇÃO DE SEO PARA CRAWLERS (WhatsApp, Facebook, etc) ---
+app.get("/rifa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) throw new Error("Configuração do Supabase ausente.");
+    
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // 1. Buscar dados da Rifa
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let query = supabaseAdmin.from("rifas").select("*");
+    query = isUuid ? query.eq("id", id) : query.eq("slug", id);
+    const { data: rifa } = await query.single();
+    
+    if (!rifa) return res.redirect("/");
+
+    // 2. Buscar Configurações do Sistema
+    const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
+
+    // 3. Carregar o index.html original
+    const indexPath = process.env.VERCEL 
+      ? path.join(process.cwd(), "index.html") 
+      : path.join(__dirname, "../index.html");
+      
+    if (!fs.existsSync(indexPath)) {
+      console.warn("index.html não encontrado no caminho:", indexPath);
+      return res.redirect("/");
+    }
+
+    let html = fs.readFileSync(indexPath, "utf8");
+
+    // 4. Injetar Metadados Dinâmicos
+    const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
+    const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
+    const image = rifa.imagem_url || "";
+    const siteUrl = `https://${req.get('host')}${req.originalUrl}`;
+
+    html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
+    html = html.replace(/<meta property="og:title" content=".*?" \/>/g, `<meta property="og:title" content="${title}" />`);
+    html = html.replace(/<meta property="og:description" content=".*?" \/>/g, `<meta property="og:description" content="${description}" />`);
+    html = html.replace(/<meta property="og:image" content=".*?" \/>/g, `<meta property="og:image" content="${image}" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />`);
+    html = html.replace(/<meta name="description" content=".*?" \/>/g, `<meta name="description" content="${description}" />`);
+    html = html.replace(/<meta property="og:url" content=".*?" \/>/g, `<meta property="og:url" content="${siteUrl}" />`);
+
+    res.send(html);
+  } catch (error) {
+    console.error("[SEO] Erro ao injetar metadados:", error);
+    res.redirect("/");
+  }
 });
 
 // Checkout Unificado (Lida com Cliente, Pedido e Pix)
