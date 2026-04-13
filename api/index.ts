@@ -96,12 +96,19 @@ app.post("/api/pagamento/pix", async (req, res) => {
     
     if (pedidoError) throw pedidoError;
 
-    // 4. Reservar Números
-    await supabaseAdmin
+    // 4. Reservar Números (UPSERT para garantir que o registro exista)
+    const numerosParaReservar = numeros.map((num: number) => ({
+      rifa_id,
+      numero: num,
+      status: "reservado",
+      pedido_id: pedido.id
+    }));
+
+    const { error: upsertError } = await supabaseAdmin
       .from("numeros_rifa")
-      .update({ status: "reservado", pedido_id: pedido.id })
-      .eq("rifa_id", rifa_id)
-      .in("numero", numeros);
+      .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
+
+    if (upsertError) throw upsertError;
 
     // 5. Mercado Pago Checkout
     const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
@@ -157,23 +164,37 @@ app.get("/api/pagamento/status/:pedido_id", async (req, res) => {
 app.post("/api/webhooks/mercadopago", async (req, res) => {
   try {
     const { action, data } = req.body;
-    console.log(`[WEBHOOK] Recebido: ${action} | ID: ${data?.id}`, req.body);
+    console.log(`[WEBHOOK] Evento: ${action} | ID: ${data?.id}`);
 
     if (action === "payment.updated" || action === "payment.created") {
       const paymentId = data?.id;
       const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").single();
       const payment = new Payment(new MercadoPagoConfig({ accessToken: config!.mp_access_token }));
       const info = await payment.get({ id: paymentId });
+
       if (info.status === "approved") {
+        console.log(`[WEBHOOK] Pagamento ${paymentId} APROVADO. Atualizando banco...`);
         const { data: p } = await supabaseAdmin.from("pedidos").select("id").eq("mp_payment_id", paymentId.toString()).single();
+        
         if (p) {
+          // 1. Marcar pedido como pago
           await supabaseAdmin.from("pedidos").update({ status: "pago", pago_em: new Date().toISOString() }).eq("id", p.id);
-          await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
+          // 2. Marcar números como vendidos
+          const { error: numErr } = await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
+          
+          if (!numErr) {
+            console.log(`[WEBHOOK] Sucesso! Pedido ${p.id} e números marcados como VENDIDOS.`);
+          } else {
+            console.error(`[WEBHOOK] Erro ao vender números do pedido ${p.id}:`, numErr);
+          }
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error(`[WEBHOOK] Falha crítica:`, e);
+  }
   res.send("OK");
 });
 
