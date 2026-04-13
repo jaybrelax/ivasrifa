@@ -147,8 +147,11 @@ export default function Home() {
                           Sem imagem
                         </div>
                       )}
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-green-500 text-sm px-3 py-1">Adquira já</Badge>
+                      <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                        <Badge className="bg-green-500 text-sm px-3 py-1 shadow-lg ring-2 ring-white">Adquira já</Badge>
+                        <Badge variant="secondary" className="bg-blue-600 text-white text-base px-3 py-1 shadow-lg font-bold border-none">
+                          R$ {Number(rifa.valor_numero).toFixed(2)}
+                        </Badge>
                       </div>
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                         <h3 className="text-2xl font-bold text-white group-hover:text-blue-200 transition-colors">{rifa.titulo}</h3>
@@ -185,8 +188,8 @@ export default function Home() {
                           R$ {Number(rifa.valor_numero).toFixed(2)}
                         </p>
                       </div>
-                      <Button size="lg" className="bg-blue-600 hover:bg-blue-700" render={<Link to={`/${rifa.slug || rifa.id}`} />} nativeButton={false}>
-                        Participar Agora
+                      <Button size="lg" className="bg-blue-600 hover:bg-blue-700 uppercase font-black" render={<Link to={`/${rifa.slug || rifa.id}`} />} nativeButton={false}>
+                        Reservar números
                       </Button>
                     </div>
                   </CardContent>
@@ -208,7 +211,13 @@ export default function Home() {
           <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
           <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
           
-          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors">
+          <div className="flex flex-wrap justify-center gap-4 text-xs mb-6">
+            <Link to="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
+            <Link to="/minhas-compras" className="hover:text-white transition-colors">Minhas Compras</Link>
+          </div>
+
+          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors block">
             Área Restrita
           </Link>
         </div>

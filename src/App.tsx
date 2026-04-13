@@ -15,6 +15,8 @@ import PedidosList from './pages/admin/PedidosList';
 import Home from './pages/public/Home';
 import RifaDetails from './pages/public/RifaDetails';
 import MinhasCompras from './pages/public/MinhasCompras';
+import Terms from './pages/public/Terms';
+import Privacy from './pages/public/Privacy';
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/:id" element={<RifaDetails />} />
         <Route path="/minhas-compras" element={<MinhasCompras />} />
+        <Route path="/termos" element={<Terms />} />
+        <Route path="/privacidade" element={<Privacy />} />
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<Login />} />

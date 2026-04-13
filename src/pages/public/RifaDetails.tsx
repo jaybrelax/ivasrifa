@@ -325,27 +325,64 @@ export default function RifaDetails() {
                     <h3 className="font-semibold flex items-center mb-3 text-sm sm:text-base">
                       <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-2 shrink-0" /> Prêmios
                     </h3>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-4">
                       {premios.map((premio) => (
-                        <div key={premio.id} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100 gap-3">
-                          <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-md bg-white border border-gray-200 overflow-hidden">
+                        <div 
+                          key={premio.id} 
+                          className={`
+                            flex items-center gap-4 rounded-xl border transition-all duration-300
+                            ${premio.posicao === 1 
+                              ? 'p-5 bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-md md:flex-row flex-col items-stretch' 
+                              : 'p-3 bg-gray-50 border-gray-100'
+                            }
+                          `}
+                        >
+                          <div className={`
+                            flex-shrink-0 rounded-lg border border-gray-200 bg-white overflow-hidden
+                            ${premio.posicao === 1 
+                              ? 'w-full md:w-48 h-48 sm:h-56' 
+                              : 'w-12 h-12 sm:w-16 sm:h-16'
+                            }
+                          `}>
                             {premio.imagem_url ? (
                               <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                <Trophy className="h-5 w-5" />
+                                <Trophy className={premio.posicao === 1 ? "h-12 w-12" : "h-5 w-5"} />
                               </div>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start gap-2 flex-wrap">
-                              <span className="font-bold text-blue-600 text-xs">{premio.posicao}º PRÊMIO</span>
+                          <div className="flex-1 flex flex-col justify-center min-w-0">
+                            <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
+                              <span className={`
+                                font-black uppercase tracking-widest
+                                ${premio.posicao === 1 ? 'text-blue-700 text-sm' : 'text-blue-600 text-[10px]'}
+                              `}>
+                                {premio.posicao === 1 ? '👑 PREMIAÇÃO PRINCIPAL' : `${premio.posicao}º PRÊMIO`}
+                              </span>
                               {premio.valor_estimado && (
-                                <span className="text-xs text-gray-500">R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}</span>
+                                <span className={`
+                                  font-bold
+                                  ${premio.posicao === 1 ? 'text-green-600 text-lg' : 'text-gray-500 text-xs'}
+                                `}>
+                                  R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}
+                                </span>
                               )}
                             </div>
-                            <h4 className="font-medium text-gray-900 text-sm truncate">{premio.titulo}</h4>
-                            {premio.descricao && <p className="text-xs text-gray-500 line-clamp-1">{premio.descricao}</p>}
+                            <h4 className={`
+                              font-bold text-gray-900 
+                              ${premio.posicao === 1 ? 'text-2xl sm:text-3xl leading-tight' : 'text-sm truncate'}
+                            `}>
+                              {premio.titulo}
+                            </h4>
+                            {premio.descricao && (
+                              <p className={`
+                                text-gray-500 mt-1
+                                ${premio.posicao === 1 ? 'text-base line-clamp-3' : 'text-xs line-clamp-1 italic'}
+                              `}>
+                                {premio.descricao}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -422,11 +459,11 @@ export default function RifaDetails() {
                     <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
                   </div>
                   <Button
-                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700 uppercase font-black"
                     disabled={selectedNumbers.length === 0}
                     onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
                   >
-                    Participar Agora
+                    Reservar números
                   </Button>
                 </CardContent>
               </Card>
@@ -448,11 +485,11 @@ export default function RifaDetails() {
             <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
           </div>
           <Button
-            className="h-12 px-6 text-base bg-green-600 hover:bg-green-700 shrink-0"
+            className="h-12 px-6 text-base bg-green-600 hover:bg-green-700 shrink-0 uppercase font-black"
             disabled={selectedNumbers.length === 0}
             onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
           >
-            Participar Agora
+            Reservar números
           </Button>
         </div>
       </div>
@@ -670,7 +707,13 @@ export default function RifaDetails() {
           <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
           <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
           
-          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors">
+          <div className="flex flex-wrap justify-center gap-4 text-xs mb-6">
+            <Link to="/" className="hover:text-white transition-colors">Ver Rifas</Link>
+            <Link to="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
+          </div>
+
+          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors block">
             Área Restrita
           </Link>
         </div>

@@ -251,7 +251,13 @@ export default function MinhasCompras() {
           <p className="mb-2">© {new Date().getFullYear()} {config.nome_sistema}. Todos os direitos reservados.</p>
           <p className="text-sm mb-6">Plataforma segura e transparente para sorteios digitais.</p>
           
-          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors">
+          <div className="flex flex-wrap justify-center gap-4 text-xs mb-6">
+            <Link to="/" className="hover:text-white transition-colors">Ver Rifas</Link>
+            <Link to="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
+          </div>
+
+          <Link to="/admin" className="text-xs text-gray-800 hover:text-gray-600 transition-colors block">
             Área Restrita
           </Link>
         </div>
