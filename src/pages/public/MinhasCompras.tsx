@@ -226,7 +226,7 @@ export default function MinhasCompras() {
                           <span className="text-gray-600 font-medium">Total: R$ {Number(pedido.valor_total).toFixed(2)}</span>
                           
                           {pedido.status === 'pendente' && (
-                            <Button size="sm" render={<Link to={`/rifa/${pedido.rifa_id}`} />} nativeButton={false}>
+                            <Button size="sm" render={<Link to={`/${pedido.rifa_id}`} />} nativeButton={false}>
                               Pagar Agora
                             </Button>
                           )}

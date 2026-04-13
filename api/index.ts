@@ -24,9 +24,23 @@ app.get("/api/health", (req, res) => {
 });
 
 // --- INJEÇÃO DE SEO PARA CRAWLERS (WhatsApp, Facebook, etc) ---
-app.get("/rifa/:id", async (req, res) => {
+// Agora atende na raiz /:id para links curtos
+app.get("/:id", async (req, res, next) => {
+  const { id } = req.params;
+  
+  // Lista de rotas que NÃO devem ser tratadas como rifas
+  const excludedRoutes = [
+    "api", "admin", "minhas-compras", "sucesso", 
+    "cancelado", "pendente", "favicon.ico", "robots.txt",
+    "manifest.json", "assets", "sitemap.xml"
+  ];
+
+  // Se for uma rota reservada ou um arquivo estático (com ponto), pula para o próximo handler (React/Static)
+  if (excludedRoutes.includes(id) || id.includes(".")) {
+    return next();
+  }
+
   try {
-    const { id } = req.params;
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
@@ -40,7 +54,8 @@ app.get("/rifa/:id", async (req, res) => {
     query = isUuid ? query.eq("id", id) : query.eq("slug", id);
     const { data: rifa } = await query.single();
     
-    if (!rifa) return res.redirect("/");
+    // Se a rifa não existir, deixa o React lidar com o 404 ou página inicial
+    if (!rifa) return next();
 
     // 2. Buscar Configurações do Sistema
     const { data: config } = await supabaseAdmin.from("vw_configuracoes_publicas").select("*").eq("id", 1).single();
@@ -51,8 +66,7 @@ app.get("/rifa/:id", async (req, res) => {
       : path.join(__dirname, "../index.html");
       
     if (!fs.existsSync(indexPath)) {
-      console.warn("index.html não encontrado no caminho:", indexPath);
-      return res.redirect("/");
+      return next();
     }
 
     let html = fs.readFileSync(indexPath, "utf8");
@@ -61,7 +75,7 @@ app.get("/rifa/:id", async (req, res) => {
     const title = `${rifa.titulo} - ${config?.nome_sistema || "Sorteios Online"}`;
     const description = (rifa.descricao || "").substring(0, 160).replace(/["']/g, "");
     const image = rifa.imagem_url || "";
-    const siteUrl = `https://${req.get('host')}${req.originalUrl}`;
+    const siteUrl = `https://${req.get('host')}/${id}`;
 
     html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
     html = html.replace(/<meta property="og:title" content=".*?" \/>/g, `<meta property="og:title" content="${title}" />`);
@@ -73,7 +87,7 @@ app.get("/rifa/:id", async (req, res) => {
     res.send(html);
   } catch (error) {
     console.error("[SEO] Erro ao injetar metadados:", error);
-    res.redirect("/");
+    next();
   }
 });
 

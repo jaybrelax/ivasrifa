@@ -133,7 +133,7 @@ export default function Home() {
 
               return (
                 <Card key={rifa.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-md">
-                  <Link to={`/rifa/${rifa.slug || rifa.id}`} className="block overflow-hidden group">
+                  <Link to={`/${rifa.slug || rifa.id}`} className="block overflow-hidden group">
                     <div className="relative h-64 w-full bg-gray-200">
                       {rifa.imagem_url ? (
                         <img
@@ -185,7 +185,7 @@ export default function Home() {
                           R$ {Number(rifa.valor_numero).toFixed(2)}
                         </p>
                       </div>
-                      <Button size="lg" className="bg-blue-600 hover:bg-blue-700" render={<Link to={`/rifa/${rifa.slug || rifa.id}`} />} nativeButton={false}>
+                      <Button size="lg" className="bg-blue-600 hover:bg-blue-700" render={<Link to={`/${rifa.slug || rifa.id}`} />} nativeButton={false}>
                         Participar Agora
                       </Button>
                     </div>

@@ -22,7 +22,7 @@ export default function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/rifa/:id" element={<RifaDetails />} />
+        <Route path="/:id" element={<RifaDetails />} />
         <Route path="/minhas-compras" element={<MinhasCompras />} />
         
         {/* Admin Routes */}
