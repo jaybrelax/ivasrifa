@@ -26,51 +26,111 @@ async function startServer() {
   });
 
   // API Routes
+  // Nova Rota de Checkout Completa (Resolve problemas de RLS)
   app.post("/api/pagamento/pix", async (req, res) => {
     try {
-      const { pedido_id } = req.body;
-      if (!pedido_id) return res.status(400).json({ error: "pedido_id é obrigatório" });
+      const { rifa_id, cliente, numeros } = req.body;
+      
+      if (!rifa_id || !cliente || !numeros) {
+        return res.status(400).json({ error: "Dados incompletos para o checkout" });
+      }
 
       const supabaseUrl = process.env.VITE_SUPABASE_URL;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseUrl || !supabaseServiceKey) return res.status(500).json({ error: "Erro de configuração do servidor" });
+      const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
 
-      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      // 1. Identificar ou Criar Cliente (Bypassing RLS)
+      const cpfLimpo = cliente.cpf.replace(/\D/g, "");
+      let clienteId;
+
+      const { data: existingCliente } = await supabaseAdmin
+        .from("clientes")
+        .select("id")
+        .eq("cpf", cpfLimpo)
+        .maybeSingle();
+
+      if (existingCliente) {
+        clienteId = existingCliente.id;
+      } else {
+        const { data: newCliente, error: clientError } = await supabaseAdmin
+          .from("clientes")
+          .insert({
+            nome_completo: cliente.nome,
+            cpf: cpfLimpo,
+            email: cliente.email,
+            telefone: cliente.telefone
+          })
+          .select()
+          .single();
+        if (clientError) throw clientError;
+        clienteId = newCliente.id;
+      }
+
+      // 2. Buscar dados da Rifa para cálculo de valor
+      const { data: rifa } = await supabaseAdmin.from("rifas").select("valor_numero").eq("id", rifa_id).single();
+      const valorTotal = numeros.length * (rifa?.valor_numero || 0);
+
+      // 3. Criar Pedido (Bypassing RLS)
+      const { data: pedido, error: pedidoError } = await supabaseAdmin
+        .from("pedidos")
+        .insert({
+          rifa_id,
+          cliente_id: clienteId,
+          numeros,
+          quantidade: numeros.length,
+          valor_total: valorTotal,
+          status: "pendente"
+        })
+        .select()
+        .single();
+      
+      if (pedidoError) throw pedidoError;
+
+      // 4. Reservar Números (Bypassing RLS)
+      await supabaseAdmin
+        .from("numeros_rifa")
+        .update({ status: "reservado", pedido_id: pedido.id })
+        .eq("rifa_id", rifa_id)
+        .in("numero", numeros);
+
+      // 5. Buscar Token Mercado Pago
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
-      if (!config?.mp_access_token) return res.status(500).json({ error: "Token do Mercado Pago não configurado" });
+      if (!config?.mp_access_token) throw new Error("Mercado Pago não configurado");
 
-      const { data: pedido } = await supabaseAdmin.from("pedidos").select(`*, cliente:clientes (nome_completo, email, cpf)`).eq("id", pedido_id).single();
-      if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
-
-      const client = new MercadoPagoConfig({ accessToken: config.mp_access_token });
-      const payment = new Payment(client);
+      // 6. Gerar Pix no Mercado Pago
+      const mpClient = new MercadoPagoConfig({ accessToken: config.mp_access_token });
+      const payment = new Payment(mpClient);
       const paymentData = {
-        transaction_amount: Number(pedido.valor_total),
-        description: `Rifa Online - Pedido ${pedido.id.substring(0, 8)}`,
+        transaction_amount: valorTotal,
+        description: `Compra de Rifa - Pedido ${pedido.id.substring(0, 8)}`,
         payment_method_id: "pix",
         payer: {
-          email: pedido.cliente.email,
-          first_name: pedido.cliente.nome_completo.split(" ")[0],
-          last_name: pedido.cliente.nome_completo.split(" ").slice(1).join(" "),
-          identification: { type: "CPF", number: pedido.cliente.cpf.replace(/\D/g, "") }
+          email: cliente.email,
+          first_name: cliente.nome.split(" ")[0],
+          last_name: cliente.nome.split(" ").slice(1).join(" "),
+          identification: { type: "CPF", number: cpfLimpo }
         }
       };
 
       const mpResponse = await payment.create({ body: paymentData });
+
+      // 7. Salvar IDs de pagamento no pedido
       await supabaseAdmin.from("pedidos").update({
         mp_payment_id: mpResponse.id?.toString(),
         mp_qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
         mp_pix_copy_paste: mpResponse.point_of_interaction?.transaction_data?.qr_code
-      }).eq("id", pedido_id);
+      }).eq("id", pedido.id);
 
       res.json({
         qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
         qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code,
-        payment_id: mpResponse.id
+        payment_id: mpResponse.id,
+        pedido_id: pedido.id
       });
+
     } catch (error: any) {
-      console.error("Erro no Pix:", error);
-      res.status(500).json({ error: error.message });
+      console.error("Erro no Checkout:", error);
+      res.status(500).json({ error: error.message || "Erro interno no checkout" });
     }
   });
 

@@ -148,87 +148,32 @@ export default function RifaDetails() {
   const handleCheckout = async () => {
     if (!rifa) return;
     setIsSubmitting(true);
-    
     try {
-      let clienteId;
-      
-      const cpfLimpo = formData.cpf.replace(/\D/g, '');
-      const { data: existingCliente } = await supabase
-        .from('clientes')
-        .select('id')
-        .eq('cpf', cpfLimpo)
-        .maybeSingle();
-
-      if (existingCliente) {
-        clienteId = existingCliente.id;
-      } else {
-        const { data: newCliente, error: insertError } = await supabase
-          .from('clientes')
-          .insert({
-            nome_completo: formData.nome,
-            cpf: cpfLimpo,
-            email: formData.email,
-            telefone: formData.telefone
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        clienteId = newCliente.id;
-      }
-
-      if (!clienteId) throw new Error("Não foi possível identificar o cliente.");
-
-      // 2. Criar Pedido
-      const valorTotal = selectedNumbers.length * rifa.valor_numero;
-      const expiraEm = new Date();
-      expiraEm.setMinutes(expiraEm.getMinutes() + rifa.timeout_reserva);
-
-      const { data: pedidoData, error: pedidoError } = await supabase
-        .from('pedidos')
-        .insert({
-          rifa_id: rifa.id,
-          cliente_id: clienteId,
-          numeros: selectedNumbers,
-          quantidade: selectedNumbers.length,
-          valor_total: valorTotal,
-          status: 'pendente',
-          expira_em: expiraEm.toISOString()
-        })
-        .select()
-        .single();
-
-      if (pedidoError) throw pedidoError;
-      
-      setPedidoId(pedidoData.id);
-
-      // 3. Reservar Números
-      const numerosToInsert = selectedNumbers.map(num => ({
-        rifa_id: rifa.id,
-        pedido_id: pedidoData.id,
-        numero: num,
-        status: 'reservado'
-      }));
-
-      const { error: numerosError } = await supabase
-        .from('numeros_rifa')
-        .insert(numerosToInsert);
-
-      if (numerosError) throw numerosError;
-
-      // 4. Call Backend to Generate PIX
+      // Chamada unificada para o Backend (O servidor cuida do cliente e do pedido via Admin Key)
       const response = await fetch('/api/pagamento/pix', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pedido_id: pedidoData.id })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rifa_id: rifa.id,
+          cliente: {
+            nome: formData.nome,
+            cpf: formData.cpf,
+            email: formData.email,
+            telefone: formData.telefone
+          },
+          numeros: selectedNumbers
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao gerar PIX");
+        throw new Error(data.error || "Erro ao processar pedido");
       }
 
+      setPedidoId(data.pedido_id);
       setPixData(data);
       setCheckoutStep(3);
     } catch (error: any) {
