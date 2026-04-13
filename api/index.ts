@@ -69,8 +69,16 @@ app.post("/api/pagamento/pix", async (req, res) => {
     }
 
     // 3. Buscar Dados da Rifa e Criar Pedido
-    const { data: rifa } = await supabaseAdmin.from("rifas").select("valor_numero").eq("id", rifa_id).single();
+    const { data: rifa } = await supabaseAdmin
+      .from("rifas")
+      .select("valor_numero, timeout_reserva")
+      .eq("id", rifa_id)
+      .single();
+    
     const valorTotal = numeros.length * (rifa?.valor_numero || 0);
+    const timeout = rifa?.timeout_reserva || 15; // Padrão 15 min
+    const expiraEm = new Date();
+    expiraEm.setMinutes(expiraEm.getMinutes() + timeout);
 
     const { data: pedido, error: pedidoError } = await supabaseAdmin
       .from("pedidos")
@@ -80,7 +88,8 @@ app.post("/api/pagamento/pix", async (req, res) => {
         numeros,
         quantidade: numeros.length,
         valor_total: valorTotal,
-        status: "pendente"
+        status: "pendente",
+        expira_em: expiraEm.toISOString()
       })
       .select()
       .single();
