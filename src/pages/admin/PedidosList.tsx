@@ -137,6 +137,7 @@ export default function PedidosList() {
 
   const filteredPedidos = pedidos.filter(p => 
     p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.display_id && p.display_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
     p.cliente?.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.cliente?.cpf.includes(searchTerm)
   );
@@ -225,7 +226,7 @@ export default function PedidosList() {
                       <div className="text-xs text-gray-500">{pedido.quantidade} números</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-mono text-xs text-gray-900">{pedido.id.substring(0, 8).toUpperCase()}</div>
+                      <div className="font-mono text-xs text-gray-900 font-bold">{pedido.display_id || pedido.id.substring(0, 8).toUpperCase()}</div>
                       <div className="text-xs text-gray-500">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -247,7 +248,8 @@ export default function PedidosList() {
           <DialogHeader>
             <DialogTitle>Detalhes do Pedido</DialogTitle>
             <DialogDescription className="flex flex-col gap-1">
-              <span>ID Pedido: {selectedPedido?.id}</span>
+              <span className="text-gray-900 font-black">Código: #{selectedPedido?.display_id}</span>
+              <span className="text-[10px] text-gray-400">UUID: {selectedPedido?.id}</span>
               {selectedPedido?.mp_payment_id && (
                 <span className="text-blue-600 font-semibold">ID Transação: {selectedPedido.mp_payment_id}</span>
               )}

@@ -173,7 +173,7 @@ export default function MinhasCompras() {
                           </div>
                           
                           <div className="text-sm text-gray-500 mb-4">
-                            Pedido #{pedido.id.substring(0, 8).toUpperCase()} • {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
+                            Pedido #{pedido.display_id || pedido.id.substring(0, 8).toUpperCase()} • {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
                           </div>
                           
                           <div className="bg-gray-50 p-3 rounded-md border border-gray-100">

@@ -14,6 +14,16 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
+// Helper para gerar ID secundário aleatório
+function gerarDisplayId(tamanho: number = 6): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removido I, O, 0, 1 para evitar confusão
+  let result = '';
+  for (let i = 0; i < tamanho; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 // Rota de Teste Health
 app.get("/api/health", (req, res) => {
   res.json({ 
@@ -188,6 +198,8 @@ app.post("/api/pagamento/pix", async (req, res) => {
       if (vInfo) vendedorIdDB = vInfo.id;
     }
 
+    const displayId = gerarDisplayId();
+
     const { data: pedido, error: pedidoError } = await supabaseAdmin
       .from("pedidos")
       .insert({
@@ -198,7 +210,8 @@ app.post("/api/pagamento/pix", async (req, res) => {
         quantidade: numeros.length,
         valor_total: valorTotal,
         status: "pendente",
-        expira_em: expiraEm.toISOString()
+        expira_em: expiraEm.toISOString(),
+        display_id: displayId
       })
       .select()
       .single();
@@ -250,7 +263,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
     });
 
     // Envio assíncrono do WhatsApp (PIX Gerado)
-    const pedidoIdCurto = pedido.id.substring(0, 8).toUpperCase();
+    const pedidoIdCurto = displayId;
     const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n*PAGAMENTO PIX (COPIA E COLA):*\n${mpResponse.point_of_interaction?.transaction_data?.qr_code}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._`;
     enviarMensagemWhatsApp(cliente.telefone, msgPix);
 
@@ -297,7 +310,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             .single();
 
           if (pedidoFull?.cliente) {
-            const pedidoIdCurto = pedidoFull.id.substring(0, 8).toUpperCase();
+            const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte! Agora é só torcer! 🍀`;
             enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
           }

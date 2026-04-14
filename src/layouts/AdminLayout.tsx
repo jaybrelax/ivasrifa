@@ -132,6 +132,14 @@ export default function AdminLayout() {
     return <Navigate to="/admin/login" replace />;
   }
 
+  // Bloqueio de rotas para Guardiões
+  const forbiddenPaths = ['/admin/rifas', '/admin/pedidos', '/admin/vendedores', '/admin/configuracoes'];
+  const isForbidden = forbiddenPaths.some(path => location.pathname.startsWith(path));
+  
+  if (userRole === 'guardiao' && isForbidden) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div className="h-screen w-full bg-background flex overflow-hidden">
       
