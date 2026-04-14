@@ -18,6 +18,7 @@ export default function Configuracoes() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [testingEvo, setTestingEvo] = useState(false);
 
   const [formData, setFormData] = useState({
     nome_sistema: "",
@@ -25,6 +26,8 @@ export default function Configuracoes() {
     mp_access_token: "",
     evolution_api_url: "",
     evolution_api_key: "",
+    evolution_instance: "",
+    evolution_enabled: false,
     hero_enabled: true,
     hero_titulo: "",
     hero_descricao: "",
@@ -55,6 +58,8 @@ export default function Configuracoes() {
             mp_access_token: data.mp_access_token || "",
             evolution_api_url: data.evolution_api_url || "",
             evolution_api_key: data.evolution_api_key || "",
+            evolution_instance: data.evolution_instance || "",
+            evolution_enabled: data.evolution_enabled === true,
             hero_enabled: data.hero_enabled !== false,
             hero_titulo: data.hero_titulo || "",
             hero_descricao: data.hero_descricao || "",
@@ -157,6 +162,48 @@ export default function Configuracoes() {
     } finally {
       setUploadingHero(false);
       if (heroInputRef.current) heroInputRef.current.value = '';
+    }
+  };
+
+  const handleTestEvolution = async () => {
+    if (!formData.evolution_api_url || !formData.evolution_api_key || !formData.evolution_api_instance) {
+       // Note: the field id is evolution_instance but in state it might be different?
+       // Let me check state names.
+    }
+    setTestingEvo(true);
+    try {
+      // Como o backend Express já tem o helper, podemos criar um endpoint de teste ou fazer direto
+      // Vamos fazer um POST para o endpoint de mensagens da Evolution direto do front para teste (se CORS permitir)
+      // Ou melhor, avisar o usuário para salvar antes.
+      
+      const numLimpo = formData.whatsapp.replace(/\D/g, "");
+      if (!numLimpo) {
+        alert("Defina um WhatsApp de Suporte para receber o teste.");
+        return;
+      }
+
+      const response = await fetch(`${formData.evolution_api_url}/message/sendText/${formData.evolution_instance}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': formData.evolution_api_key
+        },
+        body: JSON.stringify({
+          number: numLimpo.startsWith('55') ? numLimpo : `55${numLimpo}`,
+          text: "🚀 *Teste de Integração Evolution API*\n\nSeu sistema de rifas está conectado com sucesso!"
+        })
+      });
+
+      if (response.ok) {
+        alert("Mensagem de teste enviada com sucesso!");
+      } else {
+        const err = await response.json();
+        throw new Error(err.message || "Erro na API");
+      }
+    } catch (err: any) {
+      alert("Falha no teste: " + err.message);
+    } finally {
+      setTestingEvo(false);
     }
   };
 
@@ -433,17 +480,84 @@ export default function Configuracoes() {
             </div>
 
             {/* Evolution API */}
-            <div className="space-y-4 pt-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Evolution API (WhatsApp)</h3>
-              <div className="space-y-2">
-                <Label htmlFor="evolution_api_url">URL da API</Label>
-                <Input 
-                  id="evolution_api_url" 
-                  placeholder="https://sua-api.com" 
-                  value={formData.evolution_api_url}
-                  onChange={handleChange}
-                  disabled={authError}
-                />
+              <div className="space-y-4 pt-4">
+                <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
+                  Evolution API (WhatsApp)
+                  <div className="flex items-center space-x-2 text-sm font-normal">
+                    <Label htmlFor="evolution_enabled" className="cursor-pointer">Ativado</Label>
+                    <input 
+                      type="checkbox" 
+                      id="evolution_enabled"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                      checked={formData.evolution_enabled}
+                      onChange={(e) => setFormData({...formData, evolution_enabled: e.target.checked})}
+                      disabled={authError}
+                    />
+                  </div>
+                </h3>
+                
+                <div className={formData.evolution_enabled ? "space-y-4 opacity-100" : "space-y-4 opacity-40 grayscale pointer-events-none transition-all"}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="evolution_api_url">URL da API</Label>
+                      <Input 
+                        id="evolution_api_url" 
+                        placeholder="https://sua-api.com" 
+                        value={formData.evolution_api_url}
+                        onChange={handleChange}
+                        disabled={authError}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="evolution_instance">Nome da Instância</Label>
+                      <Input 
+                        id="evolution_instance" 
+                        placeholder="Ex: Admin" 
+                        value={formData.evolution_instance}
+                        onChange={handleChange}
+                        disabled={authError}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="evolution_api_key">Global API Key</Label>
+                    <div className="relative">
+                      <Input 
+                        id="evolution_api_key" 
+                        type={showEvoKey ? "text" : "password"}
+                        placeholder="Sua chave secreta..." 
+                        value={formData.evolution_api_key}
+                        onChange={handleChange}
+                        disabled={authError}
+                        className="pr-10 font-mono"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowEvoKey(!showEvoKey)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        disabled={authError}
+                      >
+                        {showEvoKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">Chave de autenticação para enviar mensagens automáticas.</p>
+                  </div>
+
+                  <div className="pt-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleTestEvolution}
+                      disabled={testingEvo || !formData.evolution_api_url}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      {testingEvo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                      Testar Conexão (Envia para o Suporte)
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4 pt-4 border-t">
@@ -461,31 +575,6 @@ export default function Configuracoes() {
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <Label htmlFor="evolution_api_key">Global API Key</Label>
-                <div className="relative">
-                  <Input 
-                    id="evolution_api_key" 
-                    type={showEvoKey ? "text" : "password"}
-                    placeholder="Sua chave secreta..." 
-                    value={formData.evolution_api_key}
-                    onChange={handleChange}
-                    disabled={authError}
-                    className="pr-10 font-mono"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowEvoKey(!showEvoKey)}
-                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                    disabled={authError}
-                  >
-                    {showEvoKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">Chave de autenticação para enviar mensagens automáticas.</p>
-              </div>
-            </div>
 
           </CardContent>
         </Card>

@@ -23,6 +23,45 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Helper Evolution API
+async function enviarMensagemWhatsApp(telefone: string, texto: string) {
+  try {
+    const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data: config } = await supabaseAdmin.from("configuracoes").select("*").eq("id", 1).single();
+
+    if (!config?.evolution_enabled || !config?.evolution_api_url || !config?.evolution_api_key || !config?.evolution_instance) {
+      console.log("[Evolution] Envio desativado ou incompleto.");
+      return;
+    }
+
+    const numLimpo = telefone.replace(/\D/g, "");
+    if (!numLimpo.startsWith("55")) {
+      // Adiciona 55 se não houver
+      telefone = "55" + numLimpo;
+    } else {
+      telefone = numLimpo;
+    }
+
+    const url = `${config.evolution_api_url}/message/sendText/${config.evolution_instance}`;
+    
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': config.evolution_api_key
+      },
+      body: JSON.stringify({
+        number: telefone,
+        text: texto,
+        linkPreview: true
+      })
+    });
+    console.log(`[Evolution] Mensagem enviada para ${telefone}`);
+  } catch (error) {
+    console.error("[Evolution] Erro ao enviar mensagem:", error);
+  }
+}
+
 // --- INJEÇÃO DE SEO PARA CRAWLERS (Chamado pelo Middleware) ---
 app.get("/api-seo/:id", async (req, res) => {
   const { id } = req.params;
@@ -210,6 +249,11 @@ app.post("/api/pagamento/pix", async (req, res) => {
       pedido_id: pedido.id
     });
 
+    // Envio assíncrono do WhatsApp (PIX Gerado)
+    const pedidoIdCurto = pedido.id.substring(0, 8).toUpperCase();
+    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n*PAGAMENTO PIX (COPIA E COLA):*\n${mpResponse.point_of_interaction?.transaction_data?.qr_code}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._`;
+    enviarMensagemWhatsApp(cliente.telefone, msgPix);
+
   } catch (error: any) {
     console.error("ERRO CRITICO:", error);
     res.status(500).json({ error: error.message || "Erro interno" });
@@ -244,6 +288,19 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             pago_em: new Date().toISOString() 
           }).eq("id", p.id);
           await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
+
+          // Buscar dados do pedido para enviar WhatsApp de confirmação
+          const { data: pedidoFull } = await supabaseAdmin
+            .from("pedidos")
+            .select("*, cliente:clientes(nome_completo, telefone), rifa:rifas(titulo)")
+            .eq("id", p.id)
+            .single();
+
+          if (pedidoFull?.cliente) {
+            const pedidoIdCurto = pedidoFull.id.substring(0, 8).toUpperCase();
+            const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte! Agora é só torcer! 🍀`;
+            enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+          }
         }
       }
     }
