@@ -72,6 +72,7 @@ export default function AdminLayout() {
     }
   }
 
+  useEffect(() => {
     async function fetchConfig() {
       try {
         const { data } = await supabase
