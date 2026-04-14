@@ -40,7 +40,7 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
     const { data: config } = await supabaseAdmin.from("configuracoes").select("*").eq("id", 1).single();
 
     if (!config?.evolution_enabled || !config?.evolution_api_url || !config?.evolution_api_key || !config?.evolution_instance) {
-      console.log("[Evolution] Envio desativado ou incompleto.");
+      console.log("[Evolution] Envio IGNORADO. Verifique se evolution_enabled está marcado e se URL, KEY e INSTANCE estão preenchidas no banco.");
       return;
     }
 
@@ -52,8 +52,15 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
       telefone = numLimpo;
     }
 
-    const url = `${config.evolution_api_url}/message/sendText/${config.evolution_instance}`;
+    // Normalizar URL (remover barra final se houver)
+    const baseUrl = config.evolution_api_url.endsWith('/') 
+      ? config.evolution_api_url.slice(0, -1) 
+      : config.evolution_api_url;
+
+    const url = `${baseUrl}/message/sendText/${config.evolution_instance}`;
     
+    console.log(`[Evolution] Tentando enviar para ${telefone} via ${url}`);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -296,18 +303,19 @@ app.post("/api/pagamento/pix", async (req, res) => {
       .from("numeros_rifa")
       .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
 
+    // Envio do WhatsApp (PIX Gerado)
+    const pedidoIdCurto = displayId;
+    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n*PAGAMENTO PIX (COPIA E COLA):*\n${mpResponse.point_of_interaction?.transaction_data?.qr_code}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._`;
+    
+    // Aguardamos o envio para garantir que o processo não seja morto pelo servidor antes de concluir a requisição externa
+    await enviarMensagemWhatsApp(cliente.telefone, msgPix);
+
     res.json({
       qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
       qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code,
       payment_id: mpResponse.id,
       pedido_id: pedido.id
     });
-
-    // Envio assíncrono do WhatsApp (PIX Gerado)
-    const pedidoIdCurto = displayId;
-    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n*PAGAMENTO PIX (COPIA E COLA):*\n${mpResponse.point_of_interaction?.transaction_data?.qr_code}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._`;
-    enviarMensagemWhatsApp(cliente.telefone, msgPix);
-
   } catch (error: any) {
     console.error("ERRO CRITICO:", error);
     res.status(500).json({ error: error.message || "Erro interno" });
@@ -353,7 +361,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
           if (pedidoFull?.cliente) {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte! Agora é só torcer! 🍀`;
-            enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+            await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
           }
         }
       }
@@ -422,11 +430,16 @@ app.get("*", async (req, res) => {
   }
 
   // Fallback para index.html
-  const distIndex = path.join(process.cwd(), "dist", "index.html");
+  const isDev = !process.env.VERCEL && process.env.NODE_ENV !== 'production';
   const rootIndex = path.join(process.cwd(), "index.html");
-  
-  if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
-  if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  const distIndex = path.join(process.cwd(), "dist", "index.html");
+
+  if (isDev) {
+    if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  } else {
+    if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
+    if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  }
   
   res.status(404).send("Página não encontrada");
 });
