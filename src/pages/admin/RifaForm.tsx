@@ -57,6 +57,7 @@ export default function RifaForm() {
   });
 
   const [hasSoldNumbers, setHasSoldNumbers] = useState(false);
+  const [initialTotalNumeros, setInitialTotalNumeros] = useState<number>(0);
 
   useEffect(() => {
     if (isEditing) {
@@ -110,6 +111,7 @@ export default function RifaForm() {
         offPrice: rifa.off_price ? rifa.off_price.toString() : "",
         qtdOff: rifa.qtd_off ? rifa.qtd_off.toString() : ""
       });
+      setInitialTotalNumeros(rifa.total_numeros);
 
       if (premiosData && premiosData.length > 0) {
         setPremios(premiosData.map(p => ({
@@ -438,19 +440,18 @@ export default function RifaForm() {
                       type="number" 
                       placeholder="Ex: 1000" 
                       required 
-                      min="1"
+                      min={hasSoldNumbers ? initialTotalNumeros : "1"}
                       value={formData.totalNumeros}
                       onChange={e => setFormData({...formData, totalNumeros: e.target.value})}
-                      disabled={hasSoldNumbers}
                     />
                     {hasSoldNumbers && (
-                      <p className="text-xs text-red-500 font-medium">
-                        ⚠️ Bloqueado: Já existem vendas realizadas para esta rifa.
+                      <p className="text-xs text-yellow-600 font-medium leading-tight">
+                        ⚠️ Atenção: Como já existem vendas, você <b>só pode aumentar</b> a quantidade de números (mínimo de {initialTotalNumeros}).
                       </p>
                     )}
                     {isEditing && !hasSoldNumbers && (
                       <p className="text-xs text-green-600 font-medium">
-                        ✓ Liberado: Nenhuma venda detectada, você pode ajustar as cotas.
+                        ✓ Liberado: Nenhuma venda detectada, você pode ajustar as cotas livremente.
                       </p>
                     )}
                   </div>

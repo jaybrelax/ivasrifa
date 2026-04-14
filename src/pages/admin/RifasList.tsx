@@ -238,30 +238,30 @@ export default function RifasList() {
                     </div>
                   </div>
                   
-                  <div className="mt-auto pt-4 flex flex-col gap-2 w-full border-t border-gray-100">
+                  <div className="mt-auto pt-4 flex flex-col gap-2.5 w-full border-t border-gray-100 bg-gray-50/50 -mx-6 px-6 -mb-6 pb-6 rounded-b-xl">
                     {userRole === 'admin' && (
-                      <>
+                      <div className="flex flex-col gap-2.5 w-full">
                         <Button 
                           variant="default" 
                           size="sm"
                           render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
                           nativeButton={false}
-                          className="w-full h-10 text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                          className="w-full h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-600/20 rounded-xl"
                         >
                           <Edit className="h-4 w-4 mr-2" /> Editar Rifa
                         </Button>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2.5">
                           <Button
                             variant="secondary" 
                             size="sm"
                             onClick={() => copyRecruitLink(rifa.id)}
-                            className={`h-9 text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 truncate`}
+                            className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >
                             {copiedId === rifa.id ? (
-                              <><CheckCircle2 className="h-4 w-4 mr-1 text-green-600" /> Copiado</>
+                              <><CheckCircle2 className="h-4 w-4 mr-1.5 text-green-600" /> Copiado</>
                             ) : (
-                              <><LinkIcon className="h-4 w-4 mr-1" /> Recrutar</>
+                              <><LinkIcon className="h-4 w-4 mr-1.5 text-blue-600" /> Recrutar</>
                             )}
                           </Button>
 
@@ -270,30 +270,30 @@ export default function RifasList() {
                             size="sm"
                             render={<Link to={`/${rifa.slug || rifa.id}${userRole === 'guardiao' ? `?ref=${vendedorRef}` : ''}`} />}
                             nativeButton={false}
-                            className="h-9 text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                            className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >
-                            <Eye className="h-4 w-4 mr-1" /> Página
+                            <Eye className="h-4 w-4 mr-1.5 text-indigo-600" /> Página
                           </Button>
                         </div>
-                      </>
+                      </div>
                     )}
 
                     {userRole === 'guardiao' && (
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="flex flex-col gap-2.5 w-full">
                         <Button 
                           variant="secondary" 
                           size="sm"
                           render={<Link to={`/${rifa.slug || rifa.id}?ref=${vendedorRef}`} />}
                           nativeButton={false}
-                          className="w-full h-10 text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          className="w-full h-11 text-sm font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                         >
-                          <Eye className="h-4 w-4 mr-2" /> Ver Página
+                          <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Ver Página
                         </Button>
 
                         <Button
                           variant="default"
                           size="sm"
-                          className="w-full h-10 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full h-11 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 rounded-xl"
                           onClick={() => {
                             const myRefLink = `${window.location.origin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
                             navigator.clipboard.writeText(myRefLink);
@@ -301,7 +301,7 @@ export default function RifasList() {
                             setTimeout(() => setCopiedId(null), 2000);
                           }}
                         >
-                           {copiedId === rifa.id ? "COPIADO!" : "COPIAR MEU LINK"}
+                           {copiedId === rifa.id ? <><CheckCircle2 className="h-4 w-4 mr-2" /> COPIADO!</> : <><LinkIcon className="h-4 w-4 mr-2" /> COPIAR MEU LINK</>}
                         </Button>
                       </div>
                     )}
