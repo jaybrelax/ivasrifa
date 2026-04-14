@@ -298,7 +298,7 @@ export default function Configuracoes() {
                 />
               </div>
               <div className="space-y-2 flex flex-col justify-end">
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-gray-50/50 dark:bg-gray-900/50 transition-colors">
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 transition-colors">
                   <div className="space-y-0.5">
                     <Label htmlFor="admin_dark_mode" className="text-sm font-medium">Modo Escuro (Admin)</Label>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Visual do Painel</p>
@@ -311,7 +311,7 @@ export default function Configuracoes() {
                     disabled={authError}
                     className={`
                       relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50
-                      ${formData.admin_dark_mode ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}
+                      ${formData.admin_dark_mode ? 'bg-primary' : 'bg-muted'}
                     `}
                   >
                     <span
@@ -330,7 +330,7 @@ export default function Configuracoes() {
               
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
+                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
                     {formData.logo_url ? (
                       <img src={formData.logo_url} alt="Logo Preview" className="h-full w-full object-contain p-2" />
                     ) : (

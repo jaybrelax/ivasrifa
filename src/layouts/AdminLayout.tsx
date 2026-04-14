@@ -133,37 +133,37 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex overflow-hidden">
+    <div className="h-screen w-full bg-background flex overflow-hidden">
       
       {/* Overlay Mobile */}
       {isSidebarOpen && (
         <div 
-          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity" 
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity" 
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
  
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 bg-card w-64 border-r border-border flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
           <div className="flex items-center">
             {config.logo_url ? (
               <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
             ) : (
               <Ticket className="h-6 w-6 text-blue-600 mr-2 shrink-0" />
             )}
-            <span className="text-xl font-bold text-gray-800 dark:text-gray-100 line-clamp-1" title={config.nome_sistema}>
+            <span className="text-xl font-bold text-foreground line-clamp-1" title={config.nome_sistema}>
               {config.nome_sistema}
             </span>
           </div>
           {/* Botão de fechar só no mobile dentro do sidebar */}
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -183,11 +183,11 @@ export default function AdminLayout() {
                     }}
                     className={`flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                       isActive 
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' 
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 mr-3 shrink-0 ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                    <item.icon className={`h-5 w-5 mr-3 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                     {item.label}
                   </Link>
                 </li>
@@ -199,15 +199,15 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-gray-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center mb-4">
             <Avatar className="h-9 w-9 shrink-0">
-              <AvatarFallback className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-bold">
+              <AvatarFallback className="bg-muted text-muted-foreground font-bold">
                 {session.user.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {userRole === 'admin' ? 'Administrador' : (vendedorData?.nome || 'Guardião')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={session.user.email}>
+              <p className="text-xs text-muted-foreground truncate" title={session.user.email}>
                 {session.user.email}
               </p>
             </div>
@@ -225,10 +225,10 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 sm:px-6 shrink-0">
+        <header className="h-16 bg-card border-b border-border flex items-center px-4 sm:px-6 shrink-0">
           <button 
             onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden p-2 -ml-2 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+            className="md:hidden p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
           >
             <span className="sr-only">Abrir menu</span>
             <Menu className="h-6 w-6" aria-hidden="true" />
@@ -236,14 +236,14 @@ export default function AdminLayout() {
           <div className="flex-1 flex justify-end">
             {/* Header actions */}
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:inline-block">
+              <span className="text-sm text-muted-foreground hidden sm:inline-block">
                 {userRole === 'admin' ? 'Modo Global' : 'Painel do Guardião'}
               </span>
             </div>
           </div>
         </header>
  
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
