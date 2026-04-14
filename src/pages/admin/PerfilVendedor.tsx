@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ export default function PerfilVendedor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [vendedor, setVendedor] = useState<any>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -53,6 +55,60 @@ export default function PerfilVendedor() {
       setLoading(false);
     }
   }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Por favor, selecione uma imagem válida (JPG, PNG ou WEBP).");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("A imagem é muito grande. O limite é de 2MB.");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${vendedor.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { 
+          cacheControl: '3600',
+          upsert: true 
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+
+      // Atualizar no banco de dados
+      const { error: updateError } = await supabase
+        .from('vendedores')
+        .update({ avatar_url: publicUrl })
+        .eq('id', vendedor.id);
+
+      if (updateError) throw updateError;
+
+      setVendedor({ ...vendedor, avatar_url: publicUrl });
+      alert("Foto de perfil atualizada!");
+      
+    } catch (error: any) {
+      console.error("Erro ao fazer upload do avatar:", error);
+      alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,18 +195,29 @@ export default function PerfilVendedor() {
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="flex flex-col items-center mb-6">
-                <div className="relative group cursor-pointer">
-                  <Avatar className="h-24 w-24 ring-4 ring-gray-100">
+                <input 
+                  type="file" 
+                  ref={avatarInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                />
+                <div 
+                  className="relative group cursor-pointer"
+                  onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                >
+                  <Avatar className="h-24 w-24 ring-4 ring-gray-100 dark:ring-slate-800">
                     <AvatarImage src={vendedor?.avatar_url} />
-                    <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold uppercase">
+                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-2xl font-bold uppercase">
                       {formData.nome.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="h-6 w-6 text-white" />
+                  <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center transition-opacity ${uploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    {uploadingAvatar ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Camera className="h-6 w-6 text-white" />}
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Clique para mudar a foto</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Clique para mudar a foto</p>
               </div>
 
               <div className="space-y-1.5">

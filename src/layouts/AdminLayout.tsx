@@ -199,6 +199,7 @@ export default function AdminLayout() {
         <div className="p-4 border-t border-gray-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center mb-4">
             <Avatar className="h-9 w-9 shrink-0">
+              <AvatarImage src={vendedorData?.avatar_url} />
               <AvatarFallback className="bg-muted text-muted-foreground font-bold">
                 {session.user.email?.charAt(0).toUpperCase()}
               </AvatarFallback>

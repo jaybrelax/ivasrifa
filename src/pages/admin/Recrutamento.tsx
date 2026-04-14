@@ -58,10 +58,13 @@ export default function Recrutamento() {
       const userId = authData.user?.id;
       if (!userId) throw new Error("Erro ao gerar usuário de autenticação.");
 
-      // Criar código base no CPF ou ID (removendo acentos e espaços)
-      const cpfLimpo = formData.cpf.replace(/\D/g, "");
-      const nomeLimpo = formData.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0];
-      const codigoBase = (nomeLimpo + cpfLimpo.slice(-3)).toUpperCase();
+      // Criar código base no Primeiro Nome (removendo acentos e espaços)
+      const nomeLimpo = formData.nome.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .split(" ")[0]
+        .toLowerCase();
+      
+      const codigoBase = nomeLimpo;
 
       // 2. Criar ou Vincular Vendedor
       const { data: vendedorData, error: vendedorError } = await supabase
