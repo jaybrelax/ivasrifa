@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   Home, 
@@ -7,7 +8,8 @@ import {
   User, 
   LayoutDashboard, 
   ShoppingBag,
-  Settings
+  Settings,
+  Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/src/lib/supabase";
@@ -50,14 +52,14 @@ export function MobileNav() {
   const adminItems: NavItem[] = [
     { label: "Painel", icon: LayoutDashboard, path: "/admin" },
     { label: "Rifas", icon: Ticket, path: "/admin/rifas" },
+    { label: "Ranking", icon: Trophy, path: "/admin/ranking" },
     { label: "Pedidos", icon: ShoppingBag, path: "/admin/pedidos" },
-    { label: "Perfil", icon: User, path: "/admin/perfil" },
   ];
 
   const items = isAdmin ? adminItems : publicItems;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 px-2 py-3 safe-area-bottom">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 px-2 py-3 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
       <nav className="flex items-center justify-around">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
@@ -110,5 +112,3 @@ export function MobileNav() {
   );
 }
 
-// Add a helper for useState since I used it but didn't import and React.* prefix is safer or import it
-import { useState } from "react";

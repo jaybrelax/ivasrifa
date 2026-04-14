@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 // @ts-ignore
 import Logo from "../../img/ivas_logo.png";
@@ -482,7 +482,7 @@ export default function RifaDetails() {
                     <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
                   </div>
                   <Button
-                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700 uppercase font-black"
+                    className="w-full h-12 text-base bg-black hover:bg-slate-900 text-white uppercase font-bold shadow-lg"
                     disabled={selectedNumbers.length === 0}
                     onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
                   >
@@ -497,7 +497,7 @@ export default function RifaDetails() {
       </div>
 
       {/* ── BARRA FIXA MOBILE (rodapé) ── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] px-4 py-3 safe-area-bottom">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">
@@ -508,7 +508,7 @@ export default function RifaDetails() {
             <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
           </div>
           <Button
-            className="h-12 px-6 text-base bg-green-600 hover:bg-green-700 shrink-0 uppercase font-black"
+            className="h-12 px-6 text-base bg-black hover:bg-slate-900 text-white shrink-0 uppercase font-bold shadow-lg"
             disabled={selectedNumbers.length === 0}
             onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
           >
@@ -520,22 +520,22 @@ export default function RifaDetails() {
       {/* ── MODAL DE CHECKOUT ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         {/* full-screen no mobile, centralizado no desktop */}
-        <DialogContent className="w-full max-w-none h-full sm:h-auto sm:max-w-[500px] sm:rounded-xl rounded-none p-0 sm:p-6 flex flex-col sm:block overflow-y-auto">
+        <DialogContent className={`w-full max-w-none h-full sm:h-auto sm:max-w-[500px] sm:rounded-xl rounded-none p-0 flex flex-col sm:block overflow-y-auto ${checkoutStep === 3 ? 'border-0' : ''}`}>
 
-          <div className="p-5 sm:p-0">
-            <DialogHeader className="mb-4">
-              <DialogTitle className="text-lg sm:text-xl">
-                {checkoutStep === 1 && "Seus Dados"}
-                {checkoutStep === 2 && "Confirmar Pedido"}
-                {checkoutStep === 3 && "Pagamento PIX"}
-                {checkoutStep === 4 && "Pagamento Confirmado! 🎉"}
-              </DialogTitle>
-              <DialogDescription className="text-sm">
-                {checkoutStep === 1 && "Preencha seus dados para garantir seus números."}
-                {checkoutStep === 2 && "Revise antes de gerar o pagamento."}
-                {checkoutStep === 3 && "Escaneie o QR Code ou copie o código Pix."}
-              </DialogDescription>
-            </DialogHeader>
+          <div className={`${checkoutStep === 3 ? 'p-0' : 'p-5 sm:p-6'}`}>
+            {checkoutStep !== 3 && (
+              <DialogHeader className="mb-4 text-center sm:text-left">
+                <DialogTitle className="text-lg sm:text-xl">
+                  {checkoutStep === 1 && "Seus Dados"}
+                  {checkoutStep === 2 && "Confirmar Pedido"}
+                  {checkoutStep === 4 && "Pagamento Confirmado! 🎉"}
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  {checkoutStep === 1 && "Preencha seus dados para garantir seus números."}
+                  {checkoutStep === 2 && "Revise antes de gerar o pagamento."}
+                </DialogDescription>
+              </DialogHeader>
+            )}
 
             {/* ── STEP 1: Dados ── */}
             {checkoutStep === 1 && (
@@ -589,69 +589,112 @@ export default function RifaDetails() {
 
             {/* ── STEP 3: PIX ── */}
             {checkoutStep === 3 && (
-              <div className="flex flex-col items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 to-[#0a192f] p-5 sm:p-7 shadow-2xl w-full border border-blue-500/20">
-                <div className="text-center mb-5 sm:mb-6">
-                  <h3 className="text-blue-200/80 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1.5 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" /> Pagamento via PIX
-                  </h3>
-                  <div className="text-white text-3xl sm:text-5xl font-black tracking-tighter drop-shadow-md">
-                    <span className="text-blue-400 text-2xl sm:text-3xl mr-1">R$</span>{totalValue.toFixed(2)}
-                  </div>
-                </div>
-
-                <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-xl shadow-black/20 mb-6 relative group transition-transform duration-500 hover:scale-[1.02]">
-                  {/* Badge animado */}
-                  <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 py-1 px-3 bg-yellow-400 text-yellow-900 text-[10px] sm:text-xs font-bold rounded-full shadow-lg transform rotate-6 animate-pulse">
-                    Pague Agora
+              <div className="flex flex-col items-center w-full min-h-[100dvh] sm:min-h-0">
+                {/* Background com gradiente azul vibrante e claro */}
+                <div className="w-full bg-gradient-to-b from-blue-400 via-blue-500 to-blue-700 px-6 sm:px-8 pt-10 pb-10 sm:rounded-xl relative overflow-hidden flex-1 flex flex-col items-center justify-center">
+                  {/* Elementos decorativos de fundo */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div className="absolute -bottom-32 -left-20 w-80 h-80 bg-blue-300/20 rounded-full blur-3xl"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-white/[0.05] to-transparent rounded-full font-black"></div>
                   </div>
 
-                  {pixData?.qr_code_base64 ? (
-                    <img
-                      src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
-                      alt="QR Code PIX"
-                      className="w-48 h-48 sm:w-60 sm:h-60 object-contain rounded-xl mix-blend-multiply"
-                    />
-                  ) : (
-                    <div className="w-48 h-48 sm:w-60 sm:h-60 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200 flex flex-col items-center justify-center text-blue-500 gap-3">
-                      <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin" />
-                      <span className="text-xs sm:text-sm font-medium">Gerando PIX...</span>
+                  {/* Close Button para mobile quando full screen */}
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50 sm:hidden"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  <div className="relative z-10 flex flex-col items-center w-full max-w-sm mx-auto">
+                    {/* Header com valor */}
+                    <div className="text-center mb-8">
+                      <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full mb-4 border border-white/10">
+                        <CheckCircle2 className="w-4 h-4 text-green-300" />
+                        <span className="text-xs font-bold text-white uppercase tracking-widest">PAGAMENTO VIA PIX</span>
+                      </div>
+                      <div className="text-white">
+                        <span className="text-base font-medium text-blue-100 block opacity-90 mb-1">Total a pagar</span>
+                        <div className="flex items-center justify-center">
+                          <span className="text-3xl sm:text-4xl text-blue-100/80 font-bold mr-1.5 mt-2">R$</span>
+                          <span className="text-6xl sm:text-7xl font-black tracking-tighter tabular-nums drop-shadow-2xl">
+                            {totalValue.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="w-full space-y-3 bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-xl border border-white/10 shadow-inner">
-                  <p className="text-xs text-blue-100 text-center font-medium">Ou copie o código Pix copia e cola:</p>
-                  <div className="flex gap-2">
-                    <Input
-                      readOnly
-                      value={pixData?.qr_code || "Aguarde..."}
-                      className="font-mono text-[10px] sm:text-xs h-12 flex-1 bg-white/95 border-0 focus-visible:ring-2 focus-visible:ring-yellow-400 text-blue-950 shadow-inner"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={copyPix}
-                      disabled={!pixData?.qr_code}
-                      className="h-12 border-0 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold px-4 sm:px-5 shadow-lg transition-transform active:scale-95"
-                    >
-                      {pixCopied ? <CheckCircle2 className="h-5 w-5 sm:mr-1" /> : <Copy className="h-5 w-5 sm:mr-1" />}
-                      <span className="hidden sm:inline">Copiar</span>
-                    </Button>
-                  </div>
-                  {pixCopied && <p className="text-xs text-yellow-400 text-center font-bold animate-in fade-in slide-in-from-bottom-1">✓ Código copiado para a área de transferência!</p>}
-                </div>
-
-                <div className="text-center space-y-2 w-full mt-6">
-                  <div className="inline-flex items-center justify-center gap-2.5 bg-black/40 backdrop-blur-sm py-2 px-5 rounded-full border border-white/5 shadow-2xl">
-                    <div className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    {/* QR Code Container */}
+                    <div className="bg-white p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-8 relative group transition-transform duration-500 hover:scale-[1.02]">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-[2.5rem] pointer-events-none"></div>
+                      {pixData?.qr_code_base64 ? (
+                        <img
+                          src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
+                          alt="QR Code PIX"
+                          className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-3xl relative z-10 mix-blend-multiply"
+                        />
+                      ) : (
+                        <div className="w-56 h-56 sm:w-64 sm:h-64 bg-blue-50 rounded-3xl flex flex-col items-center justify-center text-blue-500 gap-3">
+                          <Loader2 className="h-10 w-10 animate-spin" />
+                          <span className="text-sm font-medium">Gerando PIX...</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs sm:text-sm font-medium text-blue-50">Pronto para confirmar o pagamento...</p>
-                  </div>
 
-                  {pixData?.payment_id && (
-                    <p className="text-[10px] sm:text-xs text-blue-200/50 pt-3">ID Transação: <span className="font-mono opacity-80">{pixData.payment_id}</span></p>
-                  )}
+                    {/* Seção Copiar Código */}
+                    <div className="w-full space-y-4">
+                      <p className="text-sm text-white font-semibold text-center drop-shadow-sm">Ou copie o código Pix copia e cola:</p>
+                      
+                      {/* Input do código PIX - Branco puro, centralizado */}
+                      <div className="relative group">
+                        <Input
+                          readOnly
+                          value={pixData?.qr_code || "Aguarde..."}
+                          className="w-full font-mono text-center text-[11px] h-16 bg-white border-0 focus-visible:ring-2 focus-visible:ring-green-400 text-slate-900 shadow-2xl rounded-2xl px-6"
+                        />
+                      </div>
+                      
+                      {/* Botão Copiar - AGORA VERDE POR PADRÃO */}
+                      <Button
+                        variant="secondary"
+                        onClick={copyPix}
+                        disabled={!pixData?.qr_code}
+                        className={`w-full h-15 rounded-2xl font-black text-lg shadow-[0_10px_25px_rgba(34,197,94,0.3)] transition-all duration-300 active:scale-[0.97] flex items-center justify-center gap-3 border-0 ${
+                          pixCopied 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                      >
+                        {pixCopied ? (
+                          <><CheckCircle2 className="h-6 w-6" /> Código Copiado!</>
+                        ) : (
+                          <><Copy className="h-6 w-6" /> COPIAR CÓDIGO PIX</>
+                        )}
+                      </Button>
+                      
+                      {pixCopied && (
+                        <p className="text-xs text-green-200 text-center font-bold animate-bounce mt-2">
+                          ✓ Pronto! Agora abra o app do seu banco.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Status de confirmação centralizado */}
+                    <div className="text-center mt-10 w-full">
+                      <div className="inline-flex items-center justify-center gap-3 bg-black/20 backdrop-blur-md py-3 px-8 rounded-full border border-white/10 shadow-lg">
+                        <div className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400"></span>
+                        </div>
+                        <p className="text-sm font-bold text-white">Aguardando seu pagamento...</p>
+                      </div>
+
+                      {pixData?.payment_id && (
+                        <p className="text-[10px] text-white/40 pt-6 font-mono tracking-widest uppercase">ID Transação: {pixData.payment_id}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

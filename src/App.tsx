@@ -20,6 +20,7 @@ import MinhasCompras from './pages/public/MinhasCompras';
 import Terms from './pages/public/Terms';
 import Privacy from './pages/public/Privacy';
 import Recrutamento from './pages/admin/Recrutamento';
+import RankingList from './pages/admin/RankingList';
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="rifas/:id/editar" element={<RifaForm />} />
           <Route path="pedidos" element={<PedidosList />} />
           <Route path="vendedores" element={<VendedoresList />} />
+          <Route path="ranking" element={<RankingList />} />
           <Route path="perfil" element={<PerfilVendedor />} />
           <Route path="configuracoes" element={<Configuracoes />} />
         </Route>

@@ -1,16 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +20,8 @@ export default function RifasList() {
   const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
+  const [vendedorRef, setVendedorRef] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRifas();
@@ -36,13 +30,38 @@ export default function RifasList() {
   async function fetchRifas() {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Identificar Role e ID se for Vendedor
+      const { data: vData } = await supabase
+        .from('vendedores')
+        .select('id, codigo_ref')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      setUserRole(vData ? 'guardiao' : 'admin');
+      if (vData) setVendedorRef(vData.codigo_ref);
+
+      // 2. Buscar Rifas com contagem de números vendidos
       const { data, error } = await supabase
         .from('rifas')
-        .select('*')
+        .select(`
+          *,
+          numeros_rifa(status)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setRifas(data || []);
+
+      // Calcular progresso real para cada rifa
+      const rifasComProgresso = (data || []).map(rifa => {
+        const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'pago').length || 0;
+        const progresso = (vendidos / rifa.total_numeros) * 100;
+        return { ...rifa, numerosVendidos: vendidos, progresso };
+      });
+
+      setRifas(rifasComProgresso);
     } catch (error) {
       console.error("Erro ao buscar rifas:", error);
     } finally {
@@ -92,11 +111,15 @@ export default function RifasList() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rifas</h1>
-          <p className="text-gray-500">Gerencie todas as rifas do sistema.</p>
+          <p className="text-gray-500">
+            {userRole === 'admin' ? "Gerencie todas as rifas do sistema." : "Confira os sorteios disponíveis para venda."}
+          </p>
         </div>
-        <Button className="w-full sm:w-auto" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
-          <Plus className="mr-2 h-4 w-4" /> Nova Rifa
-        </Button>
+        {userRole === 'admin' && (
+          <Button className="w-full sm:w-auto" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
+            <Plus className="mr-2 h-4 w-4" /> Nova Rifa
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -111,12 +134,8 @@ export default function RifasList() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {rifas.map((rifa) => {
-            // Mock progress for now
-            const numerosVendidos = 0;
-            const progresso = 0;
-
             return (
-              <Card key={rifa.id} className="overflow-hidden flex flex-col">
+              <Card key={rifa.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow border-blue-100/50">
                 <div className="relative h-48 w-full bg-gray-200">
                   {rifa.imagem_url ? (
                     <img
@@ -146,52 +165,71 @@ export default function RifasList() {
                     <div className="flex justify-between">
                       <span>Progresso:</span>
                       <span className="font-medium text-gray-900">
-                        {numerosVendidos} / {rifa.total_numeros} ({progresso.toFixed(1)}%)
+                        {rifa.numerosVendidos} / {rifa.total_numeros} ({rifa.progresso.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                       <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${progresso}%` }}
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                        style={{ width: `${rifa.progresso}%` }}
                       ></div>
                     </div>
                   </div>
                   
                   <div className="mt-auto pt-4 flex gap-2 items-center border-t border-gray-100">
-                    <span className="text-xs text-gray-500 flex-1">
+                    <span className="text-[10px] text-gray-400 flex-1">
                       Sorteio: {new Date(rifa.data_sorteio).toLocaleDateString('pt-BR')}
                     </span>
                     
-                    <Button 
-                      variant="outline" 
-                      size="icon-sm"
-                      render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
-                      nativeButton={false}
-                      title="Editar Rifa"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    
+                    {userRole === 'admin' && (
+                      <Button 
+                        variant="outline" 
+                        size="icon-sm"
+                        render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
+                        nativeButton={false}
+                        title="Editar Rifa"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
 
                     <Button 
                       variant="ghost" 
                       size="icon-sm"
-                      render={<Link to={`/rifa/${rifa.id}`} />}
+                      render={<Link to={`/rifa/${rifa.id}${userRole === 'guardiao' ? `?ref=${vendedorRef}` : ''}`} />}
                       nativeButton={false}
                       title="Ver Página Pública"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
 
-                    <Button
-                      variant="ghost" 
-                      size="icon-sm"
-                      onClick={() => copyRecruitLink(rifa.id)}
-                      title="Copiar Link de Recrutamento"
-                      className={copiedId === rifa.id ? "text-green-600" : "text-blue-600"}
-                    >
-                      {copiedId === rifa.id ? <CheckCircle2 className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
-                    </Button>
+                    {userRole === 'admin' && (
+                      <Button
+                        variant="ghost" 
+                        size="icon-sm"
+                        onClick={() => copyRecruitLink(rifa.id)}
+                        title="Copiar Link de Recrutamento"
+                        className={copiedId === rifa.id ? "text-green-600" : "text-blue-600"}
+                      >
+                        {copiedId === rifa.id ? <CheckCircle2 className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
+                      </Button>
+                    )}
+
+                    {userRole === 'guardiao' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[10px] px-2 h-8 border-blue-200 text-blue-700 font-bold hover:bg-blue-50"
+                        onClick={() => {
+                          const myRefLink = `${window.location.origin}/rifa/${rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
+                          navigator.clipboard.writeText(myRefLink);
+                          setCopiedId(rifa.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                      >
+                         {copiedId === rifa.id ? "COPIADO!" : "COPIAR MEU LINK"}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -2,13 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-import { DollarSign, Ticket, Users, TrendingUp, Loader2 } from "lucide-react";
+import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
-import * as React from "react";
 import { useState, useEffect } from "react";
-import { Copy, CheckCircle2, Trophy, Target, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/src/lib/supabase";
 
 export default function Dashboard() {
@@ -26,6 +31,7 @@ export default function Dashboard() {
   const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
   const [vendedorData, setVendedorData] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [selectedRifaId, setSelectedRifaId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -39,46 +45,39 @@ export default function Dashboard() {
           .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle();
-        
+
         const role = vData ? 'guardiao' : 'admin';
         setUserRole(role);
         setVendedorData(vData);
 
         if (role === 'admin') {
           // --- LOGICA ADMIN GLOBAL ---
-          
-          // 1. Total Arrecadado (Pedidos Pagos)
           const { data: pedidosPagos } = await supabase
             .from('pedidos')
             .select('valor_total, created_at, vendedor_id, vendedores(nome)')
             .eq('status', 'pago');
-            
+
           const totalArrecadado = pedidosPagos?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
 
-          // 2. Números Vendidos
           const { count: numerosVendidos } = await supabase
             .from('numeros_rifa')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'vendido');
 
-          // 3. Vendedores Totais
           const { count: totalVendedores } = await supabase
             .from('vendedores')
             .select('*', { count: 'exact', head: true });
 
-          // 4. Taxa de Conversão
           const { count: totalPedidos } = await supabase
             .from('pedidos')
             .select('*', { count: 'exact', head: true });
-            
+
           const pedidosPagosCount = pedidosPagos?.length || 0;
-          const taxaConversao = totalPedidos && totalPedidos > 0 
-            ? (pedidosPagosCount / totalPedidos) * 100 
+          const taxaConversao = totalPedidos && totalPedidos > 0
+            ? (pedidosPagosCount / totalPedidos) * 100
             : 0;
 
-          // 5. Ranking de Guardiões (Quem mais vendeu em R$)
-          // Nota: Em um sistema real, faríamos um RPC ou View. 
-          // Aqui buscaremos os pedidos e agruparemos manualmente para o MVP.
+          // Ranking de Guardiões
           const { data: vendasVendedores } = await supabase
             .from('pedidos')
             .select('vendedor_id, valor_total, vendedores(nome)')
@@ -95,15 +94,7 @@ export default function Dashboard() {
             .sort((a, b) => b.total - a.total)
             .slice(0, 5);
 
-          // 6. Últimas Transações
-          const { data: ultimasTransacoes } = await supabase
-            .from('pedidos')
-            .select(`id, valor_total, created_at, cliente:clientes(nome_completo, email)`)
-            .eq('status', 'pago')
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-          // 7. Chart Data (7 dias)
+          // Chart Data (7 dias)
           const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - (6 - i));
@@ -121,7 +112,7 @@ export default function Dashboard() {
             numerosVendidos: numerosVendidos || 0,
             vendedoresAtivos: totalVendedores || 0,
             taxaConversao,
-            ultimasTransacoes: ultimasTransacoes || [],
+            ultimasTransacoes: [],
             chartData,
             rankingVendedores: ranking,
             minhasRifas: []
@@ -129,14 +120,11 @@ export default function Dashboard() {
 
         } else {
           // --- LOGICA GUARDIAO ---
-          
-          // 1. Rifas que ele participa + Metas
           const { data: rifasRel } = await supabase
             .from('rifa_vendedores')
             .select('rifa_id, rifas(id, titulo, meta_guardiao, slug)')
             .eq('vendedor_id', vData.id);
 
-          // 2. Minhas Vendas
           const { data: minhasVendas } = await supabase
             .from('pedidos')
             .select('valor_total, created_at, quantidade, rifa_id')
@@ -146,7 +134,6 @@ export default function Dashboard() {
           const totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
           const totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
 
-          // Processar rifas com progresso
           const minhasRifasProcessadas = (rifasRel?.map(rel => {
             const r: any = Array.isArray(rel.rifas) ? rel.rifas[0] : rel.rifas;
             if (!r) return null;
@@ -162,7 +149,6 @@ export default function Dashboard() {
             };
           }) || []).filter(Boolean);
 
-          // Chart data de vendas pessoais
           const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - (6 - i));
@@ -175,6 +161,7 @@ export default function Dashboard() {
             return { name: dayName, vendas: vendasDoDia };
           });
 
+          const rifasFinais = minhasRifasProcessadas as any[];
           setStats({
             totalArrecadado: totalMeu,
             numerosVendidos: totalCotasMinhas,
@@ -183,8 +170,13 @@ export default function Dashboard() {
             ultimasTransacoes: [],
             chartData,
             rankingVendedores: [],
-            minhasRifas: minhasRifasProcessadas || []
+            minhasRifas: rifasFinais
           });
+
+          // Seta a primeira rifa como selecionada
+          if (rifasFinais.length > 0) {
+            setSelectedRifaId(rifasFinais[0].id);
+          }
         }
       } catch (error) {
         console.error("Erro ao carregar dashboard:", error);
@@ -197,6 +189,7 @@ export default function Dashboard() {
   }, []);
 
   const copyLink = (rifaSlug: string) => {
+    if (!vendedorData) return;
     const link = `${window.location.origin}/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(rifaSlug);
@@ -211,75 +204,136 @@ export default function Dashboard() {
     );
   }
 
+  const selectedRifa = stats.minhasRifas.find(r => r.id === selectedRifaId) || stats.minhasRifas[0];
+
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-7 gap-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 lg:col-span-7 order-1">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {userRole === 'admin' ? 'Dashboard Global' : `Bem-vindo, ${vendedorData?.nome.split(' ')[0]}!`}
+            {userRole === 'admin' ? 'Dashboard Global' : `Bem-vindo, ${vendedorData?.nome?.split(' ')[0]}!`}
           </h1>
-          <p className="text-gray-500">
-            {userRole === 'admin' ? 'Visão geral do sistema de rifas.' : 'Acompanhe seu desempenho e links de divulgação.'}
+          <p className="text-gray-500 mb-4">
+            {userRole === 'admin' ? 'Visão geral do sistema de rifas.' : 'Gerencie seus links e acompanhe seu desempenho.'}
           </p>
-        </div>
-        {userRole === 'guardiao' && vendedorData && (
-          <Badge className="bg-blue-600 text-white px-3 py-1">Código: {vendedorData.codigo_ref}</Badge>
-        )}
-      </div>
-
-      {/* Seção Principal p/ Guardião: Meus Links e Metas */}
-      {userRole === 'guardiao' && (
-        <div className="lg:col-span-7 grid gap-6 md:grid-cols-2 order-3 lg:order-2">
-          {stats.minhasRifas.map(rifa => (
-            <Card key={rifa.id} className="border-blue-100 shadow-sm overflow-hidden">
-              <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
-                <h3 className="font-bold truncate mr-2">{rifa.titulo}</h3>
-                <a href={`/${rifa.slug}`} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-4 w-4 opacity-70 hover:opacity-100 transition-opacity" />
-                </a>
-              </div>
-              <CardContent className="p-5 space-y-5">
-                {/* Link Sharing */}
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Meu Link Exclusivo</Label>
-                  <div className="flex gap-2">
-                    <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs font-mono text-gray-500 truncate flex-1">
-                      {window.location.origin}/{rifa.slug}?ref={vendedorData.codigo_ref}
-                    </div>
-                    <Button 
-                      size="sm" 
-                      onClick={() => copyLink(rifa.slug)}
-                      className={copiedLink === rifa.slug ? "bg-green-600" : "bg-blue-600"}
+          
+          {userRole === 'guardiao' && stats.minhasRifas.length > 0 && (
+            <div className="w-full max-w-[300px] space-y-1.5">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Campanha Ativa</Label>
+              <Select value={selectedRifaId || ""} onValueChange={setSelectedRifaId}>
+                <SelectTrigger className="w-full bg-white text-slate-800 font-bold text-sm border-slate-200 h-11 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500/20">
+                  <SelectValue placeholder="Escolha uma campanha">
+                    {selectedRifa?.titulo}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-md border-slate-100 shadow-2xl bg-white">
+                  {stats.minhasRifas.map(r => (
+                    <SelectItem
+                      key={r.id}
+                      value={r.id}
+                      className="font-medium text-slate-700 focus:bg-blue-50 focus:text-[#1a6eff] rounded-lg my-0.5 cursor-pointer text-sm"
                     >
-                      {copiedLink === rifa.slug ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Progress Meta */}
-                <div className="space-y-2 pt-2 border-t border-gray-100">
-                  <div className="flex justify-between items-end">
-                    <Label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1">
-                      <Target className="h-3 w-3" /> Minha Meta de Vendas
-                    </Label>
-                    <span className="text-xs font-bold text-blue-700">{rifa.vendidos} / {rifa.meta}</span>
-                  </div>
-                  <Progress value={rifa.progresso} className="h-2 bg-blue-50" />
-                  <p className="text-[10px] text-gray-400 italic">Venda {rifa.meta} cotas para atingir o objetivo da campanha.</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {stats.minhasRifas.length === 0 && (
-            <Card className="md:col-span-2 border-dashed flex flex-col items-center justify-center p-10 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                <Ticket className="h-6 w-6 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">Você ainda não está vinculado a nenhuma rifa ativa.</p>
-              <p className="text-sm text-gray-400 mt-1">Peça seu link de recrutamento ao administrador.</p>
-            </Card>
+                      {r.titulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
+      </div>
+
+      {/* Seção Principal do Guardião: Link de Venda */}
+      {userRole === 'guardiao' && selectedRifa && (
+        <Card className="lg:col-span-4 order-2 lg:order-2 border border-slate-100 shadow-xl shadow-slate-200/50 bg-white">
+          <CardContent className="p-6 sm:p-8 space-y-8">
+            {/* Link Sharing - Layout Empilhado */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 bg-[#1a6eff] rounded-sm"></div>
+                <Label className="text-xs uppercase font-black text-slate-700 tracking-wider">Seu Link Personalizado</Label>
+              </div>
+              <div className="space-y-3">
+                <div className="relative group">
+                  <div className="bg-blue-50/40 border border-blue-400/30 hover:border-blue-500 transition-all rounded-md px-4 py-3 text-sm text-slate-500 break-all font-mono leading-relaxed shadow-sm">
+                    <span className="text-slate-400">{window.location.origin}/</span><span className="text-[#1a6eff] font-bold">{selectedRifa?.slug}</span><span className="text-slate-400">?ref=</span><span className="text-slate-800 font-bold">{vendedorData?.codigo_ref}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => selectedRifa && copyLink(selectedRifa.slug)}
+                  className={`w-full flex items-center justify-center gap-2 h-11 rounded-md font-bold uppercase tracking-wider text-xs transition-all duration-300 ${
+                    copiedLink === selectedRifa?.slug
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                    : "bg-[#1a6eff] text-white shadow-md shadow-blue-500/20 hover:bg-blue-600 active:scale-[0.98]"
+                  }`}
+                >
+                  {copiedLink === selectedRifa?.slug ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Copiar link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Progress Meta */}
+            <div className="space-y-4 pt-6 border-t border-slate-50">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Desempenho nesta Rifa</span>
+                  <span className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-[#1a6eff]" /> Meta do Guardião
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-3xl font-black text-[#1a6eff]">{selectedRifa.vendidos}</span>
+                  <span className="text-sm font-bold text-slate-400"> / {selectedRifa.meta}</span>
+                </div>
+              </div>
+              <Progress value={selectedRifa.progresso} className="h-4 bg-slate-100 rounded-full" />
+              <p className="text-xs text-slate-500 font-bold italic text-center bg-slate-50 py-2 rounded-lg border border-slate-100">
+                Você já atingiu {selectedRifa.progresso.toFixed(1)}% do seu objetivo!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Card de Destaque Lateral: Rumo ao Topo */}
+      {userRole === 'guardiao' && selectedRifa && (
+        <Card className="lg:col-span-3 order-6 lg:order-2 bg-gradient-to-br from-[#1a6eff] to-blue-700 border-none shadow-xl rounded-3xl p-6 flex flex-col justify-center text-white relative overflow-hidden">
+          <div className="absolute -bottom-10 -right-10 opacity-20 rotate-12">
+            <Trophy size={200} />
+          </div>
+          <div className="relative z-10 space-y-4">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Trophy className="h-6 w-6 text-white" />
+            </div>
+            <h4 className="text-2xl font-black uppercase leading-tight">Rumo ao Topo!</h4>
+            <p className="text-blue-100 text-sm font-medium leading-relaxed">
+              Cada venda coloca você mais perto das primeiras posições do ranking global de guardiões.
+            </p>
+            <Link to="/admin/ranking" className="w-full inline-flex items-center justify-center h-8 px-2.5 rounded-lg font-black uppercase text-xs tracking-widest bg-white text-[#1a6eff] hover:bg-blue-50 transition-colors">Ver Ranking Global</Link>
+          </div>
+        </Card>
+      )}
+
+      {/* Fallback se não houver rifa */}
+      {userRole === 'guardiao' && !selectedRifa && (
+        <Card className="lg:col-span-7 order-2 border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center p-16 text-center rounded-3xl">
+          <div className="w-20 h-20 bg-white shadow-sm rounded-3xl flex items-center justify-center mb-6">
+            <Ticket className="h-10 w-10 text-slate-300" />
+          </div>
+          <h3 className="text-slate-900 font-extrabold text-xl">Nenhuma Rifa Ativa</h3>
+          <p className="text-slate-500 max-w-[300px] mt-2 text-sm">Você ainda não foi vinculado a nenhuma campanha. Entre em contato com o suporte.</p>
+        </Card>
       )}
 
       {/* Cards de Métricas Rápidas */}
@@ -308,7 +362,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Pagamento confirmado</p>
           </CardContent>
         </Card>
-        
+
         {userRole === 'admin' ? (
           <>
             <Card>
@@ -334,7 +388,7 @@ export default function Dashboard() {
           </>
         ) : (
           <Card className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
-             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-blue-800">Status do Guardião</CardTitle>
               <Trophy className="h-4 w-4 text-blue-600" />
             </CardHeader>
@@ -370,7 +424,7 @@ export default function Dashboard() {
               />
               <Tooltip />
               <Bar dataKey="vendas" fill="#2563eb" radius={[4, 4, 0, 0]}>
-                  {stats.chartData.map((_entry, index) => (
+                {stats.chartData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={index === 6 ? '#2563eb' : '#93c5fd'} />
                 ))}
               </Bar>
@@ -379,59 +433,42 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Ranking / Lateral Dinâmico */}
-      <Card className="lg:col-span-3 order-2 lg:order-5">
-        <CardHeader>
-          <CardTitle>
-            {userRole === 'admin' ? 'Ranking Guardiões' : 'Últimas Transações'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {userRole === 'admin' ? (
-              // Ranking de Vendedores
-              stats.rankingVendedores.length > 0 ? (
+      {/* Ranking - Apenas Admin */}
+      {userRole === 'admin' && (
+        <Card className="lg:col-span-3 order-7 lg:order-5 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+          <CardHeader className="border-b border-slate-50 bg-slate-50/50">
+            <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-yellow-500" /> Ranking Guardiões
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {stats.rankingVendedores.length > 0 ? (
                 stats.rankingVendedores.map((v, i) => (
-                  <div key={v.nome} className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      i === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400' : 
-                      i === 1 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-400' :
-                      i === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400' : 'bg-gray-50 text-gray-500'
+                  <div key={`ranking-${i}`} className="flex items-center gap-4 group">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] transition-all group-hover:scale-110 ${
+                      i === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400' :
+                      i === 1 ? 'bg-slate-100 text-slate-700 ring-2 ring-slate-200' :
+                      i === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' : 'bg-slate-50 text-slate-500'
                     }`}>
                       {i + 1}º
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{v.nome}</p>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Guardião Ativo</p>
+                      <p className="text-sm font-black text-slate-800 truncate uppercase tracking-tighter">{v.nome}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Guardião</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black text-blue-600">R$ {v.total.toFixed(2)}</p>
+                      <p className="text-sm font-black text-[#1a6eff]">R$ {v.total.toFixed(2)}</p>
                     </div>
                   </div>
                 ))
               ) : (
-                  <p className="text-sm text-gray-500 text-center py-4 italic">Nenhum vendedor com vendas pagas.</p>
-              )
-            ) : (
-              // Últimas Transações do Guardião
-              stats.chartData.some(d => d.vendas > 0) ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-500">Acesse a aba de Pedidos para ver suas vendas em detalhe.</p>
-                  </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4 italic">Você ainda não realizou vendas.</p>
-              )
-            )}
-          </div>
-          {userRole === 'admin' && stats.rankingVendedores.length > 0 && (
-            <div className="mt-8 pt-4 border-t border-gray-100 text-center">
-              <Button variant="ghost" size="sm" className="text-xs text-blue-600 font-bold" render={<Link to="/admin/vendedores" />} nativeButton={false}>
-                Ver todos os vendedores
-              </Button>
+                <p className="text-sm text-slate-500 text-center py-4 italic font-medium">Nenhum vendedor com vendas pagas.</p>
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

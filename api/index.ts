@@ -54,7 +54,7 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
 
     const url = `${config.evolution_api_url}/message/sendText/${config.evolution_instance}`;
     
-    await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,9 +66,16 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
         linkPreview: true
       })
     });
-    console.log(`[Evolution] Mensagem enviada para ${telefone}`);
+
+    const resData = await response.json();
+
+    if (response.ok) {
+      console.log(`[Evolution] Mensagem enviada com sucesso para ${telefone}`);
+    } else {
+      console.error(`[Evolution] Erro da API (${response.status}):`, resData);
+    }
   } catch (error) {
-    console.error("[Evolution] Erro ao enviar mensagem:", error);
+    console.error("[Evolution] Erro crítico no processo de envio:", error);
   }
 }
 
@@ -172,13 +179,31 @@ app.post("/api/pagamento/pix", async (req, res) => {
         })
         .select()
         .single();
-      if (clientError) throw clientError;
       clienteId = newCliente.id;
+    }
+
+    // 0. Limpeza: Cancelar pedidos PENDENTES anteriores desse cliente para esta rifa
+    // Isso evita que o cliente receba múltiplas notificações ou tenha vários pedidos "fantasmas"
+    const { data: oldOrders } = await supabaseAdmin
+      .from("pedidos")
+      .select("id")
+      .eq("cliente_id", clienteId)
+      .eq("rifa_id", rifa_id)
+      .eq("status", "pendente");
+
+    if (oldOrders && oldOrders.length > 0) {
+      const oldIds = oldOrders.map(o => o.id);
+      await supabaseAdmin.from("pedidos").update({ status: "cancelado" }).in("id", oldIds);
+      // Liberar os números vinculados a esses pedidos cancelados
+      await supabaseAdmin
+        .from("numeros_rifa")
+        .update({ status: "disponivel", pedido_id: null })
+        .in("pedido_id", oldIds);
     }
 
     const { data: rifa } = await supabaseAdmin
       .from("rifas")
-      .select("valor_numero, timeout_reserva")
+      .select("titulo, valor_numero, timeout_reserva")
       .eq("id", rifa_id)
       .single();
     
@@ -200,6 +225,45 @@ app.post("/api/pagamento/pix", async (req, res) => {
 
     const displayId = gerarDisplayId();
 
+    // 1. Verificar se os números ainda estão disponíveis
+    const { data: numCheck } = await supabaseAdmin
+      .from("numeros_rifa")
+      .select("numero")
+      .eq("rifa_id", rifa_id)
+      .in("numero", numeros)
+      .not("status", "eq", "disponivel");
+
+    if (numCheck && numCheck.length > 0) {
+      return res.status(400).json({ error: "Alguns números selecionados já foram reservados." });
+    }
+
+    // 2. Tentar criar o pagamento no Mercado Pago primeiro
+    const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
+    if (!config?.mp_access_token) throw new Error("Mercado Pago não configurado.");
+
+    const mpClient = new MercadoPagoConfig({ accessToken: config.mp_access_token });
+    const payment = new Payment(mpClient);
+    
+    // Usamos o displayId na descrição para identificação precoce
+    const mpResponse = await payment.create({
+      body: {
+        transaction_amount: valorTotal,
+        description: `Rifa - Pedido ${displayId}`,
+        payment_method_id: "pix",
+        payer: {
+          email: cliente.email,
+          first_name: cliente.nome.split(" ")[0],
+          last_name: cliente.nome.split(" ").slice(1).join(" "),
+          identification: { type: "CPF", number: cpfLimpo }
+        }
+      }
+    });
+
+    if (!mpResponse.id) {
+      throw new Error("Falha ao gerar o PIX no Mercado Pago.");
+    }
+
+    // 3. Se o PIX foi gerado, a gente CRIA o pedido e RESERVA os números
     const { data: pedido, error: pedidoError } = await supabaseAdmin
       .from("pedidos")
       .insert({
@@ -211,7 +275,10 @@ app.post("/api/pagamento/pix", async (req, res) => {
         valor_total: valorTotal,
         status: "pendente",
         expira_em: expiraEm.toISOString(),
-        display_id: displayId
+        display_id: displayId,
+        mp_payment_id: mpResponse.id.toString(),
+        mp_qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
+        mp_pix_copy_paste: mpResponse.point_of_interaction?.transaction_data?.qr_code
       })
       .select()
       .single();
@@ -228,32 +295,6 @@ app.post("/api/pagamento/pix", async (req, res) => {
     await supabaseAdmin
       .from("numeros_rifa")
       .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
-
-    const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
-    if (!config?.mp_access_token) throw new Error("Mercado Pago não configurado.");
-
-    const mpClient = new MercadoPagoConfig({ accessToken: config.mp_access_token });
-    const payment = new Payment(mpClient);
-    
-    const mpResponse = await payment.create({
-      body: {
-        transaction_amount: valorTotal,
-        description: `Rifa - Pedido ${pedido.id.substring(0, 8)}`,
-        payment_method_id: "pix",
-        payer: {
-          email: cliente.email,
-          first_name: cliente.nome.split(" ")[0],
-          last_name: cliente.nome.split(" ").slice(1).join(" "),
-          identification: { type: "CPF", number: cpfLimpo }
-        }
-      }
-    });
-
-    await supabaseAdmin.from("pedidos").update({
-      mp_payment_id: mpResponse.id?.toString(),
-      mp_qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
-      mp_pix_copy_paste: mpResponse.point_of_interaction?.transaction_data?.qr_code
-    }).eq("id", pedido.id);
 
     res.json({
       qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,

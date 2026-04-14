@@ -2,7 +2,6 @@ import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/src/components/MobileNav";
 import { supabase } from "@/src/lib/supabase";
 
 export default function PublicLayout() {
@@ -34,7 +33,7 @@ export default function PublicLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -73,9 +72,6 @@ export default function PublicLayout() {
       <main>
         <Outlet context={{ config }} />
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
     </div>
   );
 }

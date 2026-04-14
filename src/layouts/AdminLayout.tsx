@@ -7,11 +7,24 @@ import {
   LogOut,
   Menu,
   ShoppingCart,
-  UserCircle
+  UserCircle,
+  Trophy,
+  User,
+  ChevronDown,
+  Eye
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from '@/src/lib/supabase';
 import { MobileNav } from '@/src/components/MobileNav';
 
@@ -111,7 +124,8 @@ export default function AdminLayout() {
 
   const allNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', roles: ['admin', 'guardiao'] },
-    { icon: Ticket, label: 'Rifas', path: '/admin/rifas', roles: ['admin'] },
+    { icon: Ticket, label: 'Rifas', path: '/admin/rifas', roles: ['admin', 'guardiao'] },
+    { icon: Trophy, label: 'Ranking', path: '/admin/ranking', roles: ['admin', 'guardiao'] },
     { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', roles: ['admin', 'guardiao'] },
     { icon: Users, label: 'Vendedores', path: '/admin/vendedores', roles: ['admin'] },
     { icon: UserCircle, label: 'Meu Perfil', path: '/admin/perfil', roles: ['guardiao'] },
@@ -132,8 +146,8 @@ export default function AdminLayout() {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Bloqueio de rotas para Guardiões (exceto Pedidos agora)
-  const forbiddenPaths = ['/admin/rifas', '/admin/vendedores', '/admin/configuracoes'];
+  // Bloqueio de rotas para Guardiões (exceto Pedidos e Rifas agora)
+  const forbiddenPaths = ['/admin/vendedores', '/admin/configuracoes'];
   const isForbidden = forbiddenPaths.some(path => location.pathname.startsWith(path));
   
   if (userRole === 'guardiao' && isForbidden) {
@@ -234,25 +248,82 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
-        <header className="h-16 bg-card border-b border-border flex items-center px-4 sm:px-6 shrink-0">
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-          >
-            <span className="sr-only">Abrir menu</span>
-            <Menu className="h-6 w-6" aria-hidden="true" />
-          </button>
-          <div className="flex-1 flex justify-end">
-            {/* Header actions */}
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground hidden sm:inline-block">
-                {userRole === 'admin' ? 'Modo Global' : 'Painel do Guardião'}
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-[100] relative">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            
+            {/* Logo e Nome no Mobile */}
+            <div className="flex items-center md:hidden">
+              {config.logo_url ? (
+                <img src={config.logo_url} alt={config.nome_sistema} className="h-7 object-contain mr-2" />
+              ) : (
+                <Ticket className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
+              )}
+              <span className="text-sm font-bold text-foreground line-clamp-1 truncate max-w-[120px]">
+                {config.nome_sistema}
+              </span>
+            </div>
+
+            <div className="hidden md:block">
+              <span className="text-sm font-medium text-muted-foreground">
+                {userRole === 'admin' ? 'Painel Administrativo' : 'Portal do Guardião'}
               </span>
             </div>
           </div>
+
+          <div className="flex items-center gap-3">
+            <a 
+              href={`/${userRole === 'guardiao' && vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : ''}`} 
+              target="_blank" 
+              rel="noreferrer"
+              className="hidden xs:flex items-center gap-2 text-blue-600 font-bold hover:text-blue-700 hover:bg-blue-50 px-2.5 h-7 rounded-lg text-sm transition-colors"
+            >
+              <Eye className="h-4 w-4" />
+              <span className="hidden sm:inline">Ver Site</span>
+            </a>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <div className="flex items-center gap-2 p-1 hover:bg-muted rounded-full transition-colors cursor-pointer min-w-0">
+                  <div className="text-right mr-1">
+                    <p className="text-xs font-bold text-foreground leading-none truncate max-w-[100px] xs:max-w-none">
+                       {userRole === 'admin' ? 'Administrador' : (vendedorData?.nome?.split(' ')[0] || 'Guardião')}
+                    </p>
+                  </div>
+                  <Avatar className="h-8 w-8 border border-primary/10">
+                    <AvatarImage src={vendedorData?.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      {session?.user?.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 z-[1000] bg-white border border-slate-200 shadow-2xl">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/perfil')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Editar Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
  
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-background/50 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
