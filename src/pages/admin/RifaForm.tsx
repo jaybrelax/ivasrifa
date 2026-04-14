@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/src/lib/supabase";
@@ -649,26 +650,30 @@ export default function RifaForm() {
                           />
                         </div>
                         
-                        <div className="pt-2 border-t mt-4">
-                          <label className="flex items-center space-x-2 cursor-pointer mb-3">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                        <div className="pt-4 border-t mt-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="space-y-0.5">
+                              <Label className="text-base font-semibold text-gray-800">Bônus</Label>
+                              <p className="text-xs text-gray-500">Ative este prêmio como um bônus especial.</p>
+                            </div>
+                            <Switch
                               checked={premio.is_bonus}
-                              onChange={e => updatePremio(premio.id, 'is_bonus', e.target.checked)}
+                              onCheckedChange={(checked) => updatePremio(premio.id, 'is_bonus', checked)}
                             />
-                            <span className="text-sm font-medium text-gray-700">Este prêmio é um Bônus Especial</span>
-                          </label>
+                          </div>
                           
                           {premio.is_bonus && (
-                            <div className="space-y-2 pl-6 border-l-2 border-blue-200">
-                              <Label className="text-blue-700">Link do Bônus</Label>
+                            <div className="space-y-3 pl-4 border-l-2 border-blue-200 bg-blue-50/30 p-3 rounded-r-lg">
+                              <Label className="text-blue-700 flex items-center gap-2">
+                                <Plus className="h-3 w-3" /> Link do Bônus
+                              </Label>
                               <Input 
                                 placeholder="https://..." 
+                                className="bg-white border-blue-200 focus:ring-blue-500"
                                 value={premio.link_bonus || ''}
                                 onChange={e => updatePremio(premio.id, 'link_bonus', e.target.value)}
                               />
-                              <p className="text-[10px] text-gray-500">Este link será enviado automaticamente via WhatsApp quando a compra for confirmada.</p>
+                              <p className="text-[10px] text-blue-600 font-medium italic">Enviado automaticamente via WhatsApp após a confirmação do pagamento.</p>
                             </div>
                           )}
                         </div>
