@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Loader2, Upload, Trash } from "lucide-react";
+import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Loader2, Upload, Trash, Trophy } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Select,
@@ -51,8 +51,12 @@ export default function RifaForm() {
     imagemUrl: "",
     slug: "",
     metaGuardiao: "50",
-    status: "ativa"
+    status: "ativa",
+    offPrice: "",
+    qtdOff: ""
   });
+
+  const [hasSoldNumbers, setHasSoldNumbers] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
@@ -64,11 +68,18 @@ export default function RifaForm() {
     try {
       const { data: rifa, error: rifaError } = await supabase
         .from('rifas')
-        .select('*')
+        .select(`
+          *,
+          numeros_rifa(status)
+        `)
         .eq('id', id)
         .single();
         
       if (rifaError) throw rifaError;
+
+      // Verificar se existem números vendidos
+      const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'vendido').length || 0;
+      setHasSoldNumbers(vendidos > 0);
 
       const { data: premiosData, error: premiosError } = await supabase
         .from('premios')
@@ -95,7 +106,9 @@ export default function RifaForm() {
         imagemUrl: rifa.imagem_url || "",
         slug: rifa.slug || "",
         metaGuardiao: rifa.meta_guardiao ? rifa.meta_guardiao.toString() : "50",
-        status: rifa.status
+        status: rifa.status,
+        offPrice: rifa.off_price ? rifa.off_price.toString() : "",
+        qtdOff: rifa.qtd_off ? rifa.qtd_off.toString() : ""
       });
 
       if (premiosData && premiosData.length > 0) {
@@ -240,6 +253,15 @@ export default function RifaForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação de Preço Promocional
+    if (formData.offPrice && formData.valorNumero) {
+      if (parseFloat(formData.offPrice) >= parseFloat(formData.valorNumero)) {
+        alert("O preço promocional deve ser menor que o preço normal da cota.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -256,7 +278,9 @@ export default function RifaForm() {
         qtd_sorteios: premios.length,
         slug: formData.slug || null,
         meta_guardiao: parseInt(formData.metaGuardiao) || 50,
-        status: formData.status
+        status: formData.status,
+        off_price: formData.offPrice ? parseFloat(formData.offPrice) : null,
+        qtd_off: formData.qtdOff ? parseInt(formData.qtdOff) : null
       };
 
       if (isEditing) {
@@ -417,9 +441,18 @@ export default function RifaForm() {
                       min="1"
                       value={formData.totalNumeros}
                       onChange={e => setFormData({...formData, totalNumeros: e.target.value})}
-                      disabled={isEditing} // Prevent changing total numbers after creation to avoid breaking logic
+                      disabled={hasSoldNumbers}
                     />
-                    {isEditing && <p className="text-xs text-gray-500">Não é possível alterar o total de números após a criação.</p>}
+                    {hasSoldNumbers && (
+                      <p className="text-xs text-red-500 font-medium">
+                        ⚠️ Bloqueado: Já existem vendas realizadas para esta rifa.
+                      </p>
+                    )}
+                    {isEditing && !hasSoldNumbers && (
+                      <p className="text-xs text-green-600 font-medium">
+                        ✓ Liberado: Nenhuma venda detectada, você pode ajustar as cotas.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="valorNumero">Valor por Número (R$)</Label>
@@ -469,6 +502,44 @@ export default function RifaForm() {
                     />
                     <p className="text-[10px] text-gray-500 italic">Meta universal para todos os vendedores desta rifa.</p>
                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
+                    <Trophy className="h-4 w-4 mr-2" /> Preço Promocional (Opcional)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="offPrice">Preço Promocional (R$)</Label>
+                      <Input 
+                        id="offPrice" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="Ex: 45.00" 
+                        value={formData.offPrice}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFormData({...formData, offPrice: val});
+                        }}
+                      />
+                      <p className="text-[10px] text-gray-500">Valor da cota se atingir a quantidade mínima.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="qtdOff">Qtd Mínima para Promoção</Label>
+                      <Input 
+                        id="qtdOff" 
+                        type="number" 
+                        placeholder="Ex: 5" 
+                        min="2"
+                        value={formData.qtdOff}
+                        onChange={e => setFormData({...formData, qtdOff: e.target.value})}
+                      />
+                      <p className="text-[10px] text-gray-500">A partir de quantos números o desconto se aplica.</p>
+                    </div>
+                  </div>
+                  {formData.offPrice && formData.valorNumero && parseFloat(formData.offPrice) >= parseFloat(formData.valorNumero) && (
+                    <p className="text-xs text-red-500 mt-2 font-medium">⚠️ Atenção: O preço promocional deve ser menor que o preço normal.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

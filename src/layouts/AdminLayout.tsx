@@ -167,25 +167,25 @@ export default function AdminLayout() {
  
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 bg-card w-64 border-r border-border flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`dark fixed inset-y-0 left-0 z-50 bg-sidebar w-64 border-r border-sidebar-border flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border shrink-0">
           <div className="flex items-center">
             {config.logo_url ? (
               <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
             ) : (
-              <Ticket className="h-6 w-6 text-blue-600 mr-2 shrink-0" />
+              <Ticket className="h-6 w-6 text-blue-500 mr-2 shrink-0" />
             )}
-            <span className="text-xl font-bold text-foreground line-clamp-1" title={config.nome_sistema}>
+            <span className="text-xl font-bold text-sidebar-foreground line-clamp-1" title={config.nome_sistema}>
               {config.nome_sistema}
             </span>
           </div>
           {/* Botão de fechar só no mobile dentro do sidebar */}
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="md:hidden p-1 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -203,13 +203,13 @@ export default function AdminLayout() {
                     onClick={() => {
                       if (window.innerWidth < 768) setIsSidebarOpen(false);
                     }}
-                    className={`flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                       isActive 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                        : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/5'
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 mr-3 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                    <item.icon className={`h-5 w-5 mr-3 shrink-0 ${isActive ? 'text-white' : 'text-sidebar-foreground/60'}`} />
                     {item.label}
                   </Link>
                 </li>
@@ -218,19 +218,19 @@ export default function AdminLayout() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-200 dark:border-slate-800 shrink-0">
+        <div className="p-4 border-t border-sidebar-border shrink-0">
           <div className="flex items-center mb-4">
             <Avatar className="h-9 w-9 shrink-0">
               <AvatarImage src={vendedorData?.avatar_url} />
-              <AvatarFallback className="bg-muted text-muted-foreground font-bold">
+              <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground font-bold">
                 {session.user.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium text-foreground truncate">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
                 {userRole === 'admin' ? 'Administrador' : (vendedorData?.nome || 'Guardião')}
               </p>
-              <p className="text-xs text-muted-foreground truncate" title={session.user.email}>
+              <p className="text-xs text-sidebar-foreground/60 truncate" title={session.user.email}>
                 {session.user.email}
               </p>
             </div>
@@ -238,7 +238,7 @@ export default function AdminLayout() {
           <Button 
             variant="outline" 
             onClick={handleLogout}
-            className="w-full justify-start text-red-600 dark:text-red-400 border-slate-200 dark:border-slate-800 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="w-full justify-start text-red-400 border-sidebar-border hover:text-red-300 hover:bg-red-950/30"
           >
             <LogOut className="mr-2 h-4 w-4 shrink-0" />
             Sair

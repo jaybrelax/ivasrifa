@@ -31,9 +31,11 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/:id" element={<RifaDetails />} />
           <Route path="/minhas-compras" element={<MinhasCompras />} />
-          <Route path="/termos" element={<Terms />} />
-          <Route path="/privacidade" element={<Privacy />} />
         </Route>
+        
+        {/* Independent Public Routes (No Global Header) */}
+        <Route path="/termos" element={<Terms />} />
+        <Route path="/privacidade" element={<Privacy />} />
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<Login />} />

@@ -70,7 +70,7 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
       body: JSON.stringify({
         number: telefone,
         text: texto,
-        linkPreview: true
+        linkPreview: false
       })
     });
 
@@ -210,11 +210,18 @@ app.post("/api/pagamento/pix", async (req, res) => {
 
     const { data: rifa } = await supabaseAdmin
       .from("rifas")
-      .select("titulo, valor_numero, timeout_reserva")
+      .select("titulo, valor_numero, timeout_reserva, off_price, qtd_off")
       .eq("id", rifa_id)
       .single();
     
-    const valorTotal = numeros.length * (rifa?.valor_numero || 0);
+    let precoUnitario = Number(rifa?.valor_numero || 0);
+    
+    // Aplicar preço promocional se a quantidade for atingida
+    if (rifa?.off_price && rifa?.qtd_off && numeros.length >= rifa.qtd_off) {
+      precoUnitario = Number(rifa.off_price);
+    }
+    
+    const valorTotal = numeros.length * precoUnitario;
     const timeout = rifa?.timeout_reserva || 15;
     const expiraEm = new Date();
     expiraEm.setMinutes(expiraEm.getMinutes() + timeout);
@@ -303,12 +310,24 @@ app.post("/api/pagamento/pix", async (req, res) => {
       .from("numeros_rifa")
       .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
 
-    // Envio do WhatsApp (PIX Gerado)
+    // Envio do WhatsApp (PIX Gerado) - DUAS MENSAGENS SEPARADAS
     const pedidoIdCurto = displayId;
-    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n*PAGAMENTO PIX (COPIA E COLA):*\n${mpResponse.point_of_interaction?.transaction_data?.qr_code}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._`;
+    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._\n\n*O código PIX será enviado na próxima mensagem para facilitar a cópia.*`;
     
-    // Aguardamos o envio para garantir que o processo não seja morto pelo servidor antes de concluir a requisição externa
+    const pixCopiaCola = mpResponse.point_of_interaction?.transaction_data?.qr_code;
+
+    // Helper para delay
+    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    console.log(`[WhatsApp] Enviando mensagem de resumo para #${pedidoIdCurto}...`);
     await enviarMensagemWhatsApp(cliente.telefone, msgPix);
+    
+    if (pixCopiaCola) {
+      console.log(`[WhatsApp] Aguardando 2s para enviar o código PIX isolado...`);
+      await wait(2000); // Aumentado para 2 segundos para garantir a separação total
+      console.log(`[WhatsApp] Enviando código PIX Copia e Cola...`);
+      await enviarMensagemWhatsApp(cliente.telefone, pixCopiaCola.trim());
+    }
 
     res.json({
       qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,

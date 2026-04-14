@@ -36,6 +36,7 @@ export default function RifaDetails() {
   const [formData, setFormData] = useState({ nome: "", cpf: "", email: "", telefone: "" });
   const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [config, setConfig] = useState({
     nome_sistema: "Sorteios Online",
     logo_url: "",
@@ -247,7 +248,11 @@ export default function RifaDetails() {
       setPixData(data);
       setCheckoutStep(3);
     } catch (error: any) {
-      alert(error.message || "Ocorreu um erro. Tente novamente.");
+      if (error.message?.includes("Invalid user identification number") || error.message?.includes("invalid identification.number")) {
+        setCheckoutError("CPF inválido! Por favor, clique em VOLTAR e corrija o número do seu documento.");
+      } else {
+        alert(error.message || "Ocorreu um erro. Tente novamente.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -280,7 +285,10 @@ export default function RifaDetails() {
     );
   }
 
-  const totalValue = selectedNumbers.length * rifa.valor_numero;
+  const hasPromo = rifa.off_price && rifa.qtd_off;
+  const isPromoActive = hasPromo && selectedNumbers.length >= rifa.qtd_off;
+  const currentUnitPrice = isPromoActive ? rifa.off_price : rifa.valor_numero;
+  const totalValue = selectedNumbers.length * currentUnitPrice;
   const padNum = (n: number) => n.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, "0");
 
   return (
@@ -360,8 +368,8 @@ export default function RifaDetails() {
                           <div className="flex-1 flex flex-col justify-center min-w-0">
                             <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
                               <span className={`
-                                font-black uppercase tracking-widest
-                                ${premio.posicao === 1 ? 'text-blue-700 text-sm' : 'text-blue-600 text-[10px]'}
+                                font-black uppercase tracking-normal
+                                ${premio.posicao === 1 ? 'text-blue-700 text-[10px]' : 'text-blue-400 text-[8.5px]'}
                               `}>
                                 {premio.posicao === 1 ? '👑 PREMIAÇÃO PRINCIPAL' : `${premio.posicao}º PRÊMIO`}
                               </span>
@@ -376,7 +384,7 @@ export default function RifaDetails() {
                             </div>
                             <h4 className={`
                               font-bold text-gray-900 
-                              ${premio.posicao === 1 ? 'text-2xl sm:text-3xl leading-tight' : 'text-sm truncate'}
+                              ${premio.posicao === 1 ? 'text-xl sm:text-2xl leading-snug' : 'text-sm truncate'}
                             `}>
                               {premio.titulo}
                             </h4>
@@ -399,40 +407,78 @@ export default function RifaDetails() {
 
             {/* Preço da Cota (Mobile) */}
             <Card className="md:hidden border-blue-200 bg-blue-50/50">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner">
-                    <Ticket className="h-5 w-5" />
+              <CardContent className="p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner">
+                      <Ticket className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 leading-tight">Por apenas</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Valor da cota</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 leading-tight">Por apenas</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Valor da cota</p>
+                  <div className="text-right">
+                    <p className={`text-3xl font-black text-green-600 drop-shadow-sm ${isPromoActive ? 'line-through text-gray-400 text-lg' : ''}`}>
+                      R$ {Number(rifa.valor_numero).toFixed(2)}
+                    </p>
+                    {isPromoActive && (
+                      <p className="text-3xl font-black text-green-600 drop-shadow-sm animate-pulse">
+                        R$ {Number(rifa.off_price).toFixed(2)}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-black text-green-600 drop-shadow-sm">R$ {Number(rifa.valor_numero).toFixed(2)}</p>
-                </div>
+
+                {hasPromo && !isPromoActive && (
+                  <div id="promo-banner" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white p-3 rounded-xl text-center text-sm font-medium animate-pulse shadow-md scroll-mt-[170px]">
+                    🚀 PROMOÇÃO: Compre {rifa.qtd_off} ou mais e pague apenas <span className="text-yellow-300 font-bold text-base">R$ {Number(rifa.off_price).toFixed(2)}</span> cada!
+                  </div>
+                )}
+                
+                {isPromoActive && (
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 rounded-xl text-center text-sm font-medium shadow-md">
+                    ✅ DESCONTO ATIVADO! Você está economizando <span className="font-bold text-base">R$ {(selectedNumbers.length * (rifa.valor_numero - rifa.off_price)).toFixed(2)}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Grade de Números */}
-            <Card id="numeros">
+            <Card id="numeros" className="scroll-mt-[170px]">
               <CardContent className="p-4 sm:p-6">
                 {/* Cabeçalho */}
-                <div className="flex justify-between items-center mb-4 gap-3">
-                  <h2 className="text-lg sm:text-xl font-bold">Escolha seus números</h2>
-                  <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => selectRandom(1)} className="text-xs px-2.5">
-                      <Shuffle className="h-3.5 w-3.5 mr-1" />+1
+                <div className="flex justify-between items-center mb-6 gap-3">
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Escolha seus números</h2>
+                </div>
+
+                {/* Linha Surpresinha */}
+                <div className="flex items-center gap-3 mb-5 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider flex items-center shrink-0">
+                    <Shuffle className="h-3 w-3 mr-1.5" /> Surpresinha:
+                  </span>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => selectRandom(3)} 
+                      className="bg-white hover:bg-blue-600 hover:text-white transition-colors border-blue-200 text-blue-700 font-bold h-10 px-6 text-base"
+                    >
+                      +3
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => selectRandom(5)} className="text-xs px-2.5">
-                      <Shuffle className="h-3.5 w-3.5 mr-1" />+5
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => selectRandom(5)} 
+                      className="bg-white hover:bg-blue-600 hover:text-white transition-colors border-blue-200 text-blue-700 font-bold h-10 px-6 text-base"
+                    >
+                      +5
                     </Button>
                   </div>
                 </div>
 
                 {/* Legenda em 2 colunas no mobile */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 mb-4 text-xs text-gray-600">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 mb-6 text-[11px] text-gray-600 font-medium bg-gray-50/50 p-2 rounded-lg border border-gray-100">
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-white border border-gray-300 shrink-0" /> Disponível</div>
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-blue-600 shrink-0" /> Selecionado</div>
                   <div className="flex items-center gap-1.5" title="Reservado no sistema ou sendo escolhido por alguém agora"><div className="w-3.5 h-3.5 rounded bg-yellow-400 shrink-0" /> Reservado</div>
@@ -462,9 +508,29 @@ export default function RifaDetails() {
                 <CardContent className="p-5">
                   <h3 className="text-lg font-bold mb-4">Resumo da Compra</h3>
                   <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100 text-sm">
-                    <span className="text-gray-600">Valor por número</span>
-                    <span className="font-bold">R$ {Number(rifa.valor_numero).toFixed(2)}</span>
+                    <span className="text-gray-600">Valor unitário</span>
+                    <div className="text-right">
+                      <span className={`font-bold block ${isPromoActive ? 'line-through text-gray-400 text-xs' : ''}`}>
+                        R$ {Number(rifa.valor_numero).toFixed(2)}
+                      </span>
+                      {isPromoActive && (
+                        <span className="font-bold text-green-600">
+                          R$ {Number(rifa.off_price).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  {hasPromo && !isPromoActive && (
+                    <div className="mb-4 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl text-sm text-blue-900 font-normal leading-relaxed shadow-sm">
+                      💡 <span className="font-semibold text-blue-700">Dica:</span> Adicione mais <span className="font-bold text-blue-600">{rifa.qtd_off - selectedNumbers.length}</span> números para pagar apenas <strong className="text-blue-700 text-base">R$ {Number(rifa.off_price).toFixed(2)}</strong> cada!
+                    </div>
+                  )}
+                  {isPromoActive && (
+                    <div className="mb-4 p-3 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl text-sm text-green-900 font-normal flex justify-between items-center shadow-sm">
+                      <span className="font-semibold text-green-700">ECONOMIA ATIVA</span>
+                      <span className="font-bold text-green-600 text-base">- R$ {(selectedNumbers.length * (rifa.valor_numero - rifa.off_price)).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="mb-5">
                     <span className="text-xs text-gray-500 block mb-2">Selecionados ({selectedNumbers.length}):</span>
                     {selectedNumbers.length > 0 ? (
@@ -482,11 +548,21 @@ export default function RifaDetails() {
                     <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
                   </div>
                   <Button
-                    className="w-full h-12 text-base bg-black hover:bg-slate-900 text-white uppercase font-bold shadow-lg"
-                    disabled={selectedNumbers.length === 0}
-                    onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
+                    className={`w-full h-12 text-base uppercase font-bold shadow-lg transition-all duration-300 ${
+                      selectedNumbers.length === 0 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white animate-bounce-subtle' 
+                        : 'bg-black hover:bg-slate-900 text-white'
+                    }`}
+                    onClick={() => {
+                      if (selectedNumbers.length === 0) {
+                        document.getElementById('numeros')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      } else {
+                        setCheckoutStep(1);
+                        setIsModalOpen(true);
+                      }
+                    }}
                   >
-                    Reservar números
+                    {selectedNumbers.length === 0 ? 'Escolher Números' : 'Confirmar Reserva'}
                   </Button>
                 </CardContent>
               </Card>
@@ -508,21 +584,44 @@ export default function RifaDetails() {
             <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
           </div>
           <Button
-            className="h-12 px-6 text-base bg-black hover:bg-slate-900 text-white shrink-0 uppercase font-bold shadow-lg"
-            disabled={selectedNumbers.length === 0}
-            onClick={() => { setCheckoutStep(1); setIsModalOpen(true); }}
+            className={`h-12 px-6 text-base shrink-0 uppercase font-bold shadow-lg transition-all duration-300 ${
+              selectedNumbers.length === 0 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-black hover:bg-slate-900 text-white'
+            }`}
+            onClick={() => {
+              if (selectedNumbers.length === 0) {
+                const targetId = hasPromo && !isPromoActive ? 'promo-banner' : 'numeros';
+                document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                setCheckoutStep(1);
+                setIsModalOpen(true);
+              }
+            }}
           >
-            Reservar números
+            {selectedNumbers.length === 0 ? 'Escolher Números' : 'Confirmar'}
           </Button>
         </div>
       </div>
 
-      {/* ── MODAL DE CHECKOUT ── */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        {/* full-screen no mobile, centralizado no desktop */}
-        <DialogContent className={`w-full max-w-none h-full sm:h-auto sm:max-w-[500px] sm:rounded-xl rounded-none p-0 flex flex-col sm:block overflow-y-auto ${checkoutStep === 3 ? 'border-0' : ''}`}>
+      <Dialog open={isModalOpen} onOpenChange={(val) => {
+        // Bloqueia o fechamento automático (clique fora / esc) se estiver no passo do PIX
+        if (!val && checkoutStep === 3) return;
+        setIsModalOpen(val);
+      }}>
+        {/* full-screen no mobile, centralizado no desktop com proporção 3x4 */}
+        <DialogContent 
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          className={`w-full max-w-none h-full sm:h-auto rounded-none p-0 flex flex-col sm:block ${
+            checkoutStep === 3 
+              ? 'sm:max-w-[480px] border-0 overflow-hidden sm:overflow-visible sm:rounded-3xl shadow-none sm:shadow-2xl' 
+              : 'sm:max-w-[420px] sm:aspect-[3/4.2] sm:rounded-3xl overflow-y-auto'
+          }`}
+        >
 
-          <div className={`${checkoutStep === 3 ? 'p-0' : 'p-5 sm:p-6'}`}>
+          <div className={`${checkoutStep === 3 ? 'p-0 flex-1 flex flex-col sm:min-h-[700px]' : 'p-5 sm:p-6'}`}>
             {checkoutStep !== 3 && (
               <DialogHeader className="mb-4 text-center sm:text-left">
                 <DialogTitle className="text-lg sm:text-xl">
@@ -562,6 +661,13 @@ export default function RifaDetails() {
             {/* ── STEP 2: Resumo ── */}
             {checkoutStep === 2 && (
               <div className="space-y-4">
+                {checkoutError && (
+                  <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+                    <span className="text-sm font-bold">{checkoutError}</span>
+                  </div>
+                )}
+                
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-600">Quantidade:</span>
@@ -577,7 +683,14 @@ export default function RifaDetails() {
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                     <span className="font-bold text-gray-900">Total a pagar:</span>
-                    <span className="text-xl font-bold text-green-600">R$ {totalValue.toFixed(2)}</span>
+                    <div>
+                      <span className="text-xl font-bold text-green-600 mt-2 block">R$ {totalValue.toFixed(2)}</span>
+                      {isPromoActive && (
+                        <span className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                          Desconto Ativado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start text-sm text-yellow-800 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
@@ -589,9 +702,9 @@ export default function RifaDetails() {
 
             {/* ── STEP 3: PIX ── */}
             {checkoutStep === 3 && (
-              <div className="flex flex-col items-center w-full min-h-[100dvh] sm:min-h-0">
+              <div className="flex flex-col items-center w-full flex-1">
                 {/* Background com gradiente azul vibrante e claro */}
-                <div className="w-full bg-gradient-to-b from-blue-400 via-blue-500 to-blue-700 px-6 sm:px-8 pt-10 pb-10 sm:rounded-xl relative overflow-hidden flex-1 flex flex-col items-center justify-center">
+                <div className="w-full bg-gradient-to-b from-blue-400 via-blue-500 to-blue-700 px-6 sm:px-10 pt-10 pb-16 sm:rounded-3xl relative overflow-hidden flex-1 flex flex-col items-center justify-center">
                   {/* Elementos decorativos de fundo */}
                   <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
@@ -599,13 +712,7 @@ export default function RifaDetails() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-white/[0.05] to-transparent rounded-full font-black"></div>
                   </div>
 
-                  {/* Close Button para mobile quando full screen */}
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50 sm:hidden"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
+
 
                   <div className="relative z-10 flex flex-col items-center w-full max-w-sm mx-auto">
                     {/* Header com valor */}
@@ -741,13 +848,13 @@ export default function RifaDetails() {
           </div>
 
           {/* ── RODAPÉ DO MODAL ── */}
-          <div className="p-4 sm:p-0 sm:pt-5 mt-auto sm:mt-4 border-t sm:border-t-0 bg-white sm:bg-transparent">
+          <div className="mt-auto p-5 sm:px-6 sm:pb-6 sm:pt-0 border-t sm:border-t-0 bg-white sm:bg-transparent">
             {checkoutStep === 1 && (
               <Button className="w-full h-12 text-base" onClick={() => setCheckoutStep(2)}>Continuar</Button>
             )}
             {checkoutStep === 2 && (
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-12" onClick={() => setCheckoutStep(1)} disabled={isSubmitting}>Voltar</Button>
+                <Button variant="outline" className="flex-1 h-12" onClick={() => { setCheckoutStep(1); setCheckoutError(null); }} disabled={isSubmitting}>Voltar</Button>
                 <Button className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-base" onClick={handleCheckout} disabled={isSubmitting}>
                   {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Aguarde...</> : "Gerar PIX"}
                 </Button>
@@ -757,6 +864,13 @@ export default function RifaDetails() {
               <Button className="w-full h-12 text-base" onClick={() => { setIsModalOpen(false); setSelectedNumbers([]); setCheckoutStep(1); window.location.reload(); }}>
                 Fechar
               </Button>
+            )}
+            
+            {(checkoutStep === 1 || checkoutStep === 2) && (
+              <p className="text-[10px] text-gray-400 text-center mt-4 leading-tight">
+                Ao continuar, você declara que concorda com os nossos <br />
+                <a href="/termos" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer hover:text-blue-500">Termos de Uso</a> e <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer hover:text-blue-500">Política de Privacidade</a>.
+              </p>
             )}
           </div>
 

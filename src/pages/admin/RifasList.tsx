@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -43,12 +43,13 @@ export default function RifasList() {
       setUserRole(vData ? 'guardiao' : 'admin');
       if (vData) setVendedorRef(vData.codigo_ref);
 
-      // 2. Buscar Rifas com contagem de números vendidos
+      // 2. Buscar Rifas com contagem de números vendidos e pedidos pagos
       const { data, error } = await supabase
         .from('rifas')
         .select(`
           *,
-          numeros_rifa(status)
+          numeros_rifa(status),
+          pedidos(status, valor_total)
         `)
         .order('created_at', { ascending: false });
       
@@ -56,9 +57,22 @@ export default function RifasList() {
 
       // Calcular progresso real para cada rifa
       const rifasComProgresso = (data || []).map(rifa => {
-        const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'pago').length || 0;
+        // Contagem de números vendidos (pela tabela de números)
+        const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'vendido').length || 0;
+        
+        // Faturamento real pelos pedidos pagos
+        const pedidosPagos = rifa.pedidos?.filter((p: any) => p.status === 'pago') || [];
+        const brutoTotal = pedidosPagos.reduce((acc: number, p: any) => acc + Number(p.valor_total || 0), 0);
+        
         const progresso = (vendidos / rifa.total_numeros) * 100;
-        return { ...rifa, numerosVendidos: vendidos, progresso };
+        const liquido = brutoTotal * 0.9901; // Desconto de 0.99%
+        
+        return { 
+          ...rifa, 
+          numerosVendidos: vendidos, 
+          progresso, 
+          faturamentoLiquido: liquido 
+        };
       });
 
       setRifas(rifasComProgresso);
@@ -136,21 +150,46 @@ export default function RifasList() {
           {rifas.map((rifa) => {
             return (
               <Card key={rifa.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow border-blue-100/50">
-                <div className="relative h-48 w-full bg-gray-200">
-                  {rifa.imagem_url ? (
-                    <img
-                      src={rifa.imagem_url}
-                      alt={rifa.titulo}
-                      className="object-cover w-full h-full"
-                      referrerPolicy="no-referrer"
-                    />
+                <div className="relative h-48 w-full bg-gray-200 group">
+                  {userRole === 'admin' ? (
+                    <Link to={`/admin/rifas/${rifa.id}/editar`} className="block h-full w-full overflow-hidden">
+                      {rifa.imagem_url ? (
+                        <img
+                          src={rifa.imagem_url}
+                          alt={rifa.titulo}
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                          Sem imagem
+                        </div>
+                      )}
+                    </Link>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                      Sem imagem
-                    </div>
+                    <>
+                      {rifa.imagem_url ? (
+                        <img
+                          src={rifa.imagem_url}
+                          alt={rifa.titulo}
+                          className="object-cover w-full h-full"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                          Sem imagem
+                        </div>
+                      )}
+                    </>
                   )}
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 z-10">
                     {getStatusBadge(rifa.status)}
+                  </div>
+                  <div className="absolute bottom-2 left-2 z-10">
+                    <Badge variant="outline" className="bg-black/40 text-white border-none backdrop-blur-md text-[10px] py-0.5 px-2">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(rifa.data_sorteio).toLocaleDateString('pt-BR')}
+                    </Badge>
                   </div>
                 </div>
                 <CardHeader className="pb-2">
@@ -168,67 +207,103 @@ export default function RifasList() {
                         {rifa.numerosVendidos} / {rifa.total_numeros} ({rifa.progresso.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+
+                    {rifa.faturamentoLiquido > 0 && (
+                       <div className="flex justify-between items-center border-t border-gray-100 pt-3 mt-3">
+                        <span className="text-gray-500 font-semibold text-xs uppercase tracking-wider">Arrecadado:</span>
+                        <span className="font-black text-xl text-green-600">
+                          {rifa.faturamentoLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="w-full bg-gray-100 rounded-full h-5 mt-3 relative overflow-hidden border border-gray-200/50">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                        className="bg-blue-600 h-full transition-all duration-1000 flex items-center justify-end"
                         style={{ width: `${rifa.progresso}%` }}
-                      ></div>
+                      >
+                        {rifa.progresso > 30 && (
+                          <span className="text-[10px] font-black text-white px-2 uppercase tracking-tighter">
+                            {rifa.numerosVendidos} VENDIDOS
+                          </span>
+                        )}
+                      </div>
+                      {rifa.progresso <= 30 && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">
+                            {rifa.numerosVendidos} VENDIDOS
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="mt-auto pt-4 flex gap-2 items-center border-t border-gray-100">
-                    <span className="text-[10px] text-gray-400 flex-1">
-                      Sorteio: {new Date(rifa.data_sorteio).toLocaleDateString('pt-BR')}
-                    </span>
-                    
+                  <div className="mt-auto pt-4 flex flex-col gap-2 w-full border-t border-gray-100">
                     {userRole === 'admin' && (
-                      <Button 
-                        variant="outline" 
-                        size="icon-sm"
-                        render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
-                        nativeButton={false}
-                        title="Editar Rifa"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    )}
+                      <>
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
+                          nativeButton={false}
+                          className="w-full h-10 text-xs font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                        >
+                          <Edit className="h-4 w-4 mr-2" /> Editar Rifa
+                        </Button>
 
-                    <Button 
-                      variant="ghost" 
-                      size="icon-sm"
-                      render={<Link to={`/rifa/${rifa.id}${userRole === 'guardiao' ? `?ref=${vendedorRef}` : ''}`} />}
-                      nativeButton={false}
-                      title="Ver Página Pública"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="secondary" 
+                            size="sm"
+                            onClick={() => copyRecruitLink(rifa.id)}
+                            className={`h-9 text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 truncate`}
+                          >
+                            {copiedId === rifa.id ? (
+                              <><CheckCircle2 className="h-4 w-4 mr-1 text-green-600" /> Copiado</>
+                            ) : (
+                              <><LinkIcon className="h-4 w-4 mr-1" /> Recrutar</>
+                            )}
+                          </Button>
 
-                    {userRole === 'admin' && (
-                      <Button
-                        variant="ghost" 
-                        size="icon-sm"
-                        onClick={() => copyRecruitLink(rifa.id)}
-                        title="Copiar Link de Recrutamento"
-                        className={copiedId === rifa.id ? "text-green-600" : "text-blue-600"}
-                      >
-                        {copiedId === rifa.id ? <CheckCircle2 className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
-                      </Button>
+                          <Button 
+                            variant="secondary" 
+                            size="sm"
+                            render={<Link to={`/${rifa.slug || rifa.id}${userRole === 'guardiao' ? `?ref=${vendedorRef}` : ''}`} />}
+                            nativeButton={false}
+                            className="h-9 text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> Página
+                          </Button>
+                        </div>
+                      </>
                     )}
 
                     {userRole === 'guardiao' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-[10px] px-2 h-8 border-blue-200 text-blue-700 font-bold hover:bg-blue-50"
-                        onClick={() => {
-                          const myRefLink = `${window.location.origin}/rifa/${rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
-                          navigator.clipboard.writeText(myRefLink);
-                          setCopiedId(rifa.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }}
-                      >
-                         {copiedId === rifa.id ? "COPIADO!" : "COPIAR MEU LINK"}
-                      </Button>
+                      <div className="grid grid-cols-1 gap-2">
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          render={<Link to={`/${rifa.slug || rifa.id}?ref=${vendedorRef}`} />}
+                          nativeButton={false}
+                          className="w-full h-10 text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        >
+                          <Eye className="h-4 w-4 mr-2" /> Ver Página
+                        </Button>
+
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="w-full h-10 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            const myRefLink = `${window.location.origin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
+                            navigator.clipboard.writeText(myRefLink);
+                            setCopiedId(rifa.id);
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                        >
+                           {copiedId === rifa.id ? "COPIADO!" : "COPIAR MEU LINK"}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardContent>
