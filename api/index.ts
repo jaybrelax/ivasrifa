@@ -382,6 +382,26 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte! Agora é só torcer! 🍀`;
             await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+
+            // Disparo dos links de Bônus (se existirem)
+            if (pedidoFull.rifa_id) {
+              const { data: bonusPremios } = await supabaseAdmin
+                .from("premios")
+                .select("link_bonus")
+                .eq("rifa_id", pedidoFull.rifa_id)
+                .eq("is_bonus", true)
+                .not("link_bonus", "is", null);
+
+              if (bonusPremios && bonusPremios.length > 0) {
+                const firstName = pedidoFull.cliente.nome_completo.split(" ")[0];
+                for (const bonus of bonusPremios) {
+                  if (bonus.link_bonus && bonus.link_bonus.trim() !== "") {
+                    const msgBonus = `Aqui vai o seu bônus, ${firstName}. ${bonus.link_bonus.trim()}`;
+                    await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgBonus);
+                  }
+                }
+              }
+            }
           }
         }
       }

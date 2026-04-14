@@ -34,7 +34,7 @@ export default function RifaForm() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [premios, setPremios] = useState<any[]>([{ id: 1, posicao: 1, titulo: "", descricao: "", valorEstimado: "", imagem_url: "" }]);
+  const [premios, setPremios] = useState<any[]>([{ id: 1, posicao: 1, titulo: "", descricao: "", valorEstimado: "", imagem_url: "", is_bonus: false, link_bonus: "" }]);
   const [deletedPremios, setDeletedPremios] = useState<string[]>([]);
   const [uploadingPremioId, setUploadingPremioId] = useState<number | string | null>(null);
   const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
@@ -120,7 +120,9 @@ export default function RifaForm() {
           titulo: p.titulo,
           descricao: p.descricao || "",
           valorEstimado: p.valor_estimado ? p.valor_estimado.toString() : "",
-          imagem_url: p.imagem_url || ""
+          imagem_url: p.imagem_url || "",
+          is_bonus: p.is_bonus || false,
+          link_bonus: p.link_bonus || ""
         })));
       }
     } catch (error) {
@@ -134,7 +136,7 @@ export default function RifaForm() {
 
   const addPremio = () => {
     const newPosicao = premios.length + 1;
-    setPremios([...premios, { id: Date.now(), posicao: newPosicao, titulo: "", descricao: "", valorEstimado: "", imagem_url: "" }]);
+    setPremios([...premios, { id: Date.now(), posicao: newPosicao, titulo: "", descricao: "", valorEstimado: "", imagem_url: "", is_bonus: false, link_bonus: "" }]);
   };
 
   const removePremio = (idToRemove: any) => {
@@ -323,7 +325,9 @@ export default function RifaForm() {
           titulo: p.titulo,
           descricao: p.descricao || null,
           valor_estimado: p.valorEstimado ? parseFloat(p.valorEstimado) : null,
-          imagem_url: p.imagem_url || null
+          imagem_url: p.imagem_url || null,
+          is_bonus: p.is_bonus || false,
+          link_bonus: p.link_bonus || null
         };
         if (typeof p.id === 'string') {
           payload.id = p.id;
@@ -643,6 +647,30 @@ export default function RifaForm() {
                             value={premio.descricao}
                             onChange={e => updatePremio(premio.id, 'descricao', e.target.value)}
                           />
+                        </div>
+                        
+                        <div className="pt-2 border-t mt-4">
+                          <label className="flex items-center space-x-2 cursor-pointer mb-3">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                              checked={premio.is_bonus}
+                              onChange={e => updatePremio(premio.id, 'is_bonus', e.target.checked)}
+                            />
+                            <span className="text-sm font-medium text-gray-700">Este prêmio é um Bônus Especial</span>
+                          </label>
+                          
+                          {premio.is_bonus && (
+                            <div className="space-y-2 pl-6 border-l-2 border-blue-200">
+                              <Label className="text-blue-700">Link do Bônus</Label>
+                              <Input 
+                                placeholder="https://..." 
+                                value={premio.link_bonus || ''}
+                                onChange={e => updatePremio(premio.id, 'link_bonus', e.target.value)}
+                              />
+                              <p className="text-[10px] text-gray-500">Este link será enviado automaticamente via WhatsApp quando a compra for confirmada.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
