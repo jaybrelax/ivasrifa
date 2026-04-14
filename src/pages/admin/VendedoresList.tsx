@@ -14,6 +14,7 @@ import { Plus, Search, MoreHorizontal, Edit, Trash, Copy, Loader2 } from "lucide
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -27,38 +28,57 @@ export default function VendedoresList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchVendedores() {
-      try {
-        const { data: vData, error: vError } = await supabase
-          .from('vendedores')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (vError) throw vError;
-
-        // Buscar contagem de cotas vendidas (pedidos com status 'pago')
-        const { data: pData } = await supabase
-          .from('pedidos')
-          .select('vendedor_id, quantidade')
-          .eq('status', 'pago')
-          .not('vendedor_id', 'is', null);
-
-        const vendedoresComVendas = vData?.map(vend => {
-          const totalCotas = pData?.filter(p => p.vendedor_id === vend.id)
-            .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
-          return { ...vend, totalCotas };
-        });
-
-        setVendedores(vendedoresComVendas || []);
-      } catch (error) {
-        console.error("Erro ao buscar vendedores:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchVendedores();
   }, []);
+  
+  async function fetchVendedores() {
+    setLoading(true);
+    try {
+      const { data: vData, error: vError } = await supabase
+        .from('vendedores')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (vError) throw vError;
+
+      const { data: pData } = await supabase
+        .from('pedidos')
+        .select('vendedor_id, quantidade')
+        .eq('status', 'pago')
+        .not('vendedor_id', 'is', null);
+
+      const vendedoresComVendas = vData?.map(vend => {
+        const totalCotas = pData?.filter(p => p.vendedor_id === vend.id)
+          .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
+        return { ...vend, totalCotas };
+      });
+
+      setVendedores(vendedoresComVendas || []);
+    } catch (error) {
+      console.error("Erro ao buscar vendedores:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleDelete = async (id: string, nome: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o vendedor "${nome}"? Esta ação não pode ser desfeita.`)) return;
+
+    try {
+      const { error } = await supabase.from('vendedores').delete().eq('id', id);
+      if (error) throw error;
+      setVendedores(vendedores.filter(v => v.id !== id));
+      alert("Vendedor excluído com sucesso.");
+    } catch (err: any) {
+      alert("Erro ao excluir: " + err.message);
+    }
+  };
+
+  const handleCopyLink = (codigo: string) => {
+    const link = `${window.location.origin}?ref=${codigo}`;
+    navigator.clipboard.writeText(link);
+    alert("Link de vendedor copiado!");
+  };
 
   return (
     <div className="space-y-6">
@@ -127,7 +147,7 @@ export default function VendedoresList() {
                           <Badge variant="outline" className="font-mono bg-gray-50">
                             {vendedor.codigo_ref}
                           </Badge>
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyLink(vendedor.codigo_ref)}>
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
@@ -166,16 +186,21 @@ export default function VendedoresList() {
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
+                            <DropdownMenuGroup>
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => {
+                                const tel = vendedor.telefone.replace(/\D/g, '');
+                                window.open(`https://wa.me/55${tel}`, '_blank');
+                              }}>
+                                <MoreHorizontal className="mr-2 h-4 w-4 rotate-90" />
+                                WhatsApp
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(vendedor.id, vendedor.nome)}>
+                                <Trash className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
