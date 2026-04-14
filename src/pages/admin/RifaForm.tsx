@@ -318,29 +318,45 @@ export default function RifaForm() {
         if (deleteError) throw deleteError;
       }
 
-      // Handle upsert premios
-      const premiosToUpsert = premios.map(p => {
-        const payload: any = {
-          rifa_id: rifaId,
-          posicao: p.posicao,
-          titulo: p.titulo,
-          descricao: p.descricao || null,
-          valor_estimado: p.valorEstimado ? parseFloat(p.valorEstimado) : null,
-          imagem_url: p.imagem_url || null,
-          is_bonus: p.is_bonus || false,
-          link_bonus: p.link_bonus || null
-        };
-        if (typeof p.id === 'string') {
-          payload.id = p.id;
-        }
-        return payload;
-      });
+      // Separar prêmios novos (sem ID ou ID numérico) de prêmios existentes (UUID string)
+      const novosPremios = premios.filter(p => typeof p.id !== 'string').map(p => ({
+        rifa_id: rifaId,
+        posicao: p.posicao,
+        titulo: p.titulo,
+        descricao: p.descricao || null,
+        valor_estimado: p.valorEstimado ? parseFloat(p.valorEstimado) : null,
+        imagem_url: p.imagem_url || null,
+        is_bonus: p.is_bonus || false,
+        link_bonus: p.link_bonus || null
+      }));
 
-      const { error: premiosError } = await supabase
-        .from('premios')
-        .upsert(premiosToUpsert);
+      const premiosExistentes = premios.filter(p => typeof p.id === 'string').map(p => ({
+        id: p.id,
+        rifa_id: rifaId,
+        posicao: p.posicao,
+        titulo: p.titulo,
+        descricao: p.descricao || null,
+        valor_estimado: p.valorEstimado ? parseFloat(p.valorEstimado) : null,
+        imagem_url: p.imagem_url || null,
+        is_bonus: p.is_bonus || false,
+        link_bonus: p.link_bonus || null
+      }));
 
-      if (premiosError) throw premiosError;
+      // Salvar prêmios existentes (Update)
+      if (premiosExistentes.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('premios')
+          .upsert(premiosExistentes);
+        if (upsertError) throw upsertError;
+      }
+
+      // Inserir novos prêmios (Insert)
+      if (novosPremios.length > 0) {
+        const { error: insertError } = await supabase
+          .from('premios')
+          .insert(novosPremios);
+        if (insertError) throw insertError;
+      }
 
       navigate("/admin/rifas");
     } catch (error) {
