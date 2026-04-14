@@ -34,7 +34,8 @@ export default function PedidosList() {
         .select(`
           *,
           cliente:clientes(nome_completo, cpf, telefone, email),
-          rifa:rifas(titulo)
+          rifa:rifas(titulo),
+          vendedor:vendedores(nome)
         `)
         .order('created_at', { ascending: false });
 
@@ -173,11 +174,12 @@ export default function PedidosList() {
           <table className="w-full text-sm text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3">ID / Data</th>
-                <th className="px-6 py-3">Cliente</th>
-                <th className="px-6 py-3">Rifa</th>
-                <th className="px-6 py-3">Valor</th>
+                <th className="px-6 py-3">Nome</th>
+                <th className="px-6 py-3 min-w-[120px]">Valor</th>
                 <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Vendedor</th>
+                <th className="px-6 py-3">Rifa</th>
+                <th className="px-6 py-3">ID / Data</th>
                 <th className="px-6 py-3 text-right">Ações</th>
               </tr>
             </thead>
@@ -190,30 +192,41 @@ export default function PedidosList() {
                 </tr>
               ) : filteredPedidos.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                     Nenhum pedido encontrado.
                   </td>
                 </tr>
               ) : (
                 filteredPedidos.map((pedido) => (
-                  <tr key={pedido.id} className="bg-white border-b hover:bg-gray-50">
+                  <tr 
+                    key={pedido.id} 
+                    className="bg-white border-b hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedPedido(pedido)}
+                  >
                     <td className="px-6 py-4">
-                      <div className="font-mono text-xs text-gray-900">{pedido.id.substring(0, 8).toUpperCase()}</div>
-                      <div className="text-xs text-gray-500">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</div>
+                      <div className="font-medium text-gray-900">{pedido.cliente?.nome_completo || 'Cliente s/ nome'}</div>
+                      <div className="text-xs text-gray-500">{pedido.cliente?.cpf}</div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
+                      R$ {Number(pedido.valor_total).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{pedido.cliente?.nome_completo}</div>
-                      <div className="text-xs text-gray-500">{pedido.cliente?.cpf}</div>
+                      {getStatusBadge(pedido.status)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {pedido.vendedor ? (
+                        <div className="text-blue-600 font-medium">{pedido.vendedor.nome}</div>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-400 font-normal">Direto</Badge>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-gray-900 truncate max-w-[150px]">{pedido.rifa?.titulo}</div>
                       <div className="text-xs text-gray-500">{pedido.quantidade} números</div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      R$ {Number(pedido.valor_total).toFixed(2)}
-                    </td>
                     <td className="px-6 py-4">
-                      {getStatusBadge(pedido.status)}
+                      <div className="font-mono text-xs text-gray-900">{pedido.id.substring(0, 8).toUpperCase()}</div>
+                      <div className="text-xs text-gray-500">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button variant="ghost" size="sm" onClick={() => setSelectedPedido(pedido)}>
@@ -304,7 +317,7 @@ export default function PedidosList() {
                 
                 <Button 
                   variant="ghost" 
-                  className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                  className="w-full text-red-400 hover:text-red-600 hover:bg-red-50"
                   onClick={() => {
                     setIsDeleteConfirmed(false);
                     setIsDeleteDialogOpen(true);

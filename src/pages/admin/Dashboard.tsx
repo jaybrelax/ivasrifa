@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
 import { DollarSign, Ticket, Users, TrendingUp, Loader2 } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
-import { useEffect, useState } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Copy, CheckCircle2, Trophy, Target, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -46,7 +50,7 @@ export default function Dashboard() {
           // 1. Total Arrecadado (Pedidos Pagos)
           const { data: pedidosPagos } = await supabase
             .from('pedidos')
-            .select('valor_total, created_at')
+            .select('valor_total, created_at, vendedor_id, vendedores(nome)')
             .eq('status', 'pago');
             
           const totalArrecadado = pedidosPagos?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
@@ -82,8 +86,9 @@ export default function Dashboard() {
             .not('vendedor_id', 'is', null);
 
           const rankingMap = new Map();
-          vendasVendedores?.forEach(v => {
-            const current = rankingMap.get(v.vendedor_id) || { nome: v.vendedores.nome, total: 0 };
+          vendasVendedores?.forEach((v: any) => {
+            const nome = Array.isArray(v.vendedores) ? v.vendedores[0]?.nome : (v.vendedores as any)?.nome;
+            const current = rankingMap.get(v.vendedor_id) || { nome, total: 0 };
             rankingMap.set(v.vendedor_id, { ...current, total: current.total + Number(v.valor_total) });
           });
           const ranking = Array.from(rankingMap.values())
@@ -142,8 +147,9 @@ export default function Dashboard() {
           const totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
 
           // Processar rifas com progresso
-          const minhasRifasProcessadas = rifasRel?.map(rel => {
-            const r = rel.rifas;
+          const minhasRifasProcessadas = (rifasRel?.map(rel => {
+            const r: any = Array.isArray(rel.rifas) ? rel.rifas[0] : rel.rifas;
+            if (!r) return null;
             const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
               .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
             return {
@@ -154,7 +160,7 @@ export default function Dashboard() {
               vendidos: vendasDessaRifa,
               progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
             };
-          });
+          }) || []).filter(Boolean);
 
           // Chart data de vendas pessoais
           const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -206,8 +212,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className="flex flex-col lg:grid lg:grid-cols-7 gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 lg:col-span-7 order-1">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {userRole === 'admin' ? 'Dashboard Global' : `Bem-vindo, ${vendedorData?.nome.split(' ')[0]}!`}
@@ -223,7 +229,7 @@ export default function Dashboard() {
 
       {/* Seção Principal p/ Guardião: Meus Links e Metas */}
       {userRole === 'guardiao' && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="lg:col-span-7 grid gap-6 md:grid-cols-2 order-3 lg:order-2">
           {stats.minhasRifas.map(rifa => (
             <Card key={rifa.id} className="border-blue-100 shadow-sm overflow-hidden">
               <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
@@ -277,7 +283,7 @@ export default function Dashboard() {
       )}
 
       {/* Cards de Métricas Rápidas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="lg:col-span-7 grid gap-4 md:grid-cols-2 lg:grid-cols-4 order-4 lg:order-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -340,96 +346,92 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="md:col-span-2 lg:col-span-4">
-          <CardHeader>
-            <CardTitle>{userRole === 'admin' ? 'Vendas Globais' : 'Meu Histórico'} (7 dias)</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={stats.chartData}>
-                <XAxis
-                  dataKey="name"
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `R$${value}`}
-                />
-                <Tooltip />
-                <Bar dataKey="vendas" fill="#2563eb" radius={[4, 4, 0, 0]}>
-                   {stats.chartData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 6 ? '#2563eb' : '#93c5fd'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Gráfico de Vendas */}
+      <Card className="lg:col-span-4 order-5 lg:order-4">
+        <CardHeader>
+          <CardTitle>{userRole === 'admin' ? 'Vendas Globais' : 'Meu Histórico'} (7 dias)</CardTitle>
+        </CardHeader>
+        <CardContent className="pl-2">
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={stats.chartData}>
+              <XAxis
+                dataKey="name"
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `R$${value}`}
+              />
+              <Tooltip />
+              <Bar dataKey="vendas" fill="#2563eb" radius={[4, 4, 0, 0]}>
+                  {stats.chartData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={index === 6 ? '#2563eb' : '#93c5fd'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        {/* Painel Lateral Dinâmico */}
-        <Card className="md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>
-              {userRole === 'admin' ? 'Ranking Guardiões' : 'Últimas Transações'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {userRole === 'admin' ? (
-                // Ranking de Vendedores
-                stats.rankingVendedores.length > 0 ? (
-                  stats.rankingVendedores.map((v, i) => (
-                    <div key={v.nome} className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                        i === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400' : 
-                        i === 1 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-400' :
-                        i === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400' : 'bg-gray-50 text-gray-500'
-                      }`}>
-                        {i + 1}º
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate">{v.nome}</p>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Guardião Ativo</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-black text-blue-600">R$ {v.total.toFixed(2)}</p>
-                      </div>
+      {/* Ranking / Lateral Dinâmico */}
+      <Card className="lg:col-span-3 order-2 lg:order-5">
+        <CardHeader>
+          <CardTitle>
+            {userRole === 'admin' ? 'Ranking Guardiões' : 'Últimas Transações'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {userRole === 'admin' ? (
+              // Ranking de Vendedores
+              stats.rankingVendedores.length > 0 ? (
+                stats.rankingVendedores.map((v, i) => (
+                  <div key={v.nome} className="flex items-center gap-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                      i === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400' : 
+                      i === 1 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-400' :
+                      i === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400' : 'bg-gray-50 text-gray-500'
+                    }`}>
+                      {i + 1}º
                     </div>
-                  ))
-                ) : (
-                   <p className="text-sm text-gray-500 text-center py-4 italic">Nenhum vendedor com vendas pagas.</p>
-                )
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate">{v.nome}</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Guardião Ativo</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-blue-600">R$ {v.total.toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))
               ) : (
-                // Últimas Transações do Guardião
-                stats.chartData.some(d => d.vendas > 0) ? (
-                   <div className="space-y-4">
-                     {/* Aqui seria ideal buscar os nomes dos clientes, 
-                         mas para performance mostramos um resumo por dia */}
-                     <p className="text-sm text-gray-500">Consulte a aba de Pedidos para ver seus clientes em detalhe.</p>
-                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-4 italic">Você ainda não realizou vendas.</p>
-                )
-              )}
-            </div>
-            {userRole === 'admin' && stats.rankingVendedores.length > 0 && (
-              <div className="mt-8 pt-4 border-t border-gray-100 text-center">
-                <Button variant="ghost" size="sm" className="text-xs text-blue-600 font-bold" render={<Link to="/admin/vendedores" />} nativeButton={false}>
-                  Ver todos os vendedores
-                </Button>
-              </div>
+                  <p className="text-sm text-gray-500 text-center py-4 italic">Nenhum vendedor com vendas pagas.</p>
+              )
+            ) : (
+              // Últimas Transações do Guardião
+              stats.chartData.some(d => d.vendas > 0) ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-500">Consulte a aba de Pedidos para ver seus clientes em detalhe.</p>
+                  </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4 italic">Você ainda não realizou vendas.</p>
+              )
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          {userRole === 'admin' && stats.rankingVendedores.length > 0 && (
+            <div className="mt-8 pt-4 border-t border-gray-100 text-center">
+              <Button variant="ghost" size="sm" className="text-xs text-blue-600 font-bold" render={<Link to="/admin/vendedores" />} nativeButton={false}>
+                Ver todos os vendedores
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-}
 }

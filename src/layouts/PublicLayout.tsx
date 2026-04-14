@@ -1,0 +1,81 @@
+import * as React from "react";
+import { Link, Outlet } from "react-router-dom";
+import { Ticket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MobileNav } from "@/src/components/MobileNav";
+import { supabase } from "@/src/lib/supabase";
+
+export default function PublicLayout() {
+  const [config, setConfig] = React.useState({ 
+    nome_sistema: "Sorteios Online", 
+    logo_url: ""
+  });
+
+  React.useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const { data } = await supabase
+          .from('vw_configuracoes_publicas')
+          .select('*')
+          .eq('id', 1)
+          .single();
+          
+        if (data) {
+          setConfig({
+            nome_sistema: data.nome_sistema || "Sorteios Online",
+            logo_url: data.logo_url || ""
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao carregar configurações do layout:", err);
+      }
+    }
+    fetchConfig();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center group">
+            {config.logo_url ? (
+              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2 transition-transform group-hover:scale-105" />
+            ) : (
+              <Ticket className="h-6 w-6 text-blue-600 mr-2 transition-transform group-hover:rotate-12" />
+            )}
+            <span className="text-xl font-black text-gray-900 tracking-tight">{config.nome_sistema}</span>
+          </Link>
+          
+          <nav className="hidden md:flex items-center gap-2">
+            <Button 
+                variant="ghost" 
+                size="sm"
+                className="font-bold text-gray-600 hover:text-blue-600"
+                render={<Link to="/minhas-compras" />} 
+                nativeButton={false}
+            >
+              Minhas Compras
+            </Button>
+            <Button 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 font-bold"
+                render={<Link to="/admin" />} 
+                nativeButton={false}
+            >
+              Entrar
+            </Button>
+          </nav>
+        </div>
+      </header>
+
+      {/* Page Content */}
+      <main>
+        <Outlet context={{ config }} />
+      </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNav />
+    </div>
+  );
+}

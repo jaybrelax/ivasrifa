@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/src/lib/supabase';
+import { MobileNav } from '@/src/components/MobileNav';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
@@ -213,7 +214,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 sm:px-6 shrink-0">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -238,6 +239,8 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
+      {/* Mobile Bottom Navigation */}
+      <MobileNav />
     </div>
   );
 }

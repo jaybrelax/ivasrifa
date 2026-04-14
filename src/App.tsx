@@ -5,6 +5,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
+import PublicLayout from './layouts/PublicLayout';
 import Dashboard from './pages/admin/Dashboard';
 import RifasList from './pages/admin/RifasList';
 import RifaForm from './pages/admin/RifaForm';
@@ -25,11 +26,13 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/:id" element={<RifaDetails />} />
-        <Route path="/minhas-compras" element={<MinhasCompras />} />
-        <Route path="/termos" element={<Terms />} />
-        <Route path="/privacidade" element={<Privacy />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/:id" element={<RifaDetails />} />
+          <Route path="/minhas-compras" element={<MinhasCompras />} />
+          <Route path="/termos" element={<Terms />} />
+          <Route path="/privacidade" element={<Privacy />} />
+        </Route>
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<Login />} />

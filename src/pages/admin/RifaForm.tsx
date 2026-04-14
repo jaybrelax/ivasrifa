@@ -3,8 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Save, Image as ImageIcon, Plus, Trash2, Loader2, Upload, Trash } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/src/lib/supabase";
 
@@ -21,6 +37,8 @@ export default function RifaForm() {
   const [premios, setPremios] = useState<any[]>([{ id: 1, posicao: 1, titulo: "", descricao: "", valorEstimado: "", imagem_url: "" }]);
   const [deletedPremios, setDeletedPremios] = useState<string[]>([]);
   const [uploadingPremioId, setUploadingPremioId] = useState<number | string | null>(null);
+  const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const premioFileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -32,7 +50,8 @@ export default function RifaForm() {
     timeoutReserva: "10",
     imagemUrl: "",
     slug: "",
-    metaGuardiao: "50"
+    metaGuardiao: "50",
+    status: "ativa"
   });
 
   useEffect(() => {
@@ -75,7 +94,8 @@ export default function RifaForm() {
         timeoutReserva: rifa.timeout_reserva.toString(),
         imagemUrl: rifa.imagem_url || "",
         slug: rifa.slug || "",
-        metaGuardiao: rifa.meta_guardiao ? rifa.meta_guardiao.toString() : "50"
+        metaGuardiao: rifa.meta_guardiao ? rifa.meta_guardiao.toString() : "50",
+        status: rifa.status
       });
 
       if (premiosData && premiosData.length > 0) {
@@ -235,7 +255,8 @@ export default function RifaForm() {
         imagem_url: formData.imagemUrl || null,
         qtd_sorteios: premios.length,
         slug: formData.slug || null,
-        meta_guardiao: parseInt(formData.metaGuardiao) || 50
+        meta_guardiao: parseInt(formData.metaGuardiao) || 50,
+        status: formData.status
       };
 
       if (isEditing) {
@@ -248,7 +269,7 @@ export default function RifaForm() {
         if (rifaError) throw rifaError;
       } else {
         // Insert new
-        rifaPayload.status = 'ativa';
+        rifaPayload.status = formData.status || 'ativa';
         const { data: rifaData, error: rifaError } = await supabase
           .from('rifas')
           .insert(rifaPayload)
@@ -296,6 +317,22 @@ export default function RifaForm() {
       alert("Erro ao salvar a rifa. Verifique o console para mais detalhes.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('rifas').delete().eq('id', id);
+      if (error) throw error;
+      navigate("/admin/rifas");
+    } catch (error) {
+      console.error("Erro ao excluir rifa:", error);
+      alert("Erro ao excluir a rifa.");
+    } finally {
+      setIsDeleting(false);
+      setRifaToDelete(null);
     }
   };
 
@@ -558,6 +595,38 @@ export default function RifaForm() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
+                <CardTitle>Status da Rifa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Visibilidade</Label>
+                    <Select 
+                      value={formData.status} 
+                      onValueChange={(value) => setFormData({...formData, status: value})}
+                    >
+                      <SelectTrigger id="status">
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rascunho">Desativada (Rascunho)</SelectItem>
+                        <SelectItem value="ativa">Ativa (Visível ao Público)</SelectItem>
+                        <SelectItem value="encerrada">Encerrada (Vendas Suspensas)</SelectItem>
+                        <SelectItem value="sorteada">Sorteada (Finalizada)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.status === 'rascunho' && (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                      Rifas em rascunho não são visíveis para os compradores na página inicial.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Imagem de Capa</CardTitle>
               </CardHeader>
               <CardContent>
@@ -619,9 +688,46 @@ export default function RifaForm() {
                 </Button>
               </CardContent>
             </Card>
+
+            {isEditing && (
+              <Card className="border-red-100 bg-red-50/30">
+                <CardHeader>
+                  <CardTitle className="text-red-600 text-sm">Zona de Risco</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <button 
+                    type="button" 
+                    onClick={() => setRifaToDelete(id)}
+                    className="text-red-400 hover:text-red-700 text-sm font-medium transition-colors flex items-center"
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Excluir esta Rifa
+                  </button>
+                  <p className="text-[10px] text-red-400 mt-2">Esta ação é irreversível e excluirá todos os dados da rifa.</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </form>
+
+      <Dialog open={!!rifaToDelete} onOpenChange={(open) => !open && setRifaToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Rifa</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir esta rifa? Esta ação não pode ser desfeita e apagará todos os prêmios e números associados.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRifaToDelete(null)} disabled={isDeleting}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash className="h-4 w-4 mr-2" />}
+              Excluir Definitivamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

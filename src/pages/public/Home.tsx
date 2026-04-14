@@ -2,41 +2,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Ticket, Clock, Trophy, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Link, useOutletContext } from "react-router-dom";
 import { supabase } from "@/src/lib/supabase";
 
 export default function Home() {
+  const { config: layoutConfig } = useOutletContext<any>() || { config: {} };
   const [rifasAtivas, setRifasAtivas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState({ 
+  const [config, setConfig] = useState<any>({ 
     nome_sistema: "Sorteios Online", 
     logo_url: "",
     hero_enabled: true,
-    hero_titulo: "Realize seus sonhos com nossos sorteios",
-    hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
+    hero_titulo: "",
+    hero_descricao: "",
     hero_imagem_url: ""
   });
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch Config
-        const { data: configData } = await supabase
-          .from('vw_configuracoes_publicas')
-          .select('*')
-          .eq('id', 1)
-          .single();
-          
-        if (configData) {
-          setConfig({
-            nome_sistema: configData.nome_sistema || "Sorteios Online",
-            logo_url: configData.logo_url || "",
-            hero_enabled: configData.hero_enabled !== false,
-            hero_titulo: configData.hero_titulo || "Realize seus sonhos com nossos sorteios",
-            hero_descricao: configData.hero_descricao || "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
-            hero_imagem_url: configData.hero_imagem_url || ""
-          });
+        // Use initial layout config if available, but fetch details for hero
+        if (layoutConfig && Object.keys(layoutConfig).length > 0) {
+          // If layoutConfig has hero data, use it. But usually layoutConfig 
+          // only has essential header data in some patterns. 
+          // Here, we'll ensure we have the full hero data.
+          const { data: configData } = await supabase
+            .from('vw_configuracoes_publicas')
+            .select('*')
+            .eq('id', 1)
+            .single();
+            
+          if (configData) {
+            setConfig({
+              ...configData,
+              hero_enabled: configData.hero_enabled !== false
+            });
+          }
         }
 
         // Fetch Rifas
@@ -56,26 +58,10 @@ export default function Home() {
     }
 
     fetchData();
-  }, []);
+  }, [layoutConfig]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center">
-            {config.logo_url ? (
-              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
-            ) : (
-              <Ticket className="h-6 w-6 text-blue-600 mr-2" />
-            )}
-            <span className="text-xl font-bold text-gray-900">{config.nome_sistema}</span>
-          </div>
-          <nav>
-            <Button variant="ghost" render={<Link to="/minhas-compras" />} nativeButton={false}>Minhas Compras</Button>
-          </nav>
-        </div>
-      </header>
+    <div className="bg-gray-50">
 
       {/* Hero Section */}
       {config.hero_enabled && (

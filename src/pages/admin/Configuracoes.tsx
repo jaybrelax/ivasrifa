@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -27,7 +28,8 @@ export default function Configuracoes() {
     hero_enabled: true,
     hero_titulo: "",
     hero_descricao: "",
-    hero_imagem_url: ""
+    hero_imagem_url: "",
+    whatsapp: ""
   });
 
   useEffect(() => {
@@ -56,7 +58,8 @@ export default function Configuracoes() {
             hero_enabled: data.hero_enabled !== false,
             hero_titulo: data.hero_titulo || "",
             hero_descricao: data.hero_descricao || "",
-            hero_imagem_url: data.hero_imagem_url || ""
+            hero_imagem_url: data.hero_imagem_url || "",
+            whatsapp: data.whatsapp || ""
           });
         }
       } catch (error) {
@@ -442,7 +445,24 @@ export default function Configuracoes() {
                   disabled={authError}
                 />
               </div>
-              <div className="space-y-2">
+
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-medium text-gray-900">Contatos e Suporte</h3>
+                <div className="grid gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="whatsapp">WhatsApp de Suporte</Label>
+                    <Input 
+                      id="whatsapp" 
+                      placeholder="Ex: (11) 98888-8888" 
+                      value={formData.whatsapp} 
+                      onChange={handleChange} 
+                    />
+                    <p className="text-xs text-gray-500">Este número será usado para o link de suporte na navegação mobile.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
                 <Label htmlFor="evolution_api_key">Global API Key</Label>
                 <div className="relative">
                   <Input 

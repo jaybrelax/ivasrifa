@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,17 +58,20 @@ export default function Recrutamento() {
       const userId = authData.user?.id;
       if (!userId) throw new Error("Erro ao gerar usuário de autenticação.");
 
-      // Criar código base no CPF ou ID
+      // Criar código base no CPF ou ID (removendo acentos e espaços)
       const cpfLimpo = formData.cpf.replace(/\D/g, "");
-      const codigoBase = (formData.nome.split(" ")[0] + cpfLimpo.slice(-3)).toUpperCase();
+      const nomeLimpo = formData.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0];
+      const codigoBase = (nomeLimpo + cpfLimpo.slice(-3)).toUpperCase();
 
       // 2. Criar ou Vincular Vendedor
       const { data: vendedorData, error: vendedorError } = await supabase
         .from('vendedores')
         .insert({
           nome: formData.nome,
+          email: formData.email,
           telefone: formData.telefone,
-          comissao_padrao: 0, // Poderia ser configurável
+          comissao_padrao: 0,
+          meta_numeros: 100, // Meta padrão inicial
           user_id: userId,
           codigo_ref: codigoBase
         })
@@ -88,7 +92,16 @@ export default function Recrutamento() {
 
       setStep(2);
     } catch (err: any) {
-      alert("Erro ao cadastrar: " + (err.message || "Tente novamente."));
+      console.error("Erro no recrutamento:", err);
+      let msg = err.message || "Tente novamente.";
+      
+      if (err.status === 429 || err.message?.includes("rate limit")) {
+        msg = "Muitas tentativas em pouco tempo. Por favor, aguarde cerca de 15 minutos e tente novamente.";
+      } else if (err.message?.includes("already registered") || err.message?.includes("unique_violation")) {
+        msg = "Este e-mail ou CPF já está cadastrado como guardião.";
+      }
+      
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
@@ -113,8 +126,8 @@ export default function Recrutamento() {
         
         <div className="text-center mb-6">
           <Shield className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-          <h1 className="text-3xl font-bold text-white tracking-tight">Guardiões</h1>
-          <p className="text-blue-200 mt-1 uppercase text-xs font-bold tracking-widest">Plataforma de Afiliados</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Guardiões da Rifa</h1>
+          <p className="text-blue-200 mt-1 uppercase text-xs font-bold tracking-widest">Recrutamento de vendas</p>
         </div>
 
         <Card className="border-blue-900 bg-white shadow-2xl">
@@ -123,7 +136,7 @@ export default function Recrutamento() {
             {step === 1 ? (
               <form onSubmit={handleCadastrar} className="space-y-4">
                 <div className="text-center mb-5 pb-5 border-b border-gray-100">
-                  <p className="text-sm text-gray-500">Você foi convidado para ser um afiliado da rifa:</p>
+                  <p className="text-sm text-gray-500">Você foi convidado para ser um guardião da rifa:</p>
                   <p className="font-bold text-blue-700 text-lg mt-1">{rifa.titulo}</p>
                 </div>
 

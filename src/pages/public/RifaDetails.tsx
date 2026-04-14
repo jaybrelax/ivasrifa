@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import Logo from "@/src/img/ivas_logo.png";
+// @ts-ignore
+import Logo from "../../img/ivas_logo.png";
 
 export default function RifaDetails() {
+  const { config: layoutConfig } = useOutletContext<any>() || { config: {} };
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get("ref");
-  
+
   const [rifa, setRifa] = useState<any>(null);
   const [premios, setPremios] = useState<any[]>([]);
   const [numerosVendidos, setNumerosVendidos] = useState<number[]>([]);
@@ -34,14 +36,20 @@ export default function RifaDetails() {
   const [formData, setFormData] = useState({ nome: "", cpf: "", email: "", telefone: "" });
   const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
-  const [config, setConfig] = useState({ 
-    nome_sistema: "Sorteios Online", 
+  const [config, setConfig] = useState({
+    nome_sistema: "Sorteios Online",
     logo_url: "",
     hero_enabled: true,
     hero_titulo: "Realize seus sonhos com nossos sorteios",
     hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
     hero_imagem_url: ""
   });
+
+  useEffect(() => {
+    if (layoutConfig) {
+      setConfig(prev => ({ ...prev, ...layoutConfig }));
+    }
+  }, [layoutConfig]);
 
   // Guardar ref se houver
   useEffect(() => {
@@ -60,7 +68,7 @@ export default function RifaDetails() {
           .select('*')
           .eq('id', 1)
           .single();
-          
+
         if (configData) {
           setConfig({
             nome_sistema: configData.nome_sistema || "Sorteios Online",
@@ -105,7 +113,7 @@ export default function RifaDetails() {
   useEffect(() => {
     if (rifa) {
       document.title = `${rifa.titulo} - ${config.nome_sistema}`;
-      
+
       const updateMeta = (name: string, content: string, isProperty: boolean = false) => {
         const attr = isProperty ? 'property' : 'name';
         let element = document.querySelector(`meta[${attr}="${name}"]`);
@@ -146,7 +154,7 @@ export default function RifaDetails() {
     room.on('presence', { event: 'sync' }, () => {
       const newState = room.presenceState();
       let othersNumbers: number[] = [];
-      
+
       for (const id in newState) {
         if (id === sessionId) continue;
         for (const presence of (newState[id] as any)) {
@@ -157,11 +165,11 @@ export default function RifaDetails() {
       }
       setNumerosEmSelecao(othersNumbers);
     })
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        room.track({ selected: selectedNumbers }).catch(() => {});
-      }
-    });
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          room.track({ selected: selectedNumbers }).catch(() => { });
+        }
+      });
 
     return () => {
       supabase.removeChannel(room);
@@ -172,7 +180,7 @@ export default function RifaDetails() {
   // Informar aos outros toda vez que a nossa seleção mudar
   useEffect(() => {
     if (channelRef.current && channelRef.current.state === 'joined') {
-      channelRef.current.track({ selected: selectedNumbers }).catch(() => {});
+      channelRef.current.track({ selected: selectedNumbers }).catch(() => { });
     }
   }, [selectedNumbers]);
 
@@ -222,7 +230,7 @@ export default function RifaDetails() {
     setIsSubmitting(true);
     try {
       const guardiaoRef = localStorage.getItem("@rifa:guardiao_ref");
-      
+
       const response = await fetch("/api/pagamento/pix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -276,23 +284,7 @@ export default function RifaDetails() {
   const padNum = (n: number) => n.toString().padStart(rifa.total_numeros > 99 ? 3 : 2, "0");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 md:pb-0">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            {config.logo_url ? (
-              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
-            ) : (
-              <Ticket className="h-6 w-6 text-blue-600 mr-2" />
-            )}
-            <span className="text-xl font-bold text-gray-900">{config.nome_sistema}</span>
-          </Link>
-          <nav>
-            <Button variant="ghost" render={<Link to="/minhas-compras" />} nativeButton={false}>Minhas Compras</Button>
-          </nav>
-        </div>
-      </header>
+    <div className="bg-gray-50 pb-28 md:pb-0">
 
       {/* ── HERO ── */}
       <div className="relative h-56 sm:h-64 md:h-80 w-full bg-gray-900">
@@ -340,20 +332,20 @@ export default function RifaDetails() {
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       {premios.map((premio) => (
-                        <div 
-                          key={premio.id} 
+                        <div
+                          key={premio.id}
                           className={`
                             flex items-center gap-4 rounded-xl border transition-all duration-300
-                            ${premio.posicao === 1 
-                              ? 'p-5 bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-md md:flex-row flex-col items-stretch' 
+                            ${premio.posicao === 1
+                              ? 'p-5 bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-md md:flex-row flex-col items-stretch'
                               : 'p-3 bg-gray-50 border-gray-100'
                             }
                           `}
                         >
                           <div className={`
                             flex-shrink-0 rounded-lg border border-gray-200 bg-white overflow-hidden
-                            ${premio.posicao === 1 
-                              ? 'w-full md:w-48 h-48 sm:h-56' 
+                            ${premio.posicao === 1
+                              ? 'w-full md:w-48 h-48 sm:h-56'
                               : 'w-12 h-12 sm:w-16 sm:h-16'
                             }
                           `}>
@@ -612,7 +604,7 @@ export default function RifaDetails() {
                   <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 py-1 px-3 bg-yellow-400 text-yellow-900 text-[10px] sm:text-xs font-bold rounded-full shadow-lg transform rotate-6 animate-pulse">
                     Pague Agora
                   </div>
-                  
+
                   {pixData?.qr_code_base64 ? (
                     <img
                       src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
@@ -630,15 +622,15 @@ export default function RifaDetails() {
                 <div className="w-full space-y-3 bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-xl border border-white/10 shadow-inner">
                   <p className="text-xs text-blue-100 text-center font-medium">Ou copie o código Pix copia e cola:</p>
                   <div className="flex gap-2">
-                    <Input 
-                      readOnly 
-                      value={pixData?.qr_code || "Aguarde..."} 
-                      className="font-mono text-[10px] sm:text-xs h-12 flex-1 bg-white/95 border-0 focus-visible:ring-2 focus-visible:ring-yellow-400 text-blue-950 shadow-inner" 
+                    <Input
+                      readOnly
+                      value={pixData?.qr_code || "Aguarde..."}
+                      className="font-mono text-[10px] sm:text-xs h-12 flex-1 bg-white/95 border-0 focus-visible:ring-2 focus-visible:ring-yellow-400 text-blue-950 shadow-inner"
                     />
-                    <Button 
-                      variant="secondary" 
-                      onClick={copyPix} 
-                      disabled={!pixData?.qr_code} 
+                    <Button
+                      variant="secondary"
+                      onClick={copyPix}
+                      disabled={!pixData?.qr_code}
                       className="h-12 border-0 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold px-4 sm:px-5 shadow-lg transition-transform active:scale-95"
                     >
                       {pixCopied ? <CheckCircle2 className="h-5 w-5 sm:mr-1" /> : <Copy className="h-5 w-5 sm:mr-1" />}
@@ -656,7 +648,7 @@ export default function RifaDetails() {
                     </div>
                     <p className="text-xs sm:text-sm font-medium text-blue-50">Pronto para confirmar o pagamento...</p>
                   </div>
-                  
+
                   {pixData?.payment_id && (
                     <p className="text-[10px] sm:text-xs text-blue-200/50 pt-3">ID Transação: <span className="font-mono opacity-80">{pixData.payment_id}</span></p>
                   )}

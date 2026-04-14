@@ -172,14 +172,6 @@ export default function RifasList() {
                       <Edit className="h-4 w-4" />
                     </Button>
                     
-                    <Button 
-                      variant="destructive" 
-                      size="icon-sm"
-                      onClick={() => setRifaToDelete(rifa.id)}
-                      title="Excluir Rifa"
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
 
                     <Button 
                       variant="ghost" 

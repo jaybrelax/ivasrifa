@@ -1,54 +1,32 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { Link, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowLeft, Loader2, Ticket, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Search, Loader2, Ticket, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import { useEffect } from "react";
 
 export default function MinhasCompras() {
+  const { config: layoutConfig } = useOutletContext<any>() || { config: {} };
   const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [clienteNome, setClienteNome] = useState("");
-  const [config, setConfig] = useState({ 
+  const [config, setConfig] = useState<any>({ 
     nome_sistema: "Sorteios Online", 
-    logo_url: "",
-    hero_enabled: true,
-    hero_titulo: "Realize seus sonhos com nossos sorteios",
-    hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
-    hero_imagem_url: ""
+    logo_url: ""
   });
 
   useEffect(() => {
-    async function fetchConfig() {
-      try {
-        const { data: configData } = await supabase
-          .from('vw_configuracoes_publicas')
-          .select('*')
-          .eq('id', 1)
-          .single();
-          
-        if (configData) {
-          setConfig({
-            nome_sistema: configData.nome_sistema || "Sorteios Online",
-            logo_url: configData.logo_url || "",
-            hero_enabled: configData.hero_enabled !== false,
-            hero_titulo: configData.hero_titulo || "Realize seus sonhos com nossos sorteios",
-            hero_descricao: configData.hero_descricao || "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
-            hero_imagem_url: configData.hero_imagem_url || ""
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao buscar config:", error);
-      }
+    if (layoutConfig) {
+      setConfig(layoutConfig);
     }
-    fetchConfig();
-  }, []);
+  }, [layoutConfig]);
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,23 +99,7 @@ export default function MinhasCompras() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            {config.logo_url ? (
-              <img src={config.logo_url} alt={config.nome_sistema} className="h-8 object-contain mr-2" />
-            ) : (
-              <Ticket className="h-6 w-6 text-blue-600 mr-2" />
-            )}
-            <span className="text-xl font-bold text-gray-900">{config.nome_sistema}</span>
-          </Link>
-          <nav>
-            <Button variant="ghost" render={<Link to="/" />} nativeButton={false}>Ver Rifas</Button>
-          </nav>
-        </div>
-      </header>
+    <div className="bg-gray-50">
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="mb-8">
