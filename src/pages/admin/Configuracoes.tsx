@@ -10,6 +10,7 @@ import { supabase } from "@/src/lib/supabase";
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [showMpToken, setShowMpToken] = useState(false);
@@ -32,8 +33,17 @@ export default function Configuracoes() {
     hero_titulo: "",
     hero_descricao: "",
     hero_imagem_url: "",
-    whatsapp: ""
+    whatsapp: "",
+    admin_dark_mode: false
   });
+
+  useEffect(() => {
+    if (formData.admin_dark_mode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [formData.admin_dark_mode]);
 
   useEffect(() => {
     async function fetchConfig() {
@@ -64,7 +74,8 @@ export default function Configuracoes() {
             hero_titulo: data.hero_titulo || "",
             hero_descricao: data.hero_descricao || "",
             hero_imagem_url: data.hero_imagem_url || "",
-            whatsapp: data.whatsapp || ""
+            whatsapp: data.whatsapp || "",
+            admin_dark_mode: data.admin_dark_mode === true
           });
         }
       } catch (error) {
@@ -275,15 +286,43 @@ export default function Configuracoes() {
             <CardDescription>Personalize a marca do seu sistema de rifas.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="nome_sistema">Nome do Sistema</Label>
-              <Input 
-                id="nome_sistema" 
-                placeholder="Ex: Sorteios Online" 
-                value={formData.nome_sistema}
-                onChange={handleChange}
-                disabled={authError}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome_sistema">Nome do Sistema</Label>
+                <Input 
+                  id="nome_sistema" 
+                  placeholder="Ex: Sorteios Online" 
+                  value={formData.nome_sistema}
+                  onChange={handleChange}
+                  disabled={authError}
+                />
+              </div>
+              <div className="space-y-2 flex flex-col justify-end">
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-gray-50/50 dark:bg-gray-900/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="admin_dark_mode" className="text-sm font-medium">Modo Escuro (Admin)</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Visual do Painel</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.admin_dark_mode}
+                    onClick={() => setFormData({...formData, admin_dark_mode: !formData.admin_dark_mode})}
+                    disabled={authError}
+                    className={`
+                      relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50
+                      ${formData.admin_dark_mode ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}
+                    `}
+                  >
+                    <span
+                      className={`
+                        pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform
+                        ${formData.admin_dark_mode ? 'translate-x-5' : 'translate-x-0'}
+                      `}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
             
             <div className="space-y-4">
