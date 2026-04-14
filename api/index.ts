@@ -325,9 +325,10 @@ app.post("/api/pagamento/pix", async (req, res) => {
     
     if (pixCopiaCola) {
       console.log(`[WhatsApp] Aguardando 2s para enviar o código PIX isolado...`);
-      await wait(2000); // Aumentado para 2 segundos para garantir a separação total
+      await wait(2000); 
       console.log(`[WhatsApp] Enviando código PIX Copia e Cola...`);
-      await enviarMensagemWhatsApp(cliente.telefone, pixCopiaCola.trim());
+      // Enviamos com um prefixo pequeno para garantir a visibilidade no push notifications do celular
+      await enviarMensagemWhatsApp(cliente.telefone, `💸 *CÓDIGO PIX COPIA E COLA:*\n\n${pixCopiaCola.trim()}`);
     }
 
     res.json({
@@ -384,22 +385,32 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
 
             // Disparo dos links de Bônus (se existirem)
+            console.log(`[Webhook] Verificando bônus para Rifa ID: ${pedidoFull.rifa_id}`);
             if (pedidoFull.rifa_id) {
-              const { data: bonusPremios } = await supabaseAdmin
+              const { data: bonusPremios, error: bonusError } = await supabaseAdmin
                 .from("premios")
-                .select("link_bonus")
+                .select("titulo, link_bonus")
                 .eq("rifa_id", pedidoFull.rifa_id)
                 .eq("is_bonus", true)
                 .not("link_bonus", "is", null);
 
+              if (bonusError) console.error("[Webhook] Erro ao buscar bônus:", bonusError);
+
               if (bonusPremios && bonusPremios.length > 0) {
-                const firstName = pedidoFull.cliente.nome_completo.split(" ")[0];
+                console.log(`[Webhook] Encontrados ${bonusPremios.length} bônus para enviar.`);
+                const firstName = (pedidoFull.cliente.nome_completo || "Sorteudo").split(" ")[0];
+                
                 for (const bonus of bonusPremios) {
-                  if (bonus.link_bonus && bonus.link_bonus.trim() !== "") {
-                    const msgBonus = `Aqui vai o seu bônus, ${firstName}. ${bonus.link_bonus.trim()}`;
+                  const link = bonus.link_bonus?.trim();
+                  if (link) {
+                    await new Promise(r => setTimeout(r, 2000)); // Delay entre bônus
+                    const msgBonus = `🎁 *SEU BÔNUS EXCLUSIVO!*\n\nOlá *${firstName}*!\nComo agradecimento pela sua participação, aqui está o seu acesso:\n\n🚀 *${bonus.titulo}:*\n${link}`;
+                    console.log(`[Webhook] Enviando bônus: ${bonus.titulo} para ${pedidoFull.cliente.telefone}`);
                     await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgBonus);
                   }
                 }
+              } else {
+                console.log("[Webhook] Nenhum bônus ativo encontrado para esta rifa.");
               }
             }
           }

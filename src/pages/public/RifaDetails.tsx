@@ -768,21 +768,25 @@ export default function RifaDetails() {
                     </div>
 
                     {/* QR Code Container */}
-                    <div className="bg-white p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-8 relative group transition-transform duration-500 hover:scale-[1.02]">
+                    <div className="bg-white p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-4 relative group transition-transform duration-500 hover:scale-[1.02]">
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-[2.5rem] pointer-events-none"></div>
                       {pixData?.qr_code_base64 ? (
                         <img
                           src={`data:image/jpeg;base64,${pixData.qr_code_base64}`}
                           alt="QR Code PIX"
-                          className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-3xl relative z-10 mix-blend-multiply"
+                          className="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-3xl relative z-10 mix-blend-multiply"
                         />
                       ) : (
-                        <div className="w-56 h-56 sm:w-64 sm:h-64 bg-blue-50 rounded-3xl flex flex-col items-center justify-center text-blue-500 gap-3">
+                        <div className="w-48 h-48 sm:w-56 sm:h-56 bg-blue-50 rounded-3xl flex flex-col items-center justify-center text-blue-500 gap-3">
                           <Loader2 className="h-10 w-10 animate-spin" />
                           <span className="text-sm font-medium">Gerando PIX...</span>
                         </div>
                       )}
                     </div>
+                    
+                    <p className="text-white/80 text-[11px] font-medium text-center mb-6 leading-relaxed bg-black/10 py-2 px-4 rounded-full">
+                      Após o pagamento, volte para esta página para ver a confirmação.
+                    </p>
 
                     {/* Seção Copiar Código */}
                     <div className="w-full space-y-4">
@@ -896,8 +900,15 @@ export default function RifaDetails() {
               </div>
             )}
             {checkoutStep === 4 && (
-              <Button className="w-full h-12 text-base" onClick={() => { setIsModalOpen(false); setSelectedNumbers([]); setCheckoutStep(1); window.location.reload(); }}>
-                Fechar
+              <Button 
+                className={`w-full h-12 text-base font-bold shadow-lg transition-all ${
+                  premios.some(p => p.is_bonus) 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : ""
+                }`} 
+                onClick={() => { setIsModalOpen(false); setSelectedNumbers([]); setCheckoutStep(1); window.location.reload(); }}
+              >
+                {premios.some(p => p.is_bonus) ? "Acessar bônus" : "Fechar"}
               </Button>
             )}
             
