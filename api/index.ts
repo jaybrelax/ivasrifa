@@ -70,7 +70,8 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
       body: JSON.stringify({
         number: telefone,
         text: texto,
-        linkPreview: false
+        linkPreview: false,
+        delay: 1500
       })
     });
 
