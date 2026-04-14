@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X, Plus } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 // @ts-ignore
 import Logo from "../../img/ivas_logo.png";
@@ -334,75 +334,106 @@ export default function RifaDetails() {
                 <p className="text-gray-600 whitespace-pre-line text-sm sm:text-base">{rifa.descricao || "Sem descrição disponível."}</p>
 
                 {premios.length > 0 && (
-                  <div className="mt-5">
-                    <h3 className="font-semibold flex items-center mb-3 text-sm sm:text-base">
-                      <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-2 shrink-0" /> Prêmios
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {[...premios].sort((a, b) => {
-                        if (a.is_bonus && !b.is_bonus) return -1;
-                        if (!a.is_bonus && b.is_bonus) return 1;
-                        return a.posicao - b.posicao;
-                      }).map((premio) => (
-                        <div
-                          key={premio.id}
-                          className={`
-                            flex items-center gap-4 rounded-xl border transition-all duration-300
-                            ${premio.posicao === 1 || premio.is_bonus
-                              ? 'p-5 bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-md md:flex-row flex-col items-stretch'
-                              : 'p-3 bg-gray-50 border-gray-100'
-                            }
-                          `}
-                        >
-                          <div className={`
-                            flex-shrink-0 rounded-lg border border-gray-200 bg-white overflow-hidden
-                            ${premio.posicao === 1 || premio.is_bonus
-                              ? 'w-full md:w-48 h-48 sm:h-56'
-                              : 'w-12 h-12 sm:w-16 sm:h-16'
-                            }
-                          `}>
-                            {premio.imagem_url ? (
-                              <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                <Trophy className={premio.posicao === 1 || premio.is_bonus ? "h-12 w-12" : "h-5 w-5"} />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 flex flex-col justify-center min-w-0">
-                            <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
-                              <span className={`
-                                font-black uppercase tracking-normal
-                                ${premio.is_bonus ? 'text-purple-600 text-[10px]' : premio.posicao === 1 ? 'text-blue-700 text-[10px]' : 'text-blue-400 text-[8.5px]'}
-                              `}>
-                                {premio.is_bonus ? '🎁 BÔNUS ESPECIAL' : premio.posicao === 1 ? '👑 PREMIAÇÃO PRINCIPAL' : `${premio.posicao}º PRÊMIO`}
-                              </span>
-                              {premio.valor_estimado && (
-                                <span className={`
-                                  font-bold
-                                  ${(premio.posicao === 1 || premio.is_bonus) ? 'text-green-600 text-lg' : 'text-gray-500 text-xs'}
-                                `}>
-                                  R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}
-                                </span>
+                  <div className="mt-5 space-y-6">
+                    {/* Bônus */}
+                    {premios.filter(p => p.is_bonus).length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="font-semibold flex items-center text-sm sm:text-base text-purple-700">
+                          <Plus className="h-4 w-4 mr-2" /> Bônus Exclusivos
+                        </h3>
+                        {premios.filter(p => p.is_bonus).map((premio) => (
+                          <div key={premio.id} className="flex items-center gap-4 rounded-xl border p-4 bg-gradient-to-br from-purple-50 to-white border-purple-200 shadow-sm md:flex-row flex-col items-stretch transition-all duration-300">
+                            <div className="flex-shrink-0 rounded-lg border border-purple-100 bg-white overflow-hidden w-full md:w-40 h-32 sm:h-40">
+                              {premio.imagem_url ? (
+                                <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-purple-200">
+                                  <Trophy className="h-10 w-10" />
+                                </div>
                               )}
                             </div>
-                            <h4 className={`
-                              font-bold text-gray-900 
-                              ${premio.posicao === 1 || premio.is_bonus ? 'text-xl sm:text-2xl leading-snug' : 'text-sm truncate'}
-                            `}>
-                              {premio.titulo}
-                            </h4>
-                            {premio.descricao && (
-                              <p className={`
-                                text-gray-500 mt-1
-                                ${premio.posicao === 1 || premio.is_bonus ? 'text-base line-clamp-3' : 'text-xs line-clamp-1 italic'}
-                              `}>
-                                {premio.descricao}
-                              </p>
-                            )}
+                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                              <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
+                                <span className="font-black uppercase tracking-normal text-purple-600 text-[10px]">🎁 BÔNUS DISPONÍVEL</span>
+                                {premio.valor_estimado && (
+                                  <span className="font-bold text-green-600 text-base">R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}</span>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-gray-900 text-lg sm:text-xl leading-snug">{premio.titulo}</h4>
+                              {premio.descricao && <p className="text-gray-500 mt-1 text-sm line-clamp-2">{premio.descricao}</p>}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Prêmios */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold flex items-center text-sm sm:text-base text-blue-800">
+                        <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-2 shrink-0" /> Premiação
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        {premios.filter(p => !p.is_bonus).sort((a,b) => a.posicao - b.posicao).map((premio) => (
+                          <div
+                            key={premio.id}
+                            className={`
+                              flex items-center gap-4 rounded-xl border transition-all duration-300
+                              ${premio.posicao === 1
+                                ? 'p-5 bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-md md:flex-row flex-col items-stretch'
+                                : 'p-3 bg-gray-50 border-gray-100'
+                              }
+                            `}
+                          >
+                            <div className={`
+                              flex-shrink-0 rounded-lg border border-gray-200 bg-white overflow-hidden
+                              ${premio.posicao === 1
+                                ? 'w-full md:w-48 h-48 sm:h-56'
+                                : 'w-12 h-12 sm:w-16 sm:h-16'
+                              }
+                            `}>
+                              {premio.imagem_url ? (
+                                <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                  <Trophy className={premio.posicao === 1 ? "h-12 w-12" : "h-5 w-5"} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                              <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
+                                <span className={`
+                                  font-black uppercase tracking-normal
+                                  ${premio.posicao === 1 ? 'text-blue-700 text-[10px]' : 'text-blue-400 text-[8.5px]'}
+                                `}>
+                                  {premio.posicao === 1 ? '👑 PREMIAÇÃO PRINCIPAL' : `${premio.posicao}º PRÊMIO`}
+                                </span>
+                                {premio.valor_estimado && (
+                                  <span className={`
+                                    font-bold
+                                    ${premio.posicao === 1 ? 'text-green-600 text-lg' : 'text-gray-500 text-xs'}
+                                  `}>
+                                    R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className={`
+                                font-bold text-gray-900 
+                                ${premio.posicao === 1 ? 'text-xl sm:text-2xl leading-snug' : 'text-sm truncate'}
+                              `}>
+                                {premio.titulo}
+                              </h4>
+                              {premio.descricao && (
+                                <p className={`
+                                  text-gray-500 mt-1
+                                  ${premio.posicao === 1 ? 'text-base line-clamp-3' : 'text-xs line-clamp-1 italic'}
+                                `}>
+                                  {premio.descricao}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
