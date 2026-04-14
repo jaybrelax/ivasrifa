@@ -132,6 +132,7 @@ export default function AdminLayout() {
     return <Navigate to="/admin/login" replace />;
   }
 
+  return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex overflow-hidden">
       
       {/* Overlay Mobile */}
