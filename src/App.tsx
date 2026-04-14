@@ -12,11 +12,13 @@ import VendedoresList from './pages/admin/VendedoresList';
 import Configuracoes from './pages/admin/Configuracoes';
 import Login from './pages/admin/Login';
 import PedidosList from './pages/admin/PedidosList';
+import PerfilVendedor from './pages/admin/PerfilVendedor';
 import Home from './pages/public/Home';
 import RifaDetails from './pages/public/RifaDetails';
 import MinhasCompras from './pages/public/MinhasCompras';
 import Terms from './pages/public/Terms';
 import Privacy from './pages/public/Privacy';
+import Recrutamento from './pages/admin/Recrutamento';
 
 export default function App() {
   return (
@@ -31,6 +33,7 @@ export default function App() {
         
         {/* Admin Routes */}
         <Route path="/admin/login" element={<Login />} />
+        <Route path="/admin/recrutamento" element={<Recrutamento />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="rifas" element={<RifasList />} />
@@ -38,6 +41,7 @@ export default function App() {
           <Route path="rifas/:id/editar" element={<RifaForm />} />
           <Route path="pedidos" element={<PedidosList />} />
           <Route path="vendedores" element={<VendedoresList />} />
+          <Route path="perfil" element={<PerfilVendedor />} />
           <Route path="configuracoes" element={<Configuracoes />} />
         </Route>
         

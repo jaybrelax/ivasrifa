@@ -91,7 +91,7 @@ app.get("/api-seo/:id", async (req, res) => {
 // Checkout Unificado
 app.post("/api/pagamento/pix", async (req, res) => {
   try {
-    const { rifa_id, cliente, numeros } = req.body;
+    const { rifa_id, cliente, numeros, vendedor_ref } = req.body;
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -138,11 +138,23 @@ app.post("/api/pagamento/pix", async (req, res) => {
     const expiraEm = new Date();
     expiraEm.setMinutes(expiraEm.getMinutes() + timeout);
 
+    let vendedorIdDB = null;
+    if (vendedor_ref) {
+      // Buscar o Guardião (Vendedor) dono desse Ref Code
+      const { data: vInfo } = await supabaseAdmin
+        .from('vendedores')
+        .select('id')
+        .eq('codigo_ref', vendedor_ref)
+        .maybeSingle();
+      if (vInfo) vendedorIdDB = vInfo.id;
+    }
+
     const { data: pedido, error: pedidoError } = await supabaseAdmin
       .from("pedidos")
       .insert({
         rifa_id,
         cliente_id: clienteId,
+        vendedor_id: vendedorIdDB,
         numeros,
         quantidade: numeros.length,
         valor_total: valorTotal,

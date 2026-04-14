@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, Edit, Trash, Eye, Loader2 } from "lucide-react";
+import { Plus, MoreHorizontal, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ export default function RifasList() {
   const [loading, setLoading] = useState(true);
   const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRifas();
@@ -64,6 +65,13 @@ export default function RifasList() {
     }
   };
 
+  const copyRecruitLink = (rifaId: string) => {
+    const url = `${window.location.origin}/admin/recrutamento?rifa_id=${rifaId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(rifaId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ativa":
@@ -81,12 +89,12 @@ export default function RifasList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rifas</h1>
           <p className="text-gray-500">Gerencie todas as rifas do sistema.</p>
         </div>
-        <Button render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
+        <Button className="w-full sm:w-auto" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
           <Plus className="mr-2 h-4 w-4" /> Nova Rifa
         </Button>
       </div>
@@ -181,6 +189,16 @@ export default function RifasList() {
                       title="Ver Página Pública"
                     >
                       <Eye className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost" 
+                      size="icon-sm"
+                      onClick={() => copyRecruitLink(rifa.id)}
+                      title="Copiar Link de Recrutamento"
+                      className={copiedId === rifa.id ? "text-green-600" : "text-blue-600"}
+                    >
+                      {copiedId === rifa.id ? <CheckCircle2 className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
                     </Button>
                   </div>
                 </CardContent>

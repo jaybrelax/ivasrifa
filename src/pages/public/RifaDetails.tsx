@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,9 @@ import Logo from "@/src/img/ivas_logo.png";
 
 export default function RifaDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref");
+  
   const [rifa, setRifa] = useState<any>(null);
   const [premios, setPremios] = useState<any[]>([]);
   const [numerosVendidos, setNumerosVendidos] = useState<number[]>([]);
@@ -39,6 +42,13 @@ export default function RifaDetails() {
     hero_descricao: "Participe de rifas seguras, com sorteios transparentes e prêmios incríveis.",
     hero_imagem_url: ""
   });
+
+  // Guardar ref se houver
+  useEffect(() => {
+    if (refCode) {
+      localStorage.setItem("@rifa:guardiao_ref", refCode);
+    }
+  }, [refCode]);
 
   useEffect(() => {
     async function fetchRifaData() {
@@ -211,6 +221,8 @@ export default function RifaDetails() {
     if (!rifa) return;
     setIsSubmitting(true);
     try {
+      const guardiaoRef = localStorage.getItem("@rifa:guardiao_ref");
+      
       const response = await fetch("/api/pagamento/pix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,6 +230,7 @@ export default function RifaDetails() {
           rifa_id: rifa.id,
           cliente: { nome: formData.nome, cpf: formData.cpf, email: formData.email, telefone: formData.telefone },
           numeros: selectedNumbers,
+          vendedor_ref: guardiaoRef,
         }),
       });
       const data = await response.json();

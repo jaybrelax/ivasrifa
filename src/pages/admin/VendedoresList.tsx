@@ -30,13 +30,27 @@ export default function VendedoresList() {
   useEffect(() => {
     async function fetchVendedores() {
       try {
-        const { data, error } = await supabase
+        const { data: vData, error: vError } = await supabase
           .from('vendedores')
           .select('*')
           .order('created_at', { ascending: false });
           
-        if (error) throw error;
-        setVendedores(data || []);
+        if (vError) throw vError;
+
+        // Buscar contagem de cotas vendidas (pedidos com status 'pago')
+        const { data: pData } = await supabase
+          .from('pedidos')
+          .select('vendedor_id, quantidade')
+          .eq('status', 'pago')
+          .not('vendedor_id', 'is', null);
+
+        const vendedoresComVendas = vData?.map(vend => {
+          const totalCotas = pData?.filter(p => p.vendedor_id === vend.id)
+            .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
+          return { ...vend, totalCotas };
+        });
+
+        setVendedores(vendedoresComVendas || []);
       } catch (error) {
         console.error("Erro ao buscar vendedores:", error);
       } finally {
@@ -49,26 +63,26 @@ export default function VendedoresList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Vendedores</h1>
           <p className="text-gray-500">Gerencie sua equipe de vendas e metas.</p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Novo Vendedor
         </Button>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Lista de Vendedores</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 type="search"
                 placeholder="Buscar vendedor..."
-                className="pl-8"
+                className="pl-8 w-full"
               />
             </div>
           </div>
@@ -96,9 +110,11 @@ export default function VendedoresList() {
               </TableHeader>
               <TableBody>
                 {vendedores.map((vendedor) => {
-                  const numerosVendidos = 0; // Mock for now
-                  const metaNumeros = vendedor.meta_numeros || 1; // Evitar divisão por zero
-                  const progresso = Math.min((numerosVendidos / metaNumeros) * 100, 100);
+                  const numerosVendidos = vendedor.totalCotas || 0;
+                  // Como a meta agora é por rifa, aqui na lista geral mostramos um placeholder 
+                  // ou a soma de metas. Vamos usar 50 como padrão se não houver metas.
+                  const metaExibir = 50; 
+                  const progresso = Math.min((numerosVendidos / metaExibir) * 100, 100);
 
                   return (
                     <TableRow key={vendedor.id}>
@@ -120,9 +136,9 @@ export default function VendedoresList() {
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex justify-between text-xs">
-                            <span>{numerosVendidos} / {vendedor.meta_numeros}</span>
+                            <span>{numerosVendidos} cotas</span>
                             <span className="font-medium">
-                              {progresso.toFixed(0)}%
+                              {/* Omitimos % se não houver meta global clara */}
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-1.5">

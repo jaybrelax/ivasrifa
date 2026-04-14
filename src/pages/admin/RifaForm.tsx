@@ -31,7 +31,8 @@ export default function RifaForm() {
     dataSorteio: "",
     timeoutReserva: "10",
     imagemUrl: "",
-    slug: ""
+    slug: "",
+    metaGuardiao: "50"
   });
 
   useEffect(() => {
@@ -73,7 +74,8 @@ export default function RifaForm() {
         dataSorteio: formattedDate,
         timeoutReserva: rifa.timeout_reserva.toString(),
         imagemUrl: rifa.imagem_url || "",
-        slug: rifa.slug || ""
+        slug: rifa.slug || "",
+        metaGuardiao: rifa.meta_guardiao ? rifa.meta_guardiao.toString() : "50"
       });
 
       if (premiosData && premiosData.length > 0) {
@@ -232,7 +234,8 @@ export default function RifaForm() {
         timeout_reserva: parseInt(formData.timeoutReserva),
         imagem_url: formData.imagemUrl || null,
         qtd_sorteios: premios.length,
-        slug: formData.slug || null
+        slug: formData.slug || null,
+        meta_guardiao: parseInt(formData.metaGuardiao) || 50
       };
 
       if (isEditing) {
@@ -416,6 +419,18 @@ export default function RifaForm() {
                       value={formData.timeoutReserva}
                       onChange={e => setFormData({...formData, timeoutReserva: e.target.value})}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="metaGuardiao">Meta de Vendas p/ Guardião (Cotas)</Label>
+                    <Input 
+                      id="metaGuardiao" 
+                      type="number" 
+                      required 
+                      min="1"
+                      value={formData.metaGuardiao}
+                      onChange={e => setFormData({...formData, metaGuardiao: e.target.value})}
+                    />
+                    <p className="text-[10px] text-gray-500 italic">Meta universal para todos os vendedores desta rifa.</p>
                   </div>
                 </div>
               </CardContent>
