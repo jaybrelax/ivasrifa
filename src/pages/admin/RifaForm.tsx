@@ -140,6 +140,11 @@ export default function RifaForm() {
     setPremios([...premios, { id: Date.now(), posicao: newPosicao, titulo: "", descricao: "", valorEstimado: "", imagem_url: "", is_bonus: false, link_bonus: "" }]);
   };
 
+  const addBonus = () => {
+    const newPosicao = premios.length + 1;
+    setPremios([...premios, { id: Date.now(), posicao: newPosicao, titulo: "", descricao: "", valorEstimado: "", imagem_url: "", is_bonus: true, link_bonus: "" }]);
+  };
+
   const removePremio = (idToRemove: any) => {
     if (premios.length === 1) return;
     
@@ -568,135 +573,154 @@ export default function RifaForm() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Gerenciamento de Prêmios</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addPremio}>
-                  <Plus className="h-4 w-4 mr-2" /> Adicionar Prêmio
-                </Button>
+                <CardTitle>Prêmios e Bônus</CardTitle>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={addPremio}>
+                    <Plus className="h-4 w-4 mr-2" /> Adicionar Prêmio
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className={`border-purple-200 text-purple-700 hover:bg-purple-50 ${premios.some(p => p.is_bonus) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => {
+                      if (!premios.some(p => p.is_bonus)) {
+                        addBonus();
+                      }
+                    }}
+                    disabled={premios.some(p => p.is_bonus)}
+                  >
+                    <Plus className="h-4 w-4 mr-2 text-purple-600" /> {premios.some(p => p.is_bonus) ? 'Limite de 1 Bônus' : 'Adicionar Bônus'}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {premios.map((premio) => (
-                  <div key={premio.id} className="p-4 border rounded-lg bg-gray-50 relative">
-                    {premios.length > 1 && (
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => removePremio(premio.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <h4 className="font-semibold mb-4 text-gray-700">{premio.posicao}º Prêmio</h4>
-                    
-                    <div className="flex flex-col md:flex-row gap-6 mb-4">
-                      {/* Lado da Imagem */}
-                      <div className="md:w-32 flex-shrink-0">
-                        <Label className="mb-2 block text-xs">Imagem</Label>
-                        <div className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-white relative overflow-hidden group">
-                          {premio.imagem_url ? (
-                            <>
-                              <img src={premio.imagem_url} alt={`Prêmio ${premio.posicao}`} className="h-full w-full object-cover" />
-                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button 
-                                  size="sm" 
-                                  variant="secondary" 
-                                  className="h-7 text-[10px]" 
-                                  type="button" 
-                                  onClick={() => {
-                                    setUploadingPremioId(premio.id);
-                                    premioFileInputRef.current?.click();
-                                  }}
-                                >
-                                  Mudar
-                                </Button>
-                              </div>
-                            </>
-                          ) : (
-                            <button 
-                              type="button"
-                              className="flex flex-col items-center justify-center text-gray-400 hover:text-blue-500 transition-colors"
-                              onClick={() => {
-                                setUploadingPremioId(premio.id);
-                                premioFileInputRef.current?.click();
-                              }}
-                            >
-                              <ImageIcon className="h-8 w-8 mb-1" />
-                              <span className="text-[10px]">Add Imagem</span>
-                            </button>
-                          )}
-                          
-                          {uploadingPremioId === premio.id && (
-                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                            </div>
-                          )}
-                        </div>
+              <CardContent className="space-y-8">
+                {/* Seção de Prêmios Normais */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Trophy className="h-4 w-4" /> Prêmios do Sorteio
+                  </h3>
+                  {premios.filter(p => !p.is_bonus).map((premio) => (
+                    <div key={premio.id} className="p-4 border rounded-lg bg-gray-50 relative group">
+                      {premios.filter(p => !p.is_bonus).length > 1 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removePremio(premio.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-blue-900">{premio.posicao}º Prêmio</h4>
                       </div>
+                      
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Lado da Imagem */}
+                        <div className="md:w-32 flex-shrink-0">
+                          <div className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-white relative overflow-hidden group/img">
+                            {premio.imagem_url ? (
+                              <>
+                                <img src={premio.imagem_url} alt={`Prêmio ${premio.posicao}`} className="h-full w-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                  <Button size="sm" variant="secondary" className="h-7 text-[10px]" type="button" onClick={() => { setUploadingPremioId(premio.id); premioFileInputRef.current?.click(); }}>Mudar</Button>
+                                </div>
+                              </>
+                            ) : (
+                              <button type="button" className="flex flex-col items-center justify-center text-gray-400 hover:text-blue-500" onClick={() => { setUploadingPremioId(premio.id); premioFileInputRef.current?.click(); }}>
+                                <ImageIcon className="h-8 w-8 mb-1" />
+                                <span className="text-[10px]">Add Imagem</span>
+                              </button>
+                            )}
+                            {uploadingPremioId === premio.id && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>}
+                          </div>
+                        </div>
 
-                      {/* Lado dos Campos */}
-                      <div className="flex-1 space-y-4">
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>Título do Prêmio</Label>
-                            <Input 
-                              placeholder="Ex: iPhone 15 Pro Max" 
-                              required 
-                              value={premio.titulo}
-                              onChange={e => updatePremio(premio.id, 'titulo', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Valor Estimado (R$)</Label>
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              placeholder="Ex: 8500.00" 
-                              value={premio.valorEstimado}
-                              onChange={e => updatePremio(premio.id, 'valorEstimado', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Descrição (Opcional)</Label>
-                          <Input 
-                            placeholder="Detalhes adicionais sobre o prêmio" 
-                            value={premio.descricao}
-                            onChange={e => updatePremio(premio.id, 'descricao', e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="pt-4 border-t mt-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="space-y-0.5">
-                              <Label className="text-base font-semibold text-gray-800">Bônus</Label>
-                              <p className="text-xs text-gray-500">Ative este prêmio como um bônus especial.</p>
+                        {/* Campos */}
+                        <div className="flex-1 space-y-4">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label>Título do Prêmio</Label>
+                              <Input placeholder="Ex: iPhone 15 Pro Max" required value={premio.titulo} onChange={e => updatePremio(premio.id, 'titulo', e.target.value)} />
                             </div>
-                            <Switch
-                              checked={premio.is_bonus}
-                              onCheckedChange={(checked) => updatePremio(premio.id, 'is_bonus', checked)}
-                            />
-                          </div>
-                          
-                          {premio.is_bonus && (
-                            <div className="space-y-3 pl-4 border-l-2 border-blue-200 bg-blue-50/30 p-3 rounded-r-lg">
-                              <Label className="text-blue-700 flex items-center gap-2">
-                                <Plus className="h-3 w-3" /> Link do Bônus
-                              </Label>
-                              <Input 
-                                placeholder="https://..." 
-                                className="bg-white border-blue-200 focus:ring-blue-500"
-                                value={premio.link_bonus || ''}
-                                onChange={e => updatePremio(premio.id, 'link_bonus', e.target.value)}
-                              />
-                              <p className="text-[10px] text-blue-600 font-medium italic">Enviado automaticamente via WhatsApp após a confirmação do pagamento.</p>
+                            <div className="space-y-2">
+                              <Label>Valor Estimado (R$)</Label>
+                              <Input type="number" step="0.01" placeholder="Ex: 8500.00" value={premio.valorEstimado} onChange={e => updatePremio(premio.id, 'valorEstimado', e.target.value)} />
                             </div>
-                          )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Descrição (Opcional)</Label>
+                            <Textarea placeholder="Detalhes adicionais sobre o prêmio" className="min-h-[80px]" value={premio.descricao} onChange={e => updatePremio(premio.id, 'descricao', e.target.value)} />
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Seção de Bônus */}
+                {premios.some(p => p.is_bonus) && (
+                  <div className="space-y-4 pt-6 border-t">
+                    <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider flex items-center gap-2">
+                      <Plus className="h-4 w-4" /> Bônus Instantâneo do Pedido
+                    </h3>
+                    {premios.filter(p => p.is_bonus).map((premio) => (
+                      <div key={premio.id} className="p-4 border border-purple-200 rounded-lg bg-purple-50/50 relative group">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removePremio(premio.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+
+                        <div className="flex flex-col md:flex-row gap-6">
+                          {/* Lado da Imagem */}
+                          <div className="md:w-32 flex-shrink-0">
+                            <div className="h-32 w-32 rounded-lg border-2 border-dashed border-purple-200 flex items-center justify-center bg-white relative overflow-hidden group/img">
+                              {premio.imagem_url ? (
+                                <>
+                                  <img src={premio.imagem_url} alt="Bônus" className="h-full w-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                    <Button size="sm" variant="secondary" className="h-7 text-[10px]" type="button" onClick={() => { setUploadingPremioId(premio.id); premioFileInputRef.current?.click(); }}>Mudar</Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <button type="button" className="flex flex-col items-center justify-center text-purple-300 hover:text-purple-500" onClick={() => { setUploadingPremioId(premio.id); premioFileInputRef.current?.click(); }}>
+                                  <ImageIcon className="h-8 w-8 mb-1" />
+                                  <span className="text-[10px]">Add Imagem</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Campos */}
+                          <div className="flex-1 space-y-4">
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label className="text-purple-900">Título do Bônus</Label>
+                                <Input className="border-purple-200" placeholder="Ex: E-book Exclusivo" required value={premio.titulo} onChange={e => updatePremio(premio.id, 'titulo', e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-purple-900">Link de Acesso (WhatsApp)</Label>
+                                <Input className="border-purple-200" placeholder="https://..." required value={premio.link_bonus || ''} onChange={e => updatePremio(premio.id, 'link_bonus', e.target.value)} />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-purple-900">O que é este bônus?</Label>
+                              <Textarea placeholder="Descreva o que o cliente ganha ao pagar..." className="min-h-[80px] border-purple-200" value={premio.descricao} onChange={e => updatePremio(premio.id, 'descricao', e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
                 
                 <input 
                   type="file" 

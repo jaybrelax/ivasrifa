@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
-import { Ticket } from "lucide-react";
+import { Ticket, LayoutDashboard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/src/lib/supabase";
 
@@ -9,6 +9,7 @@ export default function PublicLayout() {
     nome_sistema: "Sorteios Online", 
     logo_url: ""
   });
+  const [user, setUser] = React.useState<any>(null);
 
   React.useEffect(() => {
     async function fetchConfig() {
@@ -29,7 +30,22 @@ export default function PublicLayout() {
         console.error("Erro ao carregar configurações do layout:", err);
       }
     }
+
+    async function checkUser() {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user || null);
+    }
+
     fetchConfig();
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -46,25 +62,34 @@ export default function PublicLayout() {
             <span className="text-xl font-black text-gray-900 tracking-tight">{config.nome_sistema}</span>
           </Link>
           
-          <nav className="hidden md:flex items-center gap-2">
-            <Button 
-                variant="ghost" 
-                size="sm"
-                className="font-bold text-gray-600 hover:text-blue-600"
-                render={<Link to="/minhas-compras" />} 
-                nativeButton={false}
-            >
-              Minhas Compras
-            </Button>
-            <Button 
-                size="sm" 
-                className="bg-blue-600 hover:bg-blue-700 font-bold"
-                render={<Link to="/admin" />} 
-                nativeButton={false}
-            >
-              Entrar
-            </Button>
-          </nav>
+          <div className="flex items-center gap-2">
+            {/* Ícone Admin Mobile (Só aparece logado) */}
+            {user && (
+              <Link to="/admin" className="md:hidden flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                <LayoutDashboard className="h-6 w-6" />
+              </Link>
+            )}
+
+            <nav className="hidden md:flex items-center gap-2">
+              <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="font-bold text-gray-600 hover:text-blue-600"
+                  render={<Link to="/minhas-compras" />} 
+                  nativeButton={false}
+              >
+                Minhas Compras
+              </Button>
+              <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700 font-bold"
+                  render={<Link to="/admin" />} 
+                  nativeButton={false}
+              >
+                {user ? "Painel Admin" : "Entrar"}
+              </Button>
+            </nav>
+          </div>
         </div>
       </header>
 
