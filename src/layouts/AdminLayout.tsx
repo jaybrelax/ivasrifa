@@ -112,7 +112,7 @@ export default function AdminLayout() {
   const allNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', roles: ['admin', 'guardiao'] },
     { icon: Ticket, label: 'Rifas', path: '/admin/rifas', roles: ['admin'] },
-    { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', roles: ['admin'] },
+    { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', roles: ['admin', 'guardiao'] },
     { icon: Users, label: 'Vendedores', path: '/admin/vendedores', roles: ['admin'] },
     { icon: UserCircle, label: 'Meu Perfil', path: '/admin/perfil', roles: ['guardiao'] },
     { icon: Settings, label: 'Configurações', path: '/admin/configuracoes', roles: ['admin'] },
@@ -132,8 +132,8 @@ export default function AdminLayout() {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Bloqueio de rotas para Guardiões
-  const forbiddenPaths = ['/admin/rifas', '/admin/pedidos', '/admin/vendedores', '/admin/configuracoes'];
+  // Bloqueio de rotas para Guardiões (exceto Pedidos agora)
+  const forbiddenPaths = ['/admin/rifas', '/admin/vendedores', '/admin/configuracoes'];
   const isForbidden = forbiddenPaths.some(path => location.pathname.startsWith(path));
   
   if (userRole === 'guardiao' && isForbidden) {

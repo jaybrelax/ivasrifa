@@ -416,7 +416,7 @@ export default function Dashboard() {
               // Últimas Transações do Guardião
               stats.chartData.some(d => d.vendas > 0) ? (
                   <div className="space-y-4">
-                    <p className="text-sm text-gray-500">Acompanhe seu desempenho geral no gráfico de vendas ao lado.</p>
+                    <p className="text-sm text-gray-500">Acesse a aba de Pedidos para ver suas vendas em detalhe.</p>
                   </div>
               ) : (
                 <p className="text-sm text-gray-500 text-center py-4 italic">Você ainda não realizou vendas.</p>

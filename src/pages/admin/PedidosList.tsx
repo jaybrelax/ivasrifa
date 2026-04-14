@@ -21,6 +21,8 @@ export default function PedidosList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
+  const [vendedorId, setVendedorId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPedidos();
@@ -29,15 +31,35 @@ export default function PedidosList() {
   async function fetchPedidos() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Identificar Role e ID se for Vendedor
+      const { data: vData } = await supabase
+        .from('vendedores')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      const role = vData ? 'guardiao' : 'admin';
+      setUserRole(role);
+      if (vData) setVendedorId(vData.id);
+
+      // 2. Query de Pedidos
+      let query = supabase
         .from('pedidos')
         .select(`
           *,
           cliente:clientes(nome_completo, cpf, telefone, email),
           rifa:rifas(titulo),
           vendedor:vendedores(nome)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (vData) {
+        query = query.eq('vendedor_id', vData.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setPedidos(data || []);
@@ -178,10 +200,10 @@ export default function PedidosList() {
                 <th className="px-6 py-3">Nome</th>
                 <th className="px-6 py-3 min-w-[120px]">Valor</th>
                 <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Vendedor</th>
+                {userRole === 'admin' && <th className="px-6 py-3">Vendedor</th>}
                 <th className="px-6 py-3">Rifa</th>
                 <th className="px-6 py-3">ID / Data</th>
-                <th className="px-6 py-3 text-right">Ações</th>
+                {userRole === 'admin' && <th className="px-6 py-3 text-right">Ações</th>}
               </tr>
             </thead>
             <tbody>
@@ -214,13 +236,15 @@ export default function PedidosList() {
                     <td className="px-6 py-4">
                       {getStatusBadge(pedido.status)}
                     </td>
-                    <td className="px-6 py-4">
-                      {pedido.vendedor ? (
-                        <div className="text-blue-600 font-medium">{pedido.vendedor.nome}</div>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-400 font-normal">Direto</Badge>
-                      )}
-                    </td>
+                    {userRole === 'admin' && (
+                      <td className="px-6 py-4">
+                        {pedido.vendedor ? (
+                          <div className="text-blue-600 font-medium">{pedido.vendedor.nome}</div>
+                        ) : (
+                          <Badge variant="outline" className="text-gray-400 font-normal">Direto</Badge>
+                        )}
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <div className="text-gray-900 truncate max-w-[150px]">{pedido.rifa?.titulo}</div>
                       <div className="text-xs text-gray-500">{pedido.quantidade} números</div>
@@ -229,11 +253,13 @@ export default function PedidosList() {
                       <div className="font-mono text-xs text-gray-900 font-bold">{pedido.display_id || pedido.id.substring(0, 8).toUpperCase()}</div>
                       <div className="text-xs text-gray-500">{new Date(pedido.created_at).toLocaleDateString('pt-BR')}</div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedPedido(pedido)}>
-                        <Eye className="h-4 w-4 mr-2" /> Detalhes
-                      </Button>
-                    </td>
+                    {userRole === 'admin' && (
+                      <td className="px-6 py-4 text-right">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedPedido(pedido)}>
+                          <Eye className="h-4 w-4 mr-2" /> Detalhes
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -296,39 +322,41 @@ export default function PedidosList() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 pt-4 border-t">
-                {selectedPedido.status === 'pendente' && (
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                      onClick={() => handleCancelar(selectedPedido.id)}
-                      disabled={actionLoading}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" /> Cancelar Pedido
-                    </Button>
-                    <Button 
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => handleAprovar(selectedPedido.id)}
-                      disabled={actionLoading}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" /> Aprovar
-                    </Button>
-                  </div>
-                )}
-                
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-red-400 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => {
-                    setIsDeleteConfirmed(false);
-                    setIsDeleteDialogOpen(true);
-                  }}
-                  disabled={actionLoading}
-                >
-                  <Trash className="h-4 w-4 mr-2" /> Excluir Registro Permanente
-                </Button>
-              </div>
+              {userRole === 'admin' && (
+                <div className="flex flex-col gap-3 pt-4 border-t">
+                  {selectedPedido.status === 'pendente' && (
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        onClick={() => handleCancelar(selectedPedido.id)}
+                        disabled={actionLoading}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" /> Cancelar Pedido
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => handleAprovar(selectedPedido.id)}
+                        disabled={actionLoading}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" /> Aprovar
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-red-400 hover:text-red-600 hover:bg-red-50"
+                    onClick={() => {
+                      setIsDeleteConfirmed(false);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    disabled={actionLoading}
+                  >
+                    <Trash className="h-4 w-4 mr-2" /> Excluir Registro Permanente
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
