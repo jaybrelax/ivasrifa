@@ -119,11 +119,12 @@ export default function Dashboard() {
           });
 
         } else {
-          // --- LOGICA GUARDIAO ---
-          const { data: rifasRel } = await supabase
-            .from('rifa_vendedores')
-            .select('rifa_id, rifas(id, titulo, meta_guardiao, slug)')
-            .eq('vendedor_id', vData.id);
+          // --- LOGICA GUARDIAO (acesso global a todas as rifas ativas) ---
+          const { data: rifasAtivas } = await supabase
+            .from('rifas')
+            .select('id, titulo, meta_guardiao, slug')
+            .eq('status', 'ativa')
+            .order('created_at', { ascending: false });
 
           const { data: minhasVendas } = await supabase
             .from('pedidos')
@@ -134,9 +135,7 @@ export default function Dashboard() {
           const totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
           const totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
 
-          const minhasRifasProcessadas = (rifasRel?.map(rel => {
-            const r: any = Array.isArray(rel.rifas) ? rel.rifas[0] : rel.rifas;
-            if (!r) return null;
+          const minhasRifasProcessadas = (rifasAtivas || []).map(r => {
             const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
               .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
             return {
@@ -147,7 +146,7 @@ export default function Dashboard() {
               vendidos: vendasDessaRifa,
               progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
             };
-          }) || []).filter(Boolean);
+          });
 
           const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
@@ -161,7 +160,7 @@ export default function Dashboard() {
             return { name: dayName, vendas: vendasDoDia };
           });
 
-          const rifasFinais = minhasRifasProcessadas as any[];
+          const rifasFinais = minhasRifasProcessadas;
           setStats({
             totalArrecadado: totalMeu,
             numerosVendidos: totalCotasMinhas,

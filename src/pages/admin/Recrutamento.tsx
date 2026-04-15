@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,9 @@ import { Shield, Loader2, PartyPopper } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
 
 export default function Recrutamento() {
-  const [searchParams] = useSearchParams();
-  const rifaId = searchParams.get("rifa_id");
   const navigate = useNavigate();
 
-  const [rifa, setRifa] = useState<any>(null);
+  const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
@@ -27,23 +25,16 @@ export default function Recrutamento() {
   });
 
   useEffect(() => {
-    async function fetchRifa() {
-      if (!rifaId) {
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase.from("rifas").select("id, titulo").eq("id", rifaId).single();
-      if (!error && data) {
-        setRifa(data);
-      }
+    async function fetchConfig() {
+      const { data } = await supabase.from("configuracoes").select("nome_sistema").eq("id", 1).single();
+      setConfig(data);
       setLoading(false);
     }
-    fetchRifa();
-  }, [rifaId]);
+    fetchConfig();
+  }, []);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rifa) return;
     setSubmitting(true);
 
     try {
@@ -58,40 +49,26 @@ export default function Recrutamento() {
       const userId = authData.user?.id;
       if (!userId) throw new Error("Erro ao gerar usuário de autenticação.");
 
-      // Criar código base no Primeiro Nome (removendo acentos e espaços)
+      // Criar código de referência baseado no primeiro nome
       const nomeLimpo = formData.nome.normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .split(" ")[0]
-        .toLowerCase();
-      
-      const codigoBase = nomeLimpo;
+        .toUpperCase();
 
-      // 2. Criar ou Vincular Vendedor
-      const { data: vendedorData, error: vendedorError } = await supabase
+      // 2. Criar Vendedor (acesso global a todas as rifas)
+      const { error: vendedorError } = await supabase
         .from('vendedores')
         .insert({
           nome: formData.nome,
           email: formData.email,
           telefone: formData.telefone,
           comissao_padrao: 0,
-          meta_numeros: 100, // Meta padrão inicial
+          meta_numeros: 100,
           user_id: userId,
-          codigo_ref: codigoBase
-        })
-        .select()
-        .single();
-
-      if (vendedorError) throw vendedorError;
-
-      // 3. Vincular Guardião à Rifa
-      const { error: relError } = await supabase
-        .from('rifa_vendedores')
-        .insert({
-          rifa_id: rifa.id,
-          vendedor_id: vendedorData.id
+          codigo_ref: nomeLimpo
         });
 
-      if (relError) throw relError;
+      if (vendedorError) throw vendedorError;
 
       setStep(2);
     } catch (err: any) {
@@ -114,23 +91,14 @@ export default function Recrutamento() {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
   }
 
-  if (!rifa) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Rifa não encontrada</h2>
-        <p className="text-gray-500 text-center max-w-md">O link de recrutamento fornecido é inválido. Peça um novo link ao organizador.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
       <div className="w-full max-w-md">
         
         <div className="text-center mb-6">
           <Shield className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-          <h1 className="text-3xl font-bold text-white tracking-tight">Guardiões da Rifa</h1>
-          <p className="text-blue-200 mt-1 uppercase text-xs font-bold tracking-widest">Recrutamento de vendas</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">{config?.nome_sistema || 'Guardiões'}</h1>
+          <p className="text-blue-200 mt-1 uppercase text-xs font-bold tracking-widest">Recrutamento de Guardiões</p>
         </div>
 
         <Card className="border-blue-900 bg-white shadow-2xl">
@@ -139,8 +107,8 @@ export default function Recrutamento() {
             {step === 1 ? (
               <form onSubmit={handleCadastrar} className="space-y-4">
                 <div className="text-center mb-5 pb-5 border-b border-gray-100">
-                  <p className="text-sm text-gray-500">Você foi convidado para ser um guardião da rifa:</p>
-                  <p className="font-bold text-blue-700 text-lg mt-1">{rifa.titulo}</p>
+                  <p className="text-sm text-gray-500">Cadastre-se como Guardião e tenha acesso</p>
+                  <p className="font-bold text-blue-700 text-lg mt-1">a todas as campanhas ativas!</p>
                 </div>
 
                 <div className="space-y-1.5">

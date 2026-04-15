@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2, Calendar } from "lucide-react";
+import { Plus, Edit, Trash, Eye, Loader2, Link as LinkIcon, CheckCircle2, Calendar, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -98,10 +98,18 @@ export default function RifasList() {
     }
   };
 
-  const copyRecruitLink = (rifaId: string) => {
-    const url = `${window.location.origin}/admin/recrutamento?rifa_id=${rifaId}`;
+  const copyRecruitLink = () => {
+    const url = `${window.location.origin}/admin/recrutamento`;
     navigator.clipboard.writeText(url);
-    setCopiedId(rifaId);
+    setCopiedId('recruit');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const copyRifaLink = (rifa: any) => {
+    const ref = userRole === 'guardiao' && vendedorRef ? `?ref=${vendedorRef}` : '';
+    const url = `${window.location.origin}/${rifa.slug || rifa.id}${ref}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(rifa.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -130,9 +138,14 @@ export default function RifasList() {
           </p>
         </div>
         {userRole === 'admin' && (
-          <Button className="w-full sm:w-auto" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
-            <Plus className="mr-2 h-4 w-4" /> Nova Rifa
-          </Button>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Button variant="outline" className="flex-1 sm:flex-none" onClick={copyRecruitLink}>
+              {copiedId === 'recruit' ? <><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Copiado!</> : <><Shield className="mr-2 h-4 w-4" /> Recrutar Guardião</>}
+            </Button>
+            <Button className="flex-1 sm:flex-none" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
+              <Plus className="mr-2 h-4 w-4" /> Nova Rifa
+            </Button>
+          </div>
         )}
       </div>
 
@@ -256,13 +269,13 @@ export default function RifasList() {
                           <Button
                             variant="secondary" 
                             size="sm"
-                            onClick={() => copyRecruitLink(rifa.id)}
+                            onClick={() => copyRifaLink(rifa)}
                             className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >
                             {copiedId === rifa.id ? (
                               <><CheckCircle2 className="h-4 w-4 mr-1.5 text-green-600" /> Copiado</>
                             ) : (
-                              <><LinkIcon className="h-4 w-4 mr-1.5 text-blue-600" /> Recrutar</>
+                              <><LinkIcon className="h-4 w-4 mr-1.5 text-blue-600" /> Copiar Link</>
                             )}
                           </Button>
 

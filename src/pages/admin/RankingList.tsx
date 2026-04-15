@@ -40,8 +40,8 @@ export default function RankingList() {
       
       if (vError) throw vError;
 
-      // 2. Buscar contagem de pedidos pagos por vendedor_ref
-      let query = supabase.from('pedidos').select('vendedor_ref').eq('status', 'pago');
+      // 2. Buscar pedidos pagos com vendedor_id e quantidade de cotas
+      let query = supabase.from('pedidos').select('vendedor_id, quantidade').eq('status', 'pago').not('vendedor_id', 'is', null);
       if (selectedRifa !== "all") {
         query = query.eq('rifa_id', selectedRifa);
       }
@@ -50,12 +50,13 @@ export default function RankingList() {
       
       if (pError) throw pError;
 
-      // 3. Processar ranking
+      // 3. Processar ranking por cotas vendidas
       const rankingData = (vendedores || []).map(v => {
-        const vendas = (pedidos || []).filter(p => p.vendedor_ref === v.codigo_ref).length;
+        const cotas = (pedidos || []).filter(p => p.vendedor_id === v.id)
+          .reduce((acc, curr) => acc + (curr.quantidade || 0), 0);
         return {
           ...v,
-          vendas
+          vendas: cotas
         };
       }).sort((a, b) => b.vendas - a.vendas);
 

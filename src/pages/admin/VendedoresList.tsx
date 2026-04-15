@@ -130,10 +130,8 @@ export default function VendedoresList() {
               <TableBody>
                 {vendedores.map((vendedor) => {
                   const numerosVendidos = vendedor.totalCotas || 0;
-                  // Como a meta agora é por rifa, aqui na lista geral mostramos um placeholder 
-                  // ou a soma de metas. Vamos usar 50 como padrão se não houver metas.
-                  const metaExibir = 50; 
-                  const progresso = Math.min((numerosVendidos / metaExibir) * 100, 100);
+                  const metaReal = vendedor.meta_numeros || 50;
+                  const progresso = Math.min((numerosVendidos / metaReal) * 100, 100);
 
                   return (
                     <TableRow key={vendedor.id}>
@@ -163,7 +161,7 @@ export default function VendedoresList() {
                           <div className="w-full bg-gray-200 rounded-full h-1.5">
                             <div
                               className={`h-1.5 rounded-full ${
-                                numerosVendidos >= vendedor.meta_numeros 
+                                numerosVendidos >= metaReal 
                                   ? 'bg-green-500' 
                                   : 'bg-blue-600'
                               }`}
