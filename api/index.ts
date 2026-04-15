@@ -313,7 +313,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
 
     // Envio do WhatsApp (PIX Gerado) - DUAS MENSAGENS SEPARADAS
     const pedidoIdCurto = displayId;
-    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._\n\n*O código PIX será enviado na próxima mensagem para facilitar a cópia.*`;
+    const msgPix = `📌 *PEDIDO REALIZADO: #${pedidoIdCurto}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._\n\n*💸 CÓDIGO PIX COPIA E COLA:* 👇`;
     
     const pixCopiaCola = mpResponse.point_of_interaction?.transaction_data?.qr_code;
 
@@ -327,8 +327,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
       console.log(`[WhatsApp] Aguardando 2s para enviar o código PIX isolado...`);
       await wait(2000); 
       console.log(`[WhatsApp] Enviando código PIX Copia e Cola...`);
-      // Enviamos com um prefixo pequeno para garantir a visibilidade no push notifications do celular
-      await enviarMensagemWhatsApp(cliente.telefone, `💸 *CÓDIGO PIX COPIA E COLA:*\n\n${pixCopiaCola.trim()}`);
+      await enviarMensagemWhatsApp(cliente.telefone, pixCopiaCola.trim());
     }
 
     res.json({
@@ -362,6 +361,8 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").single();
       const payment = new Payment(new MercadoPagoConfig({ accessToken: config!.mp_access_token }));
       const info = await payment.get({ id: paymentId });
+      
+      console.log(`[Webhook] Pagamento ID: ${paymentId} - Status: ${info.status}`);
 
       if (info.status === "approved") {
         const { data: p } = await supabaseAdmin.from("pedidos").select("id").eq("mp_payment_id", paymentId.toString()).single();
@@ -404,7 +405,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
                   const link = bonus.link_bonus?.trim();
                   if (link) {
                     await new Promise(r => setTimeout(r, 2000)); // Delay entre bônus
-                    const msgBonus = `🎁 *SEU BÔNUS EXCLUSIVO!*\n\nOlá *${firstName}*!\nComo agradecimento pela sua participação, aqui está o seu acesso:\n\n🚀 *${bonus.titulo}:*\n${link}`;
+                    const msgBonus = `🎁 *SEU BÔNUS EXCLUSIVO!*\n\nOlá *${firstName}*!\nComo agradecimento pela sua compra, aqui está o seu acesso:\n\n🚀 *${bonus.titulo}:*\n${link}`;
                     console.log(`[Webhook] Enviando bônus: ${bonus.titulo} para ${pedidoFull.cliente.telefone}`);
                     await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgBonus);
                   }

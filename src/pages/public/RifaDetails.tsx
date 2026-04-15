@@ -906,7 +906,16 @@ export default function RifaDetails() {
                     ? "bg-green-600 hover:bg-green-700 text-white" 
                     : ""
                 }`} 
-                onClick={() => { setIsModalOpen(false); setSelectedNumbers([]); setCheckoutStep(1); window.location.reload(); }}
+                onClick={() => { 
+                  const bonus = premios.find(p => p.is_bonus && p.link_bonus);
+                  if (bonus?.link_bonus) {
+                    window.open(bonus.link_bonus, '_blank');
+                  }
+                  setIsModalOpen(false); 
+                  setSelectedNumbers([]); 
+                  setCheckoutStep(1); 
+                  window.location.reload(); 
+                }}
               >
                 {premios.some(p => p.is_bonus) ? "Acessar bônus" : "Fechar"}
               </Button>
