@@ -41,9 +41,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-50/50 via-slate-50 to-slate-100/50">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center mb-6">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <img src={logo} alt="IVAS Logo" className="h-16 w-auto object-contain" />
-          </div>
+          <img src={logo} alt="IVAS Logo" className="h-20 w-auto object-contain" />
         </div>
         <h2 className="text-center text-3xl font-bold text-slate-900 tracking-tight">
           Acesso Restrito

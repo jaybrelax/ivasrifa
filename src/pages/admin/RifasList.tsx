@@ -44,14 +44,20 @@ export default function RifasList() {
       if (vData) setVendedorRef(vData.codigo_ref);
 
       // 2. Buscar Rifas com contagem de números vendidos e pedidos pagos
-      const { data, error } = await supabase
+      let rifasQuery = supabase
         .from('rifas')
         .select(`
           *,
           numeros_rifa(status),
           pedidos(status, valor_total)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (vData) {
+        // Se for guardião, ocultar rascunhos
+        rifasQuery = rifasQuery.neq('status', 'rascunho');
+      }
+
+      const { data, error } = await rifasQuery.order('created_at', { ascending: false });
       
       if (error) throw error;
 

@@ -21,7 +21,24 @@ export default function RankingList() {
 
   async function fetchRifas() {
     try {
-      const { data, error } = await supabase.from('rifas').select('id, titulo').order('created_at', { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Verificar Role
+      const { data: vData } = await supabase
+        .from('vendedores')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      const isGuardiao = !!vData;
+
+      let query = supabase.from('rifas').select('id, titulo');
+      if (isGuardiao) {
+        query = query.neq('status', 'rascunho');
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
       if (!error && data) {
         setRifas(data);
       }

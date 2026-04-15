@@ -51,18 +51,20 @@ export default function Dashboard() {
         setVendedorData(vData);
 
         if (role === 'admin') {
-          // --- LOGICA ADMIN GLOBAL ---
+          // --- LOGICA ADMIN GLOBAL (ignorar rascunhos) ---
           const { data: pedidosPagos } = await supabase
             .from('pedidos')
-            .select('valor_total, created_at, vendedor_id, vendedores(nome)')
-            .eq('status', 'pago');
+            .select('valor_total, created_at, vendedor_id, vendedores(nome), rifas!inner(status)')
+            .eq('status', 'pago')
+            .neq('rifas.status', 'rascunho');
 
           const totalArrecadado = pedidosPagos?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
 
           const { count: numerosVendidos } = await supabase
             .from('numeros_rifa')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'vendido');
+            .select('*, rifas!inner(status)', { count: 'exact', head: true })
+            .eq('status', 'vendido')
+            .neq('rifas.status', 'rascunho');
 
           const { count: totalVendedores } = await supabase
             .from('vendedores')
@@ -70,19 +72,21 @@ export default function Dashboard() {
 
           const { count: totalPedidos } = await supabase
             .from('pedidos')
-            .select('*', { count: 'exact', head: true });
+            .select('*, rifas!inner(status)', { count: 'exact', head: true })
+            .neq('rifas.status', 'rascunho');
 
           const pedidosPagosCount = pedidosPagos?.length || 0;
           const taxaConversao = totalPedidos && totalPedidos > 0
             ? (pedidosPagosCount / totalPedidos) * 100
             : 0;
 
-          // Ranking de Guardiões
+          // Ranking de Guardiões (ignorar rascunhos)
           const { data: vendasVendedores } = await supabase
             .from('pedidos')
-            .select('vendedor_id, valor_total, vendedores(nome)')
+            .select('vendedor_id, valor_total, vendedores(nome), rifas!inner(status)')
             .eq('status', 'pago')
-            .not('vendedor_id', 'is', null);
+            .not('vendedor_id', 'is', null)
+            .neq('rifas.status', 'rascunho');
 
           const rankingMap = new Map();
           vendasVendedores?.forEach((v: any) => {
@@ -119,18 +123,19 @@ export default function Dashboard() {
           });
 
         } else {
-          // --- LOGICA GUARDIAO (acesso global a todas as rifas ativas) ---
+          // --- LOGICA GUARDIAO (acesso global a todas as rifas não rascunho) ---
           const { data: rifasAtivas } = await supabase
             .from('rifas')
             .select('id, titulo, meta_guardiao, slug')
-            .eq('status', 'ativa')
+            .neq('status', 'rascunho')
             .order('created_at', { ascending: false });
 
           const { data: minhasVendas } = await supabase
             .from('pedidos')
-            .select('valor_total, created_at, quantidade, rifa_id')
+            .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
             .eq('vendedor_id', vData.id)
-            .eq('status', 'pago');
+            .eq('status', 'pago')
+            .neq('rifas.status', 'rascunho');
 
           const totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
           const totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;

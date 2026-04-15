@@ -107,8 +107,7 @@ export default function Recrutamento() {
             {step === 1 ? (
               <form onSubmit={handleCadastrar} className="space-y-4">
                 <div className="text-center mb-5 pb-5 border-b border-gray-100">
-                  <p className="text-sm text-gray-500">Cadastre-se como Guardião e tenha acesso</p>
-                  <p className="font-bold text-blue-700 text-lg mt-1">a todas as campanhas ativas!</p>
+                  <p className="font-bold text-blue-700 text-lg mt-1">Cadastre-se como Guardião!</p>
                 </div>
 
                 <div className="space-y-1.5">

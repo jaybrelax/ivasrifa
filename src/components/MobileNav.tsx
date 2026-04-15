@@ -8,7 +8,6 @@ import {
   User, 
   LayoutDashboard, 
   ShoppingBag,
-  Settings,
   Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +18,7 @@ interface NavItem {
   icon: React.ElementType;
   path: string;
   external?: boolean;
+  color: string;
 }
 
 export function MobileNav() {
@@ -27,10 +27,8 @@ export function MobileNav() {
   const [whatsapp, setWhatsapp] = useState("");
 
   React.useEffect(() => {
-    // Check if path is admin
     setIsAdmin(location.pathname.startsWith("/admin"));
 
-    // Fetch WhatsApp from config
     async function fetchConfig() {
       const { data } = await supabase
         .from('configuracoes')
@@ -43,27 +41,37 @@ export function MobileNav() {
   }, [location.pathname]);
 
   const publicItems: NavItem[] = [
-    { label: "Início", icon: Home, path: "/" },
-    { label: "Compras", icon: Ticket, path: "/minhas-compras" },
-    { label: "Suporte", icon: MessageSquare, path: `https://wa.me/${whatsapp.replace(/\D/g, '')}`, external: true },
-    { label: "Admin", icon: User, path: "/admin" },
+    { label: "Início", icon: Home, path: "/", color: "#6366f1" },
+    { label: "Compras", icon: Ticket, path: "/minhas-compras", color: "#3b82f6" },
+    { label: "Suporte", icon: MessageSquare, path: `https://wa.me/${whatsapp.replace(/\D/g, '')}`, external: true, color: "#10b981" },
+    { label: "Admin", icon: User, path: "/admin", color: "#8b5cf6" },
   ];
 
   const adminItems: NavItem[] = [
-    { label: "Painel", icon: LayoutDashboard, path: "/admin" },
-    { label: "Rifas", icon: Ticket, path: "/admin/rifas" },
-    { label: "Ranking", icon: Trophy, path: "/admin/ranking" },
-    { label: "Pedidos", icon: ShoppingBag, path: "/admin/pedidos" },
+    { label: "Painel", icon: LayoutDashboard, path: "/admin", color: "#8b5cf6" },
+    { label: "Rifas", icon: Ticket, path: "/admin/rifas", color: "#3b82f6" },
+    { label: "Ranking", icon: Trophy, path: "/admin/ranking", color: "#f59e0b" },
+    { label: "Pedidos", icon: ShoppingBag, path: "/admin/pedidos", color: "#10b981" },
   ];
 
   const items = isAdmin ? adminItems : publicItems;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-800 px-2 py-3 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+    <div
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-3 py-2 safe-area-bottom"
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(99,102,241,0.1)',
+        boxShadow: '0 -4px 24px rgba(99,102,241,0.08)',
+      }}
+    >
       <nav className="flex items-center justify-around">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
-          
+          const isActive = isAdmin
+            ? (item.path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.path))
+            : location.pathname === item.path;
+
           if (item.external) {
             return (
               <a
@@ -71,12 +79,12 @@ export function MobileNav() {
                 href={item.path}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center gap-1 group"
+                className="flex flex-col items-center gap-1 group py-1 px-2"
               >
-                <div className="p-1 rounded-full text-zinc-400 group-active:scale-95 transition-transform">
-                  <item.icon size={22} />
+                <div className="p-1.5 rounded-xl text-slate-400 group-active:scale-95 transition-transform">
+                  <item.icon size={20} />
                 </div>
-                <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-tighter">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-tight">
                   {item.label}
                 </span>
               </a>
@@ -87,23 +95,25 @@ export function MobileNav() {
             <Link
               key={item.label}
               to={item.path}
-              className="flex flex-col items-center gap-1 group"
+              className="flex flex-col items-center gap-1 group py-1 px-2 active:scale-95 transition-transform"
             >
-              <div className={cn(
-                "p-1 rounded-full transition-all duration-300 group-active:scale-95",
-                isActive ? "text-blue-500" : "text-zinc-400"
-              )}>
-                <item.icon size={22} className={cn(isActive && "drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]")} />
+              <div
+                className={cn(
+                  "p-1.5 rounded-xl transition-all duration-200",
+                  isActive ? "shadow-md" : "text-slate-400"
+                )}
+                style={isActive ? { background: item.color, color: '#fff', boxShadow: `0 4px 12px ${item.color}40` } : {}}
+              >
+                <item.icon size={20} className={isActive ? "text-white" : ""} />
               </div>
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-tighter transition-colors",
-                isActive ? "text-blue-500" : "text-zinc-500"
-              )}>
+              <span
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                  isActive ? "text-slate-800" : "text-slate-400"
+                )}
+              >
                 {item.label}
               </span>
-              {isActive && (
-                <div className="absolute -bottom-1 w-1 h-1 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
-              )}
             </Link>
           );
         })}
@@ -111,4 +121,3 @@ export function MobileNav() {
     </div>
   );
 }
-
