@@ -195,7 +195,7 @@ export default function RifasList() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg line-clamp-1">{rifa.titulo}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col">
+                <CardContent className="flex-1 pb-4">
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
                     <div className="flex justify-between">
                       <span>Valor:</span>
@@ -237,8 +237,9 @@ export default function RifasList() {
                       )}
                     </div>
                   </div>
-                  
-                  <div className="mt-auto pt-4 flex flex-col gap-2.5 w-full border-t border-gray-100 bg-gray-50/50 -mx-6 px-6 -mb-6 pb-6 rounded-b-xl">
+                </CardContent>
+                
+                <div className="bg-gray-50/80 border-t border-gray-100 p-5 pt-4 rounded-b-xl flex flex-col gap-2.5 w-full">
                     {userRole === 'admin' && (
                       <div className="flex flex-col gap-2.5 w-full">
                         <Button 
@@ -306,7 +307,6 @@ export default function RifasList() {
                       </div>
                     )}
                   </div>
-                </CardContent>
               </Card>
             );
           })}
