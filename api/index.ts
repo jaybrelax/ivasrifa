@@ -80,10 +80,10 @@ async function enviarMensagemWhatsApp(telefone: string, texto: string) {
     if (response.ok) {
       console.log(`[Evolution] Mensagem enviada com sucesso para ${telefone}`);
     } else {
-      console.error(`[Evolution] Erro da API (${response.status}):`, resData);
+      console.error(`[Evolution] Erro da API (${response.status}) para ${telefone}:`, JSON.stringify(resData));
     }
   } catch (error) {
-    console.error("[Evolution] Erro crítico no processo de envio:", error);
+    console.error("[Evolution] Erro crítico no processo de envio para " + telefone + ":", error);
   }
 }
 
@@ -380,40 +380,46 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             .eq("id", p.id)
             .single();
 
-          if (pedidoFull?.cliente) {
+          if (pedidoFull?.cliente?.telefone) {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte! Agora é só torcer! 🍀`;
-            await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+            
+            try {
+              console.log(`[Webhook] Tentando enviar confirmação para ${pedidoFull.cliente.telefone}`);
+              await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+            } catch (err) {
+              console.error(`[Webhook] Falha ao enviar confirmação:`, err);
+            }
 
             // Disparo dos links de Bônus (se existirem)
-            console.log(`[Webhook] Verificando bônus para Rifa ID: ${pedidoFull.rifa_id}`);
             if (pedidoFull.rifa_id) {
-              const { data: bonusPremios, error: bonusError } = await supabaseAdmin
+              console.log(`[Webhook] Buscando bônus para Rifa: ${pedidoFull.rifa_id}`);
+              const { data: bonusPremios } = await supabaseAdmin
                 .from("premios")
                 .select("titulo, link_bonus")
                 .eq("rifa_id", pedidoFull.rifa_id)
                 .eq("is_bonus", true)
                 .not("link_bonus", "is", null);
 
-              if (bonusError) console.error("[Webhook] Erro ao buscar bônus:", bonusError);
-
               if (bonusPremios && bonusPremios.length > 0) {
-                console.log(`[Webhook] Encontrados ${bonusPremios.length} bônus para enviar.`);
                 const firstName = (pedidoFull.cliente.nome_completo || "Sorteudo").split(" ")[0];
-                
                 for (const bonus of bonusPremios) {
                   const link = bonus.link_bonus?.trim();
                   if (link) {
-                    await new Promise(r => setTimeout(r, 2000)); // Delay entre bônus
-                    const msgBonus = `🎁 *SEU BÔNUS EXCLUSIVO!*\n\nOlá *${firstName}*!\nComo agradecimento pela sua compra, aqui está o seu acesso:\n\n🚀 *${bonus.titulo}:*\n${link}`;
-                    console.log(`[Webhook] Enviando bônus: ${bonus.titulo} para ${pedidoFull.cliente.telefone}`);
-                    await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgBonus);
+                    try {
+                      await new Promise(r => setTimeout(r, 3000)); 
+                      const msgBonus = `🎁 *SEU BÔNUS EXCLUSIVO!*\n\nOlá *${firstName}*!\nComo agradecimento pela sua compra, aqui está o seu acesso:\n\n🚀 *${bonus.titulo}:*\n${link}`;
+                      console.log(`[Webhook] Enviando bônus: ${bonus.titulo}`);
+                      await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgBonus);
+                    } catch (err) {
+                      console.error(`[Webhook] Falha ao enviar bônus ${bonus.titulo}:`, err);
+                    }
                   }
                 }
-              } else {
-                console.log("[Webhook] Nenhum bônus ativo encontrado para esta rifa.");
               }
             }
+          } else {
+            console.log(`[Webhook] Pedido ${p.id} sem telefone de cliente.`, pedidoFull);
           }
         }
       }
