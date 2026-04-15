@@ -33,7 +33,21 @@ export default function RifaDetails() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
 
-  const [formData, setFormData] = useState({ nome: "", cpf: "", email: "", telefone: "" });
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = localStorage.getItem("@rifa:client_data");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          nome: parsed.nome || "",
+          cpf: parsed.cpf || "",
+          email: parsed.email || "",
+          telefone: parsed.telefone || ""
+        };
+      }
+    } catch {}
+    return { nome: "", cpf: "", email: "", telefone: "" };
+  });
   const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -193,6 +207,8 @@ export default function RifaDetails() {
         try {
           const { data, error } = await supabase.from("pedidos").select("status").eq("id", pedidoId).single();
           if (!error && data && data.status === "pago") {
+            // Salva dados no cache local para compras e pesquisas futuras
+            localStorage.setItem("@rifa:client_data", JSON.stringify(formData));
             setCheckoutStep(4);
             clearInterval(interval);
           }
@@ -202,7 +218,7 @@ export default function RifaDetails() {
       }, 5000);
     }
     return () => { if (interval) clearInterval(interval); };
-  }, [checkoutStep, pedidoId]);
+  }, [checkoutStep, pedidoId, formData]);
 
   const handleNumberClick = (num: number) => {
     if (numerosVendidos.includes(num) || numerosReservados.includes(num) || numerosEmSelecao.includes(num)) return;
@@ -467,7 +483,7 @@ export default function RifaDetails() {
 
                 {hasPromo && !isPromoActive && (
                   <div id="promo-banner" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white p-3 rounded-xl text-center text-sm font-medium animate-pulse shadow-md scroll-mt-[170px]">
-                    🚀 PROMOÇÃO: Compre {rifa.qtd_off} ou mais e pague apenas <span className="text-yellow-300 font-bold text-base">R$ {Number(rifa.off_price).toFixed(2)}</span> cada!
+                    🚀 PROMOÇÃO: Compre {rifa.qtd_off} ou mais e pague apenas <span className="text-yellow-300 font-bold text-base">R$ {Number(rifa.off_price).toFixed(2)}</span> por cada cota!
                   </div>
                 )}
                 

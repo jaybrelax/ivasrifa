@@ -11,7 +11,16 @@ import { supabase } from "@/src/lib/supabase";
 
 export default function MinhasCompras() {
   const { config: layoutConfig } = useOutletContext<any>() || { config: {} };
-  const [cpf, setCpf] = useState("");
+  const [cpf, setCpf] = useState(() => {
+    try {
+      const saved = localStorage.getItem("@rifa:client_data");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.cpf) return parsed.cpf;
+      }
+    } catch {}
+    return "";
+  });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [pedidos, setPedidos] = useState<any[]>([]);
@@ -28,12 +37,19 @@ export default function MinhasCompras() {
   }, [layoutConfig]);
 
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-busco no load inicial se o CPF foi restaurado do cache
+  useEffect(() => {
+    if (cpf && !searched && !loading) {
+      handleSearch(null); // passa null para o event
+    }
+  }, []);
+
+  const handleSearch = async (e: React.FormEvent | null) => {
+    if (e) e.preventDefault();
     const cleanCpf = cpf.replace(/\D/g, '');
     
     if (cleanCpf.length !== 11) {
-      alert("Por favor, digite um CPF válido com 11 dígitos.");
+      if (e) alert("Por favor, digite um CPF válido com 11 dígitos.");
       return;
     }
 
@@ -107,7 +123,7 @@ export default function MinhasCompras() {
             <CardTitle>Consultar Meus Números</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSearch} className="flex gap-4 items-end">
+            <form onSubmit={(e) => handleSearch(e)} className="flex gap-4 items-end">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="cpf">Digite seu CPF</Label>
                 <Input 

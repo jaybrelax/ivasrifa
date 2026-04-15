@@ -65,24 +65,24 @@ export default function PublicLayout() {
           <div className="flex items-center gap-2">
             {/* Ícone Admin Mobile (Só aparece logado) */}
             {user && (
-              <Link to="/admin" className="md:hidden flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+              <Link to="/admin" className="md:hidden flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors mr-1">
                 <LayoutDashboard className="h-6 w-6" />
               </Link>
             )}
-
-            <nav className="hidden md:flex items-center gap-2">
+            <nav className="flex items-center gap-1 sm:gap-2">
               <Button 
                   variant="ghost" 
                   size="sm"
-                  className="font-bold text-gray-600 hover:text-blue-600"
+                  className="font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 rounded-full px-3 sm:px-4"
                   render={<Link to="/minhas-compras" />} 
                   nativeButton={false}
               >
-                Minhas Compras
+                <Ticket className="w-4 h-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Meus Números</span>
               </Button>
               <Button 
                   size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700 font-bold"
+                  className="bg-blue-600 hover:bg-blue-700 font-bold hidden sm:flex"
                   render={<Link to="/admin" />} 
                   nativeButton={false}
               >
