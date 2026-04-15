@@ -71,8 +71,9 @@ export default function AdminLayout() {
     else document.documentElement.classList.remove('dark');
   }, [config.admin_dark_mode]);
 
-  // PWA Isolation para Painel Administrativo
-  useEffect(() => {
+    // PWA Isolation para Painel Administrativo
+    const timestamp = new Date().getTime();
+    useEffect(() => {
     const manifestUrl = '/admin-manifest.json';
     let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
     
@@ -87,8 +88,13 @@ export default function AdminLayout() {
     }
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/admin-sw.js').then(
-        (reg) => console.log('PWA Admin SW ativado:', reg.scope),
+      // Adicionando query string para forçar update e ignorar cache no script
+      navigator.serviceWorker.register('/admin-sw.js?v=' + timestamp).then(
+        (reg) => {
+          console.log('PWA Admin SW ativado:', reg.scope);
+          // Força a detecção do novo service worker caso estivesse preso
+          reg.update();
+        },
         (err) => console.error('PWA Admin SW falhou:', err)
       );
     }
