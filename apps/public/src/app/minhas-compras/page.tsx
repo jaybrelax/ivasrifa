@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Ticket, Clock, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
-import { supabase } from "@shared/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export default function MinhasCompras() {

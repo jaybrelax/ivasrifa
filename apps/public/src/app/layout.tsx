@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { supabase } from "@shared/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Ticket, User } from "lucide-react";
 

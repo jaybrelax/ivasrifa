@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@rifa/shared": "^0.0.0",
+    "@rifa/shared": "*",
     "@supabase/supabase-js": "^2.103.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

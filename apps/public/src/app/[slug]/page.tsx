@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { supabase } from "@shared/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import RifaDetailsClient from "@/components/RifaDetailsClient";
 import { notFound } from "next/navigation";
 

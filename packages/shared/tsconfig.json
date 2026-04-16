@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "moduleResolution": "Bundler",
     "strict": true,
+    "declaration": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "isolatedModules": true
+    "outDir": "dist"
   },
-  "include": ["src"]
+  "include": ["index.ts", "supabaseClient.ts", "types.ts", "utils.ts"],
+  "exclude": ["node_modules", "dist"]
 }

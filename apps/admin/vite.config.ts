@@ -6,17 +6,21 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '../../', ''); // Busca o .env na raiz do monorepo
+  
   return {
     plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'ivas_icon_192.png', 'ivas_icon_512.png'],
         manifest: {
           name: 'Portal IVAS - Admin',
           short_name: 'IVAS Admin',
           description: 'Painel Administrativo do Sistema de Rifas IVAS',
           theme_color: '#ffffff',
+          start_url: '/admin',
+          display: 'standalone',
           icons: [
             {
               src: 'ivas_icon_192.png',
@@ -34,16 +38,26 @@ export default defineConfig(({mode}) => {
     ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      // Adiciona variáveis do Supabase se necessário para o build
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@shared': path.resolve(__dirname, '../../packages/shared/src'),
+        '@shared': path.resolve(__dirname, '../../packages/shared'),
       },
     },
+    build: {
+      // Garante que o build não falhe por causa de dependências do monorepo
+      commonjsOptions: {
+        include: [/packages\/shared/, /node_modules/],
+      },
+      rollupOptions: {
+        external: (id) => id.includes('node_modules') && !id.includes('vite-plugin-pwa') && !id.includes('@shared')
+      }
+    },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

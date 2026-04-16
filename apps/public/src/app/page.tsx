@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Ticket, Clock, Trophy } from "lucide-react";
-import { supabase } from "@shared/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 async function getData() {
