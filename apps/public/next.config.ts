@@ -15,7 +15,8 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  }
+  },
+  transpilePackages: ["@rifa/shared"],
 };
 
 export default nextConfig;
