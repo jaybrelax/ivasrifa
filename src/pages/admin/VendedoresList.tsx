@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { Link } from "react-router-dom";
@@ -120,42 +121,6 @@ export default function VendedoresList() {
         </div>
       </div>
 
-      {/* Banner de Recrutamento */}
-      <Card className="bg-gradient-to-r from-blue-600 to-blue-800 border-none text-white overflow-hidden relative">
-        <div className="absolute right-0 top-0 h-full w-48 opacity-10 flex items-center justify-center">
-          <Shield size={160} />
-        </div>
-        <CardContent className="p-6 relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Link de Recrutamento Global</p>
-              <p className="font-mono text-white/80 text-sm break-all">
-                {window.location.origin}/admin/recrutamento
-              </p>
-              <p className="text-blue-200 text-xs mt-1">Compartilhe este link para recrutar novos guardiões. O acesso é automático para todas as rifas ativas.</p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
-                onClick={handleCopiarLink}
-              >
-                {linkCopiado ? <CheckCircle2 className="h-4 w-4 mr-1.5" /> : <Copy className="h-4 w-4 mr-1.5" />}
-                {linkCopiado ? "Copiado!" : "Copiar"}
-              </Button>
-              <Button
-                size="sm"
-                className="bg-white text-blue-700 hover:bg-blue-50 font-bold"
-                render={<Link to="/admin/recrutamento" />}
-                nativeButton={false}
-              >
-                <ExternalLink className="h-4 w-4 mr-1.5" /> Abrir
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tabela de Guardiões */}
       <Card>
@@ -207,9 +172,9 @@ export default function VendedoresList() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Cotas Vendidas</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Código Ref</TableHead>
-                  <TableHead>Cotas Vendidas</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -223,9 +188,35 @@ export default function VendedoresList() {
 
                   return (
                     <TableRow key={vendedor.id}>
-                      <TableCell className="font-medium">{vendedor.nome}</TableCell>
                       <TableCell>
-                        <div className="text-sm">{vendedor.email}</div>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 ring-2 ring-white shadow-sm">
+                            <AvatarImage src={vendedor.avatar_url} />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-xs font-bold">
+                              {vendedor.nome ? vendedor.nome.charAt(0).toUpperCase() : 'G'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-slate-900">{vendedor.nome}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5 min-w-[120px]">
+                          <div className="flex justify-between text-xs">
+                            <span className="font-bold text-gray-700">{totalCotas} cotas</span>
+                            <span className={atingiuMeta ? "text-green-600 font-bold" : "text-gray-400"}>
+                              meta: {metaReal}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${atingiuMeta ? 'bg-green-500' : 'bg-blue-500'}`}
+                              style={{ width: `${progresso}%` }}
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm font-medium text-slate-700">{vendedor.email}</div>
                         <div className="text-xs text-gray-500">{vendedor.telefone}</div>
                       </TableCell>
                       <TableCell>
@@ -243,22 +234,6 @@ export default function VendedoresList() {
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <span className="font-bold text-gray-700">{totalCotas} cotas</span>
-                            <span className={atingiuMeta ? "text-green-600 font-bold" : "text-gray-400"}>
-                              meta: {metaReal}
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all ${atingiuMeta ? 'bg-green-500' : 'bg-blue-500'}`}
-                              style={{ width: `${progresso}%` }}
-                            />
-                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
