@@ -59,7 +59,7 @@ export default function RifasList() {
         const pedidosPagos = rifa.pedidos?.filter((p: any) => p.status === 'pago') || [];
         const brutoTotal = pedidosPagos.reduce((acc: number, p: any) => acc + Number(p.valor_total || 0), 0);
         
-        const progresso = (vendidos / rifa.total_numeros) * 100;
+        const progresso = rifa.total_numeros > 0 ? (vendidos / rifa.total_numeros) * 100 : 0;
         const liquido = brutoTotal * 0.9901; // Desconto de 0.99%
         
         return { 

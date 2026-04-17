@@ -56,9 +56,18 @@ export default function AdminLayout() {
       setLoadingAuth(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth Event:', event, session?.user?.email);
       setSession(session);
-      if (session) checkUserRole(session.user.id);
+      if (session) {
+        checkUserRole(session.user.id);
+      } else {
+        // Se deslogou sem querer, vamos forçar o redirecionamento se não for login
+        if (location.pathname !== '/login' && location.pathname !== '/recrutamento') {
+          console.warn('Sessão perdida. Redirecionando para login.');
+          navigate('/login');
+        }
+      }
     });
 
     return () => {
