@@ -45,17 +45,12 @@ export default defineConfig(({mode}) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@shared': path.resolve(__dirname, '../../packages/shared'),
       },
     },
     build: {
-      // Garante que o build não falhe por causa de dependências do monorepo
       commonjsOptions: {
         include: [/packages\/shared/, /node_modules/],
       },
-      rollupOptions: {
-        external: (id) => id.includes('node_modules') && !id.includes('vite-plugin-pwa') && !id.includes('@shared')
-      }
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
