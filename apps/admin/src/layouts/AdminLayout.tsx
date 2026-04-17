@@ -35,10 +35,23 @@ export default function AdminLayout() {
   const [vendedorData, setVendedorData] = useState<any>(null);
 
   useEffect(() => {
+    // Timeout de segurança: Se não carregar em 3 segundos, libera o loader
+    const securityTimeout = setTimeout(() => {
+      if (loadingAuth) {
+        console.warn('Auth Timeout: Forçando saída do loader.');
+        setLoadingAuth(false);
+      }
+    }, 3000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(securityTimeout);
       setSession(session);
       setLoadingAuth(false);
       if (session) checkUserRole(session.user.id);
+    }).catch(err => {
+      clearTimeout(securityTimeout);
+      console.error('Erro ao buscar sessão:', err);
+      setLoadingAuth(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -46,7 +59,10 @@ export default function AdminLayout() {
       if (session) checkUserRole(session.user.id);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(securityTimeout);
+      subscription.unsubscribe();
+    }
   }, []);
 
   async function checkUserRole(userId: string) {
