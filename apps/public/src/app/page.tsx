@@ -5,16 +5,26 @@ import { Ticket, Clock, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-async function getData() {
-  const [configRes, rifasRes] = await Promise.all([
-    supabase.from('vw_configuracoes_publicas').select('*').eq('id', 1).single(),
-    supabase.from('rifas').select('*').in('status', ['ativa', 'sorteada']).order('created_at', { ascending: false })
-  ]);
+export const revalidate = 3600; // Cache de 1 hora
 
-  return {
-    config: configRes.data || {},
-    rifas: rifasRes.data || []
-  };
+async function getData() {
+  try {
+    const [configRes, rifasRes] = await Promise.all([
+      supabase.from('vw_configuracoes_publicas').select('*').eq('id', 1).single(),
+      supabase.from('rifas').select('*').in('status', ['ativa', 'sorteada']).order('created_at', { ascending: false })
+    ]);
+
+    if (configRes.error) console.error("Error fetching config:", configRes.error);
+    if (rifasRes.error) console.error("Error fetching rifas:", rifasRes.error);
+
+    return {
+      config: configRes.data || {},
+      rifas: rifasRes.data || []
+    };
+  } catch (err) {
+    console.error("Critical error in getData:", err);
+    return { config: {}, rifas: [] };
+  }
 }
 
 export default async function Home() {
@@ -59,7 +69,7 @@ export default async function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center mb-8">
           <Trophy className="h-6 w-6 text-yellow-500 mr-2" />
-          <h2 className="text-2xl font-bold text-gray-900">Sorteios em Andamento</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Rifas em Andamento</h2>
         </div>
 
         {rifas.length === 0 ? (
