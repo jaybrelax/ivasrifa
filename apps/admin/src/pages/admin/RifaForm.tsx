@@ -364,9 +364,9 @@ export default function RifaForm() {
       }
 
       navigate("/admin/rifas");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar rifa:", error);
-      alert("Erro ao salvar a rifa. Verifique o console para mais detalhes.");
+      alert(`Erro ao salvar a rifa: ${error?.message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
