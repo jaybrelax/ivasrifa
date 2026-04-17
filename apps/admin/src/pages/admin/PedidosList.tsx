@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-export default function PedidosList() {
+export default function VendasList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -66,7 +66,7 @@ export default function PedidosList() {
   const vendedorId = pedidosData?.vendedorId;
 
   const handleAprovar = async (pedidoId: string) => {
-    if (!confirm("Tem certeza que deseja aprovar este pedido manualmente?")) return;
+    if (!confirm("Tem certeza que deseja aprovar esta venda manualmente?")) return;
     setActionLoading(true);
     try {
       // Atualiza status do pedido
@@ -85,19 +85,19 @@ export default function PedidosList() {
 
       if (numerosError) throw numerosError;
 
-      alert("Pedido aprovado com sucesso!");
+      alert("Venda aprovada com sucesso!");
       fetchPedidos();
       setSelectedPedido(null);
     } catch (error) {
-      console.error("Erro ao aprovar pedido:", error);
-      alert("Erro ao aprovar pedido.");
+      console.error("Erro ao aprovar venda:", error);
+      alert("Erro ao aprovar venda.");
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCancelar = async (pedidoId: string) => {
-    if (!confirm("Tem certeza que deseja cancelar este pedido? Os números serão liberados.")) return;
+    if (!confirm("Tem certeza que deseja cancelar esta venda? Os números serão liberados.")) return;
     setActionLoading(true);
     try {
       // Atualiza status do pedido
@@ -116,12 +116,12 @@ export default function PedidosList() {
 
       if (numerosError) throw numerosError;
 
-      alert("Pedido cancelado com sucesso!");
+      alert("Venda cancelada com sucesso!");
       fetchPedidos();
       setSelectedPedido(null);
     } catch (error) {
-      console.error("Erro ao cancelar pedido:", error);
-      alert("Erro ao cancelar pedido.");
+      console.error("Erro ao cancelar venda:", error);
+      alert("Erro ao cancelar venda.");
     } finally {
       setActionLoading(false);
     }
@@ -140,13 +140,13 @@ export default function PedidosList() {
 
       if (error) throw error;
 
-      alert("Pedido excluído permanentemente!");
+      alert("Venda excluída permanentemente!");
       fetchPedidos();
       setSelectedPedido(null);
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao excluir pedido:", error);
-      alert("Erro ao excluir pedido.");
+      console.error("Erro ao excluir venda:", error);
+      alert("Erro ao excluir venda.");
     } finally {
       setActionLoading(false);
     }
@@ -173,7 +173,7 @@ export default function PedidosList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Vendas</h1>
           <p className="text-gray-500">Gerencie as compras e aprovações manuais.</p>
         </div>
         <div className="relative w-full sm:w-72">
@@ -211,7 +211,7 @@ export default function PedidosList() {
               ) : filteredPedidos.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                    Nenhum pedido encontrado.
+                    Nenhuma venda encontrada.
                   </td>
                 </tr>
               ) : (
@@ -267,7 +267,7 @@ export default function PedidosList() {
       <Dialog open={!!selectedPedido} onOpenChange={(open) => !open && setSelectedPedido(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Detalhes do Pedido</DialogTitle>
+            <DialogTitle>Detalhes da Venda</DialogTitle>
             <DialogDescription className="flex flex-col gap-1">
               <span className="text-gray-900 font-black">Código: #{selectedPedido?.display_id}</span>
               <span className="text-[10px] text-gray-400">UUID: {selectedPedido?.id}</span>

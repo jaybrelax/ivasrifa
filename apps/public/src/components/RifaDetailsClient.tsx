@@ -429,7 +429,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     <button
                       key={num}
                       onClick={() => handleNumberClick(num)}
-                      className={`h-9 sm:h-10 rounded-md border font-semibold text-xs sm:text-sm transition-all flex items-center justify-center select-none ${getNumberStatusClass(num)}`}
+                      className={`h-10 sm:h-12 rounded-lg border font-bold text-sm sm:text-base transition-all flex items-center justify-center select-none ${getNumberStatusClass(num)}`}
                     >
                       {padNum(num)}
                     </button>
@@ -495,14 +495,22 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
       {/* Floating Mobile Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-gray-100 px-4 py-3 safe-area-bottom shadow-lg">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-gray-500">
-              {selectedNumbers.length > 0 ? `${selectedNumbers.length} selecionado(s)` : "Nenhum selecionado"}
-            </p>
-            <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
+          <div className="min-w-0 pr-2 flex-1">
+            {selectedNumbers.length > 0 ? (
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5 max-w-[150px] scrollbar-hide">
+                {selectedNumbers.map(n => (
+                  <div key={n} className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
+                    {n}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">Nenhum selecionado</p>
+            )}
+            <p className="text-lg font-extrabold text-green-600 leading-tight mt-0.5">R$ {totalValue.toFixed(2)}</p>
           </div>
           <Button
-            className={`h-12 px-8 uppercase font-bold rounded-full transition-all duration-300 ${
+            className={`h-12 px-6 uppercase text-xs sm:text-sm font-bold rounded-full transition-all duration-300 ${
               selectedNumbers.length === 0 
                 ? 'bg-black text-white' 
                 : 'bg-[#1b5df1] text-white font-black'
@@ -516,7 +524,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
               }
             }}
           >
-            {selectedNumbers.length === 0 ? 'Escolher' : 'Confirmar'}
+            {selectedNumbers.length === 0 ? 'Escolher números' : 'Confirmar Números'}
           </Button>
         </div>
       </div>
@@ -607,7 +615,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 mt-6">
+                    <div className="flex flex-col gap-4 mt-6">
                       <Button 
                         disabled={isSubmitting} 
                         className="h-14 rounded-full bg-[#1b5df1] hover:bg-[#0044cc] text-[15px] font-bold uppercase tracking-widest shadow-[0_8px_20px_rgba(27,93,241,0.25)] transition-all active:scale-[0.98]"
@@ -623,18 +631,27 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                       >
                         Prosseguir <ArrowRight className="ml-1 h-5 w-5" />
                       </Button>
-                      <button 
-                        onClick={() => setIsModalOpen(false)}
-                        className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest py-3 transition-colors"
-                      >
-                        Cancelar Pedido
-                      </button>
+                      <p className="text-[12px] text-slate-400 font-medium text-center leading-relaxed px-4">
+                        Ao continuar, você declara que concorda com os nossos{" "}
+                        <Link href="/termos" target="_blank" className="text-[#1b5df1] font-bold underline decoration-slate-200 underline-offset-4">Termos de Uso</Link> e{" "}
+                        <Link href="/privacidade" target="_blank" className="text-[#1b5df1] font-bold underline decoration-slate-200 underline-offset-4">Política de Privacidade</Link>.
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {checkoutStep === 2 && (
                   <div className="space-y-6">
+                    {/* Reservation Banner */}
+                    <div className="bg-[#fffbeb] border border-[#fde68a] p-4 p-5 rounded-[24px] flex items-start gap-3.5 shadow-sm">
+                      <div className="h-6 w-6 rounded-full bg-[#f59e0b] flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <p className="text-[#92400e] text-[14px] font-bold leading-tight">
+                        Seus números ficam reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 minutos</span> após gerar o PIX.
+                      </p>
+                    </div>
+
                     {checkoutError && (
                       <div className="p-4 bg-[#ffecec] border border-[#ffcccc] text-[#d32f2f] text-[13px] font-bold rounded-[12px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                         <div className="h-6 w-6 rounded-full bg-[#d32f2f] flex items-center justify-center shrink-0">
@@ -716,12 +733,12 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
           )}
 
           {checkoutStep === 3 && (
-            <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-blue-900 to-[#0055ff] text-white min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500 relative">
+            <div className="flex-1 flex flex-col min-h-[100dvh] sm:min-h-0 sm:h-[90vh] sm:max-h-[700px] overflow-hidden bg-gradient-to-b from-[#0a1854] via-[#0d2080] to-[#1035c4] text-white relative animate-in fade-in duration-500">
               {/* Close Confirmation Popup */}
               {showCloseConfirmation && (
                 <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
                   <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowCloseConfirmation(false)}></div>
-                  <div className="relative bg-white rounded-[32px] p-8 max-w-[320px] w-full text-center shadow-2xl border border-white/10">
+                  <div className="relative bg-white rounded-[32px] p-8 max-w-[320px] w-full text-center shadow-2xl">
                     <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
                       <AlertCircle className="h-8 w-8 text-amber-600" />
                     </div>
@@ -730,79 +747,90 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                       Você ainda não confirmou o pagamento. Se fechar agora, perderá sua reserva em alguns minutos. Deseja realmente sair?
                     </p>
                     <div className="space-y-3">
-                       <Button 
-                         onClick={() => {
-                           setShowCloseConfirmation(false);
-                           setIsModalOpen(false);
-                         }} 
-                         variant="ghost" 
-                         className="w-full h-12 text-slate-400 font-bold hover:text-slate-600 hover:bg-slate-50 rounded-2xl"
-                       >
-                         Sim, desejo sair
-                       </Button>
-                       <Button 
-                         onClick={() => setShowCloseConfirmation(false)} 
-                         className="w-full h-14 bg-[#1b5df1] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                       >
-                         Voltar ao PIX
-                       </Button>
+                      <Button
+                        onClick={() => {
+                          setShowCloseConfirmation(false);
+                          setIsModalOpen(false);
+                        }}
+                        variant="ghost"
+                        className="w-full h-12 text-slate-400 font-bold hover:text-slate-600 hover:bg-slate-50 rounded-2xl"
+                      >
+                        Sim, desejo sair
+                      </Button>
+                      <Button
+                        onClick={() => setShowCloseConfirmation(false)}
+                        className="w-full h-14 bg-[#1b5df1] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg"
+                      >
+                        Voltar ao PIX
+                      </Button>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="p-8 pb-4">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex flex-col gap-1">
-                    <img 
-                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png/1280px-Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png" 
-                      alt="Logo Pix" 
-                      className="h-5 w-auto object-contain brightness-0 invert mb-1" 
-                    />
-                    <h2 className="text-xl font-black uppercase tracking-tighter text-blue-100">Pagamento PIX</h2>
-                  </div>
-                  <button onClick={() => setShowCloseConfirmation(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors relative z-10">
-                    <X className="h-6 w-6 text-white/70" />
-                  </button>
-                </div>
-                
-                <div className="bg-white p-6 rounded-[32px] shadow-2xl flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500 ring-4 ring-white/10 border border-white/5">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
+                <h2 className="text-lg font-black uppercase tracking-widest text-white">Pagamento PIX</h2>
+                <button
+                  onClick={() => setShowCloseConfirmation(true)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="h-6 w-6 text-white/80" />
+                </button>
+              </div>
+
+              {/* QR Code area — flex-1 so it takes available space */}
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 gap-5">
+                {/* QR Code Card */}
+                <div className="bg-white rounded-[28px] shadow-2xl p-5 flex items-center justify-center w-full max-w-[260px] aspect-square">
                   {pixData?.qr_code_base64 ? (
-                    <img src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`} alt="QR Code PIX" className="w-full h-auto mix-blend-multiply" />
+                    <img
+                      src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="w-full h-auto mix-blend-multiply"
+                    />
                   ) : (
-                    <div className="w-48 h-48 bg-slate-50 animate-pulse rounded-2xl flex items-center justify-center text-slate-300">
-                      <Loader2 className="h-10 w-10 animate-spin" />
+                    <div className="w-full aspect-square bg-slate-50 animate-pulse rounded-2xl flex items-center justify-center text-slate-300">
+                      <Loader2 className="h-12 w-12 animate-spin" />
                     </div>
                   )}
                 </div>
+
+                {/* PIX Logo */}
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png/1280px-Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png"
+                  alt="Logo Pix"
+                  className="h-8 w-auto object-contain brightness-0 invert opacity-95"
+                />
+
+                {/* Valor */}
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-blue-300 uppercase tracking-[0.2em] mb-1">Valor a pagar</p>
+                  <p className="text-[52px] font-black text-white leading-none tracking-tight">R$ {totalValue.toFixed(2)}</p>
+                </div>
               </div>
 
-              <div className="p-8 pt-6 space-y-6 flex-1 flex flex-col justify-end bg-black/10 backdrop-blur-sm">
-                <div className="space-y-1.5 text-center">
-                  <p className="text-sm font-bold text-blue-300 uppercase tracking-widest">Valor a pagar</p>
-                  <p className="text-5xl font-black text-white">R$ {totalValue.toFixed(2)}</p>
-                </div>
+              {/* Bottom actions — fixed at bottom */}
+              <div className="shrink-0 px-6 pb-8 pt-2 space-y-3">
+                <Button
+                  onClick={copyPix}
+                  className="w-full h-[58px] bg-[#22c55e] hover:bg-[#16a34a] text-white text-base font-black uppercase tracking-widest rounded-[18px] shadow-xl shadow-green-900/30 active:scale-[0.98] transition-all border-none"
+                >
+                  {pixCopied ? (
+                    <><CheckCircle2 className="mr-3 h-5 w-5" /> Copiado!</>
+                  ) : (
+                    <><Copy className="mr-3 h-5 w-5" /> Copiar Código PIX</>
+                  )}
+                </Button>
 
-                <div className="space-y-3">
-                  <Button 
-                    onClick={copyPix} 
-                    className="w-full h-16 bg-white text-[#1b5df1] hover:bg-blue-50 text-lg font-black uppercase tracking-widest rounded-[24px] shadow-xl shadow-black/20 active:scale-95 transition-all border-none"
-                  >
-                    {pixCopied ? (
-                      <><CheckCircle2 className="mr-3 h-6 w-6" /> Copiado!</>
-                    ) : (
-                      <><Copy className="mr-3 h-6 w-6" /> Copia e Cola</>
-                    )}
-                  </Button>
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white border border-white/10 animate-pulse">
-                      <Loader2 className="h-3 w-3 animate-spin text-blue-300" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento</span>
-                    </div>
-                    <p className="text-[10px] text-white/60 text-center uppercase font-bold leading-tight tracking-widest opacity-80">
-                      Não saia desta tela após pagar<br />A confirmação é automática
-                    </p>
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 animate-pulse">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-300 shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-widest">Aguardando Pagamento</span>
                   </div>
+                  <p className="text-[10px] text-white/60 text-center uppercase font-bold leading-snug tracking-widest">
+                    Não saia desta tela após pagar<br />A confirmação é automática
+                  </p>
                 </div>
               </div>
             </div>

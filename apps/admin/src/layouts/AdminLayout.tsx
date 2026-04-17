@@ -168,7 +168,7 @@ export default function AdminLayout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'guardiao'], color: 'text-violet-500', bg: 'bg-violet-50', activeBg: 'bg-violet-600' },
     { icon: Ticket, label: 'Rifas', path: '/rifas', roles: ['admin', 'guardiao'], color: 'text-blue-500', bg: 'bg-blue-50', activeBg: 'bg-blue-600' },
     { icon: Trophy, label: 'Ranking', path: '/ranking', roles: ['admin', 'guardiao'], color: 'text-amber-500', bg: 'bg-amber-50', activeBg: 'bg-amber-500' },
-    { icon: ShoppingCart, label: 'Pedidos', path: '/pedidos', roles: ['admin', 'guardiao'], color: 'text-emerald-500', bg: 'bg-emerald-50', activeBg: 'bg-emerald-600' },
+    { icon: ShoppingCart, label: 'Vendas', path: '/vendas', roles: ['admin', 'guardiao'], color: 'text-emerald-500', bg: 'bg-emerald-50', activeBg: 'bg-emerald-600' },
     { icon: Shield, label: 'Guardiões', path: '/vendedores', roles: ['admin'], color: 'text-indigo-500', bg: 'bg-indigo-50', activeBg: 'bg-indigo-600' },
     { icon: UserCircle, label: 'Meu Perfil', path: '/perfil', roles: ['admin', 'guardiao'], color: 'text-pink-500', bg: 'bg-pink-50', activeBg: 'bg-pink-600' },
     { icon: Settings, label: 'Configurações', path: '/configuracoes', roles: ['admin'], color: 'text-slate-500', bg: 'bg-slate-50', activeBg: 'bg-slate-600' },
@@ -301,7 +301,7 @@ export default function AdminLayout() {
         {/* View Site + Logout */}
         <div className="p-4 space-y-2 shrink-0" style={{ borderTop: '1px solid rgba(99,102,241,0.08)' }}>
           <a
-            href={`/${vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : ''}`}
+            href={`https://rifa.virtudes.net.br${vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : ''}`}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all group"

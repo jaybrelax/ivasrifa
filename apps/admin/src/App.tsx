@@ -7,7 +7,7 @@ import RifaForm from './pages/admin/RifaForm';
 import VendedoresList from './pages/admin/VendedoresList';
 import Configuracoes from './pages/admin/Configuracoes';
 import Login from './pages/admin/Login';
-import PedidosList from './pages/admin/PedidosList';
+import VendasList from './pages/admin/PedidosList';
 import PerfilVendedor from './pages/admin/PerfilVendedor';
 import Recrutamento from './pages/admin/Recrutamento';
 import RankingList from './pages/admin/RankingList';
@@ -36,7 +36,7 @@ export default function App() {
             <Route path="rifas" element={<RifasList />} />
             <Route path="rifas/nova" element={<RifaForm />} />
             <Route path="rifas/:id/editar" element={<RifaForm />} />
-            <Route path="pedidos" element={<PedidosList />} />
+            <Route path="vendas" element={<VendasList />} />
             <Route path="vendedores" element={<VendedoresList />} />
             <Route path="ranking" element={<RankingList />} />
             <Route path="perfil" element={<PerfilVendedor />} />

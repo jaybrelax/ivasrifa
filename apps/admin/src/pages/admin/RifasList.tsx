@@ -80,6 +80,7 @@ export default function RifasList() {
   const rifas = rifasData?.rifas || [];
   const userRole = rifasData?.role || 'admin';
   const vendedorData = rifasData?.vendedor;
+  const vRef = vendedorData?.codigo_ref;
 
   const confirmDelete = async () => {
     if (!rifaToDelete) return;
@@ -104,8 +105,8 @@ export default function RifasList() {
   };
 
   const copyRifaLink = (rifa: any) => {
-    const ref = vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : '';
-    const publicOrigin = "http://rifa.virtudes.net.br";
+    const ref = vRef ? `?ref=${vRef}` : '';
+    const publicOrigin = "https://rifa.virtudes.net.br";
     const url = `${publicOrigin}/${rifa.slug || rifa.id}${ref}`;
     navigator.clipboard.writeText(url);
     setCopiedId(rifa.id);
@@ -282,8 +283,8 @@ export default function RifasList() {
                             variant="secondary" 
                             size="sm"
                             onClick={() => {
-                              const publicOrigin = "http://rifa.virtudes.net.br";
-                              window.open(`${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`, '_blank');
+                              const publicOrigin = "https://rifa.virtudes.net.br";
+                              window.open(`${publicOrigin}/${rifa.slug || rifa.id}${vRef ? `?ref=${vRef}` : ''}`, '_blank');
                             }}
                             className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >
@@ -299,8 +300,8 @@ export default function RifasList() {
                           variant="secondary" 
                           size="sm"
                           onClick={() => {
-                            const publicOrigin = "http://rifa.virtudes.net.br";
-                            window.open(`${publicOrigin}/${rifa.slug || rifa.id}?ref=${vendedorRef}`, '_blank');
+                            const publicOrigin = "https://rifa.virtudes.net.br";
+                            window.open(`${publicOrigin}/${rifa.slug || rifa.id}?ref=${vRef}`, '_blank');
                           }}
                           className="w-full h-11 text-sm font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                         >
@@ -312,8 +313,8 @@ export default function RifasList() {
                           size="sm"
                           className="w-full h-11 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 rounded-xl"
                           onClick={() => {
-                            const publicOrigin = "http://rifa.virtudes.net.br";
-                            const myRefLink = `${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
+                            const publicOrigin = "https://rifa.virtudes.net.br";
+                            const myRefLink = `${publicOrigin}/${rifa.slug || rifa.id}${vRef ? `?ref=${vRef}` : ''}`;
                             navigator.clipboard.writeText(myRefLink);
                             setCopiedId(rifa.id);
                             setTimeout(() => setCopiedId(null), 2000);
