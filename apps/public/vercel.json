@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "https://ivasrifa-admin.vercel.app/admin"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://ivasrifa-admin.vercel.app/admin/:path*"
+    }
+  ]
+}
