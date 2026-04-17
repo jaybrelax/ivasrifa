@@ -97,7 +97,7 @@ export default function RifasList() {
   };
 
   const copyRecruitLink = () => {
-    const url = `http://rifa.virtudes.net.br/recrutamento`;
+    const url = `http://admin.rifa.virtudes.net.br/recrutamento`;
     navigator.clipboard.writeText(url);
     setCopiedId('recruit');
     setTimeout(() => setCopiedId(null), 2000);
