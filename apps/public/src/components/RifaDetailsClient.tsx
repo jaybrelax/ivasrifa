@@ -590,60 +590,57 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
                 {checkoutStep === 1 && (
                   <div className="space-y-6">
-                    <div className="bg-[#f8fafc] p-6 rounded-[28px] space-y-5 border border-slate-100/60 shadow-sm shadow-slate-100">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
-                        <div className="relative group">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
-                          <Input 
-                            value={formData.nome} 
-                            onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
-                            placeholder="Ex: João da Silva"
-                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 text-[15px]"
-                          />
-                        </div>
+                    <div className="bg-slate-50 p-6 sm:p-7 rounded-[32px] space-y-6 border border-slate-100 shadow-sm shadow-slate-200/50">
+                      
+                      {/* Nome */}
+                      <div className="relative group">
+                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">Nome Completo</Label>
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-[20px] w-[20px] text-slate-400 group-focus-within:text-[#1b5df1] z-10 transition-colors" />
+                        <Input 
+                          value={formData.nome} 
+                          onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
+                          placeholder="Ex: João da Silva"
+                          className="peer h-[56px] pl-[42px] rounded-[16px] border-2 border-slate-200 bg-transparent focus:bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:shadow-[0_4px_12px_rgba(27,93,241,0.06)] font-bold text-slate-800 placeholder:text-slate-300 focus:border-[#1b5df1] focus:ring-0 text-[15px] transition-all"
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
-                        <div className="relative group overflow-hidden">
-                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
-                          <Input 
-                            value={formData.cpf} 
-                            onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
-                            placeholder="000.000.000-00"
-                            inputMode="numeric"
-                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 font-mono text-[15px]"
-                          />
-                        </div>
+                      {/* CPF */}
+                      <div className="relative group">
+                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">CPF</Label>
+                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-[20px] w-[20px] text-slate-400 group-focus-within:text-[#1b5df1] z-10 transition-colors" />
+                        <Input 
+                          value={formData.cpf} 
+                          onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
+                          placeholder="000.000.000-00"
+                          inputMode="numeric"
+                          className="peer h-[56px] pl-[42px] rounded-[16px] border-2 border-slate-200 bg-transparent focus:bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:shadow-[0_4px_12px_rgba(27,93,241,0.06)] font-bold text-slate-800 placeholder:text-slate-300 focus:border-[#1b5df1] focus:ring-0 font-mono text-[15px] transition-all"
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
-                        <div className="relative group overflow-hidden">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
-                          <Input 
-                            value={formData.telefone} 
-                            onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
-                            placeholder="(00) 00000-0000"
-                            inputMode="numeric"
-                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 font-mono text-[15px]"
-                          />
-                        </div>
+                      {/* Telefone */}
+                      <div className="relative group">
+                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">WhatsApp / Telefone</Label>
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-[20px] w-[20px] text-slate-400 group-focus-within:text-[#1b5df1] z-10 transition-colors" />
+                        <Input 
+                          value={formData.telefone} 
+                          onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
+                          placeholder="(00) 00000-0000"
+                          inputMode="numeric"
+                          className="peer h-[56px] pl-[42px] rounded-[16px] border-2 border-slate-200 bg-transparent focus:bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:shadow-[0_4px_12px_rgba(27,93,241,0.06)] font-bold text-slate-800 placeholder:text-slate-300 focus:border-[#1b5df1] focus:ring-0 font-mono text-[15px] transition-all"
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
-                        <div className="relative group overflow-hidden">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
-                          <Input 
-                            type="email" 
-                            value={formData.email} 
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-                            placeholder="seu@email.com"
-                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 text-[15px]"
-                          />
-                        </div>
+                      {/* Email */}
+                      <div className="relative group">
+                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">E-mail</Label>
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-[20px] w-[20px] text-slate-400 group-focus-within:text-[#1b5df1] z-10 transition-colors" />
+                        <Input 
+                          type="email" 
+                          value={formData.email} 
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                          placeholder="seu@email.com"
+                          className="peer h-[56px] pl-[42px] rounded-[16px] border-2 border-slate-200 bg-transparent focus:bg-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:shadow-[0_4px_12px_rgba(27,93,241,0.06)] font-bold text-slate-800 placeholder:text-slate-300 focus:border-[#1b5df1] focus:ring-0 text-[15px] transition-all"
+                        />
                       </div>
                     </div>
 
@@ -673,19 +670,19 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 )}
 
                 {checkoutStep === 2 && (
-                  <div className="space-y-6">
+                  <div className="space-y-3.5">
                     {/* Reservation Banner */}
-                    <div className="bg-[#fffbeb] border border-[#fde68a] p-4 p-5 rounded-[24px] flex items-start gap-3.5 shadow-sm">
-                      <div className="h-6 w-6 rounded-full bg-[#f59e0b] flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="bg-[#fffbeb] border border-[#fde68a] p-3.5 rounded-[20px] flex items-center gap-3 shadow-sm">
+                      <div className="h-6 w-6 rounded-full bg-[#f59e0b] flex items-center justify-center shrink-0">
                         <AlertCircle className="h-4 w-4 text-white" />
                       </div>
-                      <p className="text-[#92400e] text-[14px] font-bold leading-tight">
-                        Seus números ficam reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 minutos</span> após gerar o PIX.
+                      <p className="text-[#92400e] text-[13px] font-bold leading-tight">
+                        Seus números ficam reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 min</span>
                       </p>
                     </div>
 
                     {checkoutError && (
-                      <div className="p-4 bg-[#ffecec] border border-[#ffcccc] text-[#d32f2f] text-[13px] font-bold rounded-[12px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="p-3 bg-[#ffecec] border border-[#ffcccc] text-[#d32f2f] text-[13px] font-bold rounded-[16px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                         <div className="h-6 w-6 rounded-full bg-[#d32f2f] flex items-center justify-center shrink-0">
                           <AlertCircle className="h-4 w-4 text-white" />
                         </div>
@@ -694,31 +691,31 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     )}
 
                     {/* User Summary Card */}
-                    <div className="bg-white rounded-[24px] p-5 flex items-center gap-4 border border-slate-100 shadow-sm">
-                      <div className="h-[52px] w-[52px] rounded-full bg-slate-50 flex items-center justify-center text-[#1b5df1] shrink-0 border border-slate-100">
-                        <User className="h-[24px] w-[24px]" />
+                    <div className="bg-white rounded-[20px] p-4 flex items-center gap-4 border border-slate-100 shadow-sm">
+                      <div className="h-11 w-11 rounded-full bg-slate-50 flex items-center justify-center text-[#1b5df1] shrink-0 border border-slate-100">
+                        <User className="h-[20px] w-[20px]" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-black text-slate-900 text-[18px] leading-tight truncate">{formData.nome}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                           <p className="text-[12px] text-slate-500 font-bold tracking-tight">{formData.cpf}</p>
+                        <p className="font-black text-slate-900 text-[16px] leading-tight truncate">{formData.nome}</p>
+                        <div className="flex items-center gap-3 mt-0.5">
+                           <p className="text-[11px] text-slate-500 font-bold tracking-tight">{formData.cpf}</p>
                            <div className="h-3 w-[1px] bg-slate-200"></div>
                            <div className="flex items-center gap-1.5 overflow-hidden">
-                              <Phone className="h-3 w-3 text-[#1b5df1]" />
-                              <p className="text-[12px] text-slate-500 font-bold truncate">{formData.telefone}</p>
+                              <Phone className="h-[10px] w-[10px] text-[#1b5df1]" />
+                              <p className="text-[11px] text-slate-500 font-bold truncate">{formData.telefone}</p>
                            </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Numbers Summary Card */}
-                    <div className="bg-[#eff6ff] rounded-[24px] p-6 border border-blue-100 shadow-sm space-y-4">
+                    <div className="bg-[#eff6ff] rounded-[20px] p-5 border border-blue-100 shadow-sm space-y-3">
                       <div className="flex items-center justify-between">
-                         <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
+                         <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Cotas ({selectedNumbers.length})</h4>
                       </div>
-                      <div className="flex flex-wrap gap-2.5">
+                      <div className="flex flex-wrap gap-2">
                         {selectedNumbers.map((num) => (
-                           <div key={num} className="w-[46px] h-[46px] rounded-full bg-white text-[#1b5df1] flex items-center justify-center font-black text-[15px] shadow-sm border border-blue-100">
+                           <div key={num} className="w-10 h-10 rounded-full bg-white text-[#1b5df1] flex items-center justify-center font-black text-[14px] shadow-sm border border-blue-100">
                             {padNum(num)}
                           </div>
                         ))}
@@ -726,7 +723,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     </div>
 
                     {/* Pricing Display */}
-                    <div className="bg-[#f8fafc] rounded-[28px] py-10 px-5 mt-6 border border-slate-100/60 shadow-sm shadow-slate-100 text-center space-y-1.5 relative">
+                    <div className="bg-[#f8fafc] rounded-[24px] py-6 px-5 mt-4 border border-slate-100/60 shadow-sm shadow-slate-100 text-center space-y-1 relative">
                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#dcfce7] text-[#166534] text-[10px] font-black uppercase tracking-widest border border-green-200 shadow-sm">
                         <CheckCircle2 className="h-3.5 w-3.5" /> Pagamento Seguro
                       </div>

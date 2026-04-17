@@ -171,7 +171,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
       .not("status", "eq", "disponivel");
 
     if (numCheck && numCheck.length > 0) {
-      return res.status(400).json({ error: "Alguns números selecionados já foram reservados." });
+      return res.status(400).json({ error: "Alguns números selecionados já foram reservados segundos antes, volte para selecionar outros números." });
     }
 
     const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").eq("id", 1).single();
