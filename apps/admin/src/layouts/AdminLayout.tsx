@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
 import { cn } from "@/lib/utils";
 import { MobileNav } from '@/components/MobileNav';
+import { InstallPWA } from '@/components/InstallPWA';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
@@ -338,6 +339,9 @@ export default function AdminLayout() {
             </div>
           </div>
         </header>
+
+        {/* Banner PWA Mobile */}
+        <InstallPWA />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
