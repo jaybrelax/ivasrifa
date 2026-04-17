@@ -294,42 +294,10 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
                 {premios.length > 0 && (
                   <div className="mt-5 space-y-6">
-                    {/* Bônus */}
-                    {premios.filter(p => p.is_bonus).length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold flex items-center text-sm sm:text-base text-purple-700">
-                          <Plus className="h-4 w-4 mr-2" /> Bônus Exclusivos
-                        </h3>
-                        {premios.filter(p => p.is_bonus).map((premio) => (
-                          <div key={premio.id} className="flex flex-col md:flex-row items-stretch gap-4 rounded-xl border p-4 bg-gradient-to-br from-purple-50 to-white border-purple-200 shadow-sm transition-all duration-300">
-                            <div className="flex-shrink-0 rounded-lg border border-purple-100 bg-white overflow-hidden w-full md:w-40 h-32 sm:h-40">
-                              {premio.imagem_url ? (
-                                <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-purple-200">
-                                  <Trophy className="h-10 w-10" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 flex flex-col justify-center min-w-0">
-                              <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
-                                <span className="font-black uppercase tracking-normal text-purple-600 text-[10px]">🎁 BÔNUS DISPONÍVEL</span>
-                                {premio.valor_estimado && (
-                                  <span className="font-bold text-green-600 text-base">R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}</span>
-                                )}
-                              </div>
-                              <h4 className="font-bold text-gray-900 text-lg sm:text-xl leading-snug">{premio.titulo}</h4>
-                              {premio.descricao && <p className="text-gray-500 mt-1 text-sm line-clamp-2">{premio.descricao}</p>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
                     {/* Prêmios */}
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center text-sm sm:text-base text-blue-800">
-                        <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-2 shrink-0" /> Premiação
+                    <div className="space-y-4">
+                      <h3 className="font-black flex items-center text-xl sm:text-2xl text-blue-900 tracking-tight drop-shadow-sm">
+                        <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-500 mr-2 shrink-0 drop-shadow-md" /> Premiação
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
                         {premios.filter(p => !p.is_bonus).sort((a,b) => a.posicao - b.posicao).map((premio) => (
@@ -394,6 +362,38 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                         ))}
                       </div>
                     </div>
+
+                    {/* Bônus */}
+                    {premios.filter(p => p.is_bonus).length > 0 && (
+                      <div className="space-y-3 pt-3 border-t border-gray-100">
+                        <h3 className="font-semibold flex items-center text-sm sm:text-base text-purple-700">
+                          <Plus className="h-4 w-4 mr-2" /> Bônus Exclusivos
+                        </h3>
+                        {premios.filter(p => p.is_bonus).map((premio) => (
+                          <div key={premio.id} className="flex flex-col md:flex-row items-stretch gap-4 rounded-xl border p-4 bg-gradient-to-br from-purple-50 to-white border-purple-200 shadow-sm transition-all duration-300">
+                            <div className="flex-shrink-0 rounded-lg border border-purple-100 bg-white overflow-hidden w-full md:w-40 h-32 sm:h-40">
+                              {premio.imagem_url ? (
+                                <img src={premio.imagem_url} alt={premio.titulo} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-purple-200">
+                                  <Trophy className="h-10 w-10" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                              <div className="flex justify-between items-start gap-2 flex-wrap mb-1">
+                                <span className="font-black uppercase tracking-normal text-purple-600 text-[10px]">🎁 BÔNUS DISPONÍVEL</span>
+                                {premio.valor_estimado && (
+                                  <span className="font-bold text-green-600 text-base">R$ {Number(premio.valor_estimado).toLocaleString("pt-BR")}</span>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-gray-900 text-lg sm:text-xl leading-snug">{premio.titulo}</h4>
+                              {premio.descricao && <p className="text-gray-500 mt-1 text-sm line-clamp-2">{premio.descricao}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
