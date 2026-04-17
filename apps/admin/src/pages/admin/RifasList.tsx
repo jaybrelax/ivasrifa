@@ -105,7 +105,7 @@ export default function RifasList() {
   };
 
   const copyRecruitLink = () => {
-    const url = `${window.location.origin}/admin/recrutamento`;
+    const url = `${window.location.origin}/recrutamento`;
     navigator.clipboard.writeText(url);
     setCopiedId('recruit');
     setTimeout(() => setCopiedId(null), 2000);

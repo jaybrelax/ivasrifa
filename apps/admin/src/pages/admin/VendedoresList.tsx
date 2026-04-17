@@ -78,7 +78,7 @@ export default function VendedoresList() {
   };
 
   const handleCopiarLink = () => {
-    const link = `${window.location.origin}/admin/recrutamento`;
+    const link = `${window.location.origin}/recrutamento`;
     navigator.clipboard.writeText(link);
     setLinkCopiado(true);
     setTimeout(() => setLinkCopiado(false), 2500);
@@ -113,7 +113,7 @@ export default function VendedoresList() {
           </Button>
           <Button
             className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white"
-            render={<Link to="/admin/recrutamento" />}
+            render={<Link to="/recrutamento" />}
             nativeButton={false}
           >
             <ExternalLink className="h-4 w-4 mr-2" /> Abrir Recrutamento
@@ -160,7 +160,7 @@ export default function VendedoresList() {
                 <Button
                   size="sm"
                   className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
-                  render={<Link to="/admin/recrutamento" />}
+                  render={<Link to="/recrutamento" />}
                   nativeButton={false}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" /> Recrutar primeiro guardião

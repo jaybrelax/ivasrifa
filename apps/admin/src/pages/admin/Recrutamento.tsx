@@ -146,7 +146,7 @@ export default function Recrutamento() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Conta Criada!</h3>
                 <p className="text-gray-500 mb-6">Você já é um guardião. Acesse seu painel administrativo para pegar seu link exclusivo!</p>
-                <Button className="w-full h-12" onClick={() => navigate("/admin/login")}>
+                <Button className="w-full h-12" onClick={() => navigate("/login")}>
                   Acessar Painel
                 </Button>
               </div>

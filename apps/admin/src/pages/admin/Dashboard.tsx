@@ -324,7 +324,7 @@ export default function Dashboard() {
             <p className="text-blue-100 text-sm font-medium leading-relaxed">
               Cada venda coloca você mais perto das primeiras posições do ranking global de guardiões.
             </p>
-            <Link to="/admin/ranking" className="w-full inline-flex items-center justify-center h-8 px-2.5 rounded-lg font-black uppercase text-xs tracking-widest bg-white text-[#1a6eff] hover:bg-blue-50 transition-colors">Ver Ranking Global</Link>
+            <Link to="/ranking" className="w-full inline-flex items-center justify-center h-8 px-2.5 rounded-lg font-black uppercase text-xs tracking-widest bg-white text-[#1a6eff] hover:bg-blue-50 transition-colors">Ver Ranking Global</Link>
           </div>
         </Card>
       )}
