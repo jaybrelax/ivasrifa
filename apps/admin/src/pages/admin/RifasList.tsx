@@ -149,7 +149,7 @@ export default function RifasList() {
             <Button variant="outline" className="flex-1 sm:flex-none" onClick={copyRecruitLink}>
               {copiedId === 'recruit' ? <><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Copiado!</> : <><Shield className="mr-2 h-4 w-4" /> Recrutar Guardião</>}
             </Button>
-            <Button className="flex-1 sm:flex-none" render={<Link to="/admin/rifas/nova" />} nativeButton={false}>
+            <Button className="flex-1 sm:flex-none" render={<Link to="/rifas/nova" />} nativeButton={false}>
               <Plus className="mr-2 h-4 w-4" /> Nova Rifa
             </Button>
           </div>
@@ -172,7 +172,7 @@ export default function RifasList() {
               <Card key={rifa.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow border-blue-100/50">
                 <div className="relative h-48 w-full bg-gray-200 group">
                   {userRole === 'admin' ? (
-                    <Link to={`/admin/rifas/${rifa.id}/editar`} className="block h-full w-full overflow-hidden">
+                    <Link to={`/rifas/${rifa.id}/editar`} className="block h-full w-full overflow-hidden">
                       {rifa.imagem_url ? (
                         <img
                           src={rifa.imagem_url}
@@ -265,7 +265,7 @@ export default function RifasList() {
                         <Button 
                           variant="default" 
                           size="sm"
-                          render={<Link to={`/admin/rifas/${rifa.id}/editar`} />}
+                          render={<Link to={`/rifas/${rifa.id}/editar`} />}
                           nativeButton={false}
                           className="w-full h-11 text-sm font-bold bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-600/20 rounded-xl"
                         >
