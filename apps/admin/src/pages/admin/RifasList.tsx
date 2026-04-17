@@ -41,8 +41,7 @@ export default function RifasList() {
         .from('rifas')
         .select(`
           *,
-          numeros_rifa(status),
-          pedidos(status, valor_total)
+          pedidos(status, valor_total, quantidade)
         `);
 
       if (role === 'guardiao') {
@@ -55,8 +54,8 @@ export default function RifasList() {
 
       // Calcular progresso real para cada rifa
       const rifasComProgresso = (data || []).map(rifa => {
-        const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'vendido').length || 0;
         const pedidosPagos = rifa.pedidos?.filter((p: any) => p.status === 'pago') || [];
+        const vendidos = pedidosPagos.reduce((acc: number, p: any) => acc + Number(p.quantidade || 0), 0);
         const brutoTotal = pedidosPagos.reduce((acc: number, p: any) => acc + Number(p.valor_total || 0), 0);
         
         const progresso = rifa.total_numeros > 0 ? (vendidos / rifa.total_numeros) * 100 : 0;
@@ -77,6 +76,10 @@ export default function RifasList() {
       };
     }
   });
+
+  const rifas = rifasData?.rifas || [];
+  const userRole = rifasData?.role || 'admin';
+  const vendedorData = rifasData?.vendedor;
 
   const confirmDelete = async () => {
     if (!rifaToDelete) return;

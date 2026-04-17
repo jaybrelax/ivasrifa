@@ -111,7 +111,7 @@ export default async function RootLayout({
               <Link href="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
               <Link href="/privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
               <Link href="/minhas-compras" className="hover:text-white transition-colors">Minhas Compras</Link>
-              <a href="/admin" className="hover:text-white transition-colors border-l border-gray-700 pl-4 ml-4">Área Restrita</a>
+              <a href="https://admin.rifa.virtudes.net.br" className="hover:text-white transition-colors border-l border-gray-700 pl-4 ml-4">Área Restrita</a>
             </div>
           </div>
         </footer>
