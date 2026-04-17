@@ -516,94 +516,94 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
       {/* Checkout Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="w-full h-screen sm:h-auto sm:max-w-[450px] p-0 overflow-y-auto sm:rounded-[32px] border-none sm:border flex flex-col bg-white">
+        <DialogContent className="!fixed !inset-0 !m-0 !max-w-none !w-full !h-[100dvh] !rounded-none border-none p-0 overflow-y-auto flex flex-col bg-white sm:!relative sm:!max-w-[450px] sm:!h-auto sm:!rounded-[32px] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:!top-[50%] sm:!left-[50%] sm:border">
           {(checkoutStep === 1 || checkoutStep === 2) && (
             <div className="flex-1 flex flex-col pb-8">
               {/* Custom Header Checkout */}
-              <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="sticky top-0 bg-white z-20 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
                 <button 
                   onClick={() => checkoutStep === 1 ? setIsModalOpen(false) : setCheckoutStep(1)} 
-                  className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors"
+                  className="p-2 hover:bg-slate-50 rounded-full transition-colors relative z-10"
                 >
-                  <ChevronLeft className="h-6 w-6 text-[#0055ff]" />
+                  <ArrowLeft className={`h-[22px] w-[22px] ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-slate-800'}`} />
                 </button>
-                <h3 className="text-xl font-bold text-slate-800 tracking-tight">Checkout</h3>
+                <h3 className={`text-lg font-bold absolute left-1/2 -translate-x-1/2 tracking-tight ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-slate-900'}`}>Checkout</h3>
                 <div className="w-10"></div> {/* Spacer */}
               </div>
 
-              <div className="px-6 sm:px-8 pt-8 flex-1">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
+              <div className="px-5 sm:px-8 pt-8 flex-1">
+                <div className="text-center mb-10">
+                  <h2 className="text-[28px] font-extrabold text-slate-900 tracking-tight mb-2 leading-tight">
                     {checkoutStep === 1 ? "Seus Dados" : "Resumo da Compra"}
                   </h2>
-                  <p className="text-slate-500 font-medium">
+                  <p className="text-slate-500 font-medium text-[15px]">
                     {checkoutStep === 1 ? "Preencha para garantir suas cotas" : "Confira os detalhes da reserva"}
                   </p>
                 </div>
 
                 {checkoutStep === 1 && (
                   <div className="space-y-6">
-                    <div className="bg-[#f8fafc] p-5 sm:p-6 rounded-[24px] space-y-5 border border-slate-100/50">
+                    <div className="bg-[#f8fafc] p-6 rounded-[28px] space-y-5 border border-slate-100/60 shadow-sm shadow-slate-100">
                       <div className="space-y-2">
-                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
                         <div className="relative group">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
                           <Input 
                             value={formData.nome} 
                             onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
                             placeholder="Ex: João da Silva"
-                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 bg-white"
+                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 text-[15px]"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
                         <div className="relative group overflow-hidden">
-                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
                           <Input 
                             value={formData.cpf} 
                             onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
                             placeholder="000.000.000-00"
                             inputMode="numeric"
-                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 font-mono placeholder:text-slate-300 bg-white"
+                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 font-mono text-[15px]"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
                         <div className="relative group overflow-hidden">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
                           <Input 
                             value={formData.telefone} 
                             onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
                             placeholder="(00) 00000-0000"
                             inputMode="numeric"
-                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 font-mono placeholder:text-slate-300 bg-white"
+                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 font-mono text-[15px]"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
                         <div className="relative group overflow-hidden">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-slate-400" />
                           <Input 
                             type="email" 
                             value={formData.email} 
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
                             placeholder="seu@email.com"
-                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 bg-white"
+                            className="h-14 pl-11 rounded-[14px] border border-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] font-semibold text-slate-800 placeholder:text-slate-400 bg-white focus:ring-2 focus:ring-[#0055ff]/20 text-[15px]"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-4 mt-4">
+                    <div className="flex flex-col gap-3 mt-6">
                       <Button 
                         disabled={isSubmitting} 
-                        className="h-16 rounded-[24px] bg-[#0055ff] hover:bg-[#0044cc] text-lg font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 transition-all active:scale-[0.98]"
+                        className="h-14 rounded-full bg-[#1b5df1] hover:bg-[#0044cc] text-[15px] font-bold uppercase tracking-widest shadow-[0_8px_20px_rgba(27,93,241,0.25)] transition-all active:scale-[0.98]"
                         onClick={() => {
                           if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email) {
                             setCheckoutError("Preencha todos os campos para continuar");
@@ -614,11 +614,11 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                           setCheckoutStep(2);
                         }}
                       >
-                        Prosseguir <ArrowRight className="ml-2 h-6 w-6" />
+                        Prosseguir <ArrowRight className="ml-1 h-5 w-5" />
                       </Button>
                       <button 
                         onClick={() => setIsModalOpen(false)}
-                        className="text-[13px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest py-2 transition-colors"
+                        className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest py-3 transition-colors"
                       >
                         Cancelar Pedido
                       </button>
@@ -629,8 +629,8 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 {checkoutStep === 2 && (
                   <div className="space-y-6">
                     {checkoutError && (
-                      <div className="p-4 bg-red-100/80 border border-red-200 text-red-700 text-[13px] font-bold rounded-[16px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                        <div className="h-6 w-6 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                      <div className="p-4 bg-[#ffecec] border border-[#ffcccc] text-[#d32f2f] text-[13px] font-bold rounded-[12px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="h-6 w-6 rounded-full bg-[#d32f2f] flex items-center justify-center shrink-0">
                           <AlertCircle className="h-4 w-4 text-white" />
                         </div>
                         {checkoutError}
@@ -638,25 +638,25 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     )}
 
                     {/* User Summary Card */}
-                    <div className="bg-[#f1f5f9] rounded-[24px] p-4 flex items-center gap-4 border border-slate-200/50">
-                      <div className="h-12 w-12 rounded-full bg-[#0055ff] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                        <User className="h-6 w-6" />
+                    <div className="bg-[#f8fafc] rounded-[24px] p-5 flex items-center gap-4 border border-slate-100/60 shadow-sm shadow-slate-100">
+                      <div className="h-[46px] w-[46px] rounded-full bg-[#1b5df1] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+                        <User className="h-[22px] w-[22px]" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-lg leading-tight truncate">{formData.nome}</p>
-                        <p className="text-sm text-slate-500 font-semibold">{formData.telefone}</p>
+                        <p className="font-bold text-slate-900 text-[17px] leading-tight truncate">{formData.nome}</p>
+                        <p className="text-[13px] text-slate-500 font-medium">{formData.telefone}</p>
                       </div>
                     </div>
 
                     {/* Numbers Summary Card */}
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm space-y-4">
-                      <div className="flex items-center justify-between">
-                         <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
-                         <span className="text-[10px] font-black text-[#0055ff] uppercase tracking-widest">Pacote {padNum(selectedNumbers.length)}</span>
+                    <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                         <h4 className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Cotas Selecionadas ({selectedNumbers.length})</h4>
+                         <span className="text-[11px] font-extrabold text-[#1b5df1] uppercase tracking-wider">Pacote {padNum(selectedNumbers.length)}</span>
                       </div>
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-2.5 pt-1">
                         {selectedNumbers.map((num) => (
-                          <div key={num} className="w-12 h-12 rounded-full bg-[#0055ff] text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/40 text-base border-2 border-white ring-2 ring-blue-50 pulse-blue">
+                          <div key={num} className="w-[46px] h-[46px] rounded-[16px] xl:rounded-full bg-[#1b5df1] text-white flex items-center justify-center font-bold text-[16px] shadow-[0_4px_12px_rgba(27,93,241,0.3)]">
                             {padNum(num)}
                           </div>
                         ))}
@@ -664,31 +664,34 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     </div>
 
                     {/* Pricing Display */}
-                    <div className="bg-[#f8fafc] rounded-[32px] p-8 mt-4 border border-slate-100/50 text-center space-y-2">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-[#008000] text-[11px] font-black uppercase tracking-widest border border-green-200/50 mb-2">
-                        <Shield className="h-4 w-4" /> Pagamento Seguro
+                    <div className="bg-[#f8fafc] rounded-[28px] py-10 px-5 mt-6 border border-slate-100/60 shadow-sm shadow-slate-100 text-center space-y-1.5 relative">
+                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#dcfce7] text-[#166534] text-[10px] font-black uppercase tracking-widest border border-green-200 shadow-sm">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Pagamento Seguro
                       </div>
-                      <p className="text-xs uppercase font-black text-slate-400 tracking-widest">Total a Pagar</p>
-                      <p className="text-5xl font-black text-[#008000] tracking-tighter">
+                      <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider pt-1">Total a Pagar</p>
+                      <p className="text-[42px] font-black text-[#006b2d] tracking-tighter leading-none">
                         R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 pt-2">
                       <Button 
                         disabled={isSubmitting} 
-                        className="h-16 rounded-[24px] bg-[#008000] hover:bg-[#006600] text-lg font-black uppercase tracking-widest shadow-xl shadow-green-500/30 transition-all active:scale-[0.98]"
+                        className="h-14 rounded-full bg-[#006b2d] hover:bg-[#005a26] text-[15px] font-bold uppercase tracking-widest shadow-[0_8px_20px_rgba(0,107,45,0.25)] transition-all active:scale-[0.98]"
                         onClick={handleCheckout}
                       >
                         {isSubmitting ? (
                           <Loader2 className="animate-spin h-6 w-6" />
                         ) : (
-                          <><Wallet className="mr-3 h-6 w-6" /> Finalizar e Pagar via PIX</>
+                          <>
+                           <Wallet className="mr-2.5 h-5 w-5" /> 
+                           Finalizar e Pagar via PIX
+                          </>
                         )}
                       </Button>
                       <button 
                          onClick={() => setCheckoutStep(1)}
-                         className="text-[13px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest py-2 transition-colors"
+                         className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest py-3 transition-colors"
                       >
                          Voltar e Alterar Dados
                       </button>
