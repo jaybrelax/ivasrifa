@@ -69,8 +69,14 @@ export default function AdminLayout() {
   async function checkUserRole(userId: string) {
     try {
       const { data } = await supabase.from('vendedores').select('*').eq('user_id', userId).maybeSingle();
-      if (data) { setUserRole('guardiao'); setVendedorData(data); }
-      else { setUserRole('admin'); setVendedorData(null); }
+      if (data) { 
+        setUserRole(data.is_admin ? 'admin' : 'guardiao'); 
+        setVendedorData(data); 
+      }
+      else { 
+        setUserRole('admin'); 
+        setVendedorData(null); 
+      }
     } catch (err) { console.error('Erro ao checar role:', err); }
   }
 
@@ -258,7 +264,7 @@ export default function AdminLayout() {
         {/* View Site + Logout */}
         <div className="p-4 space-y-2 shrink-0" style={{ borderTop: '1px solid rgba(99,102,241,0.08)' }}>
           <a
-            href={`/${userRole === 'guardiao' && vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : ''}`}
+            href={`/${vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : ''}`}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all group"

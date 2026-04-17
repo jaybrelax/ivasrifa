@@ -29,7 +29,7 @@ export default function Login() {
 
       if (error) throw error;
       
-      navigate('/admin');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
     } finally {

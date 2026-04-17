@@ -36,11 +36,11 @@ export default function RifasList() {
       // 1. Identificar Role e ID se for Vendedor
       const { data: vData } = await supabase
         .from('vendedores')
-        .select('id, codigo_ref')
+        .select('*, is_admin')
         .eq('user_id', session.user.id)
         .maybeSingle();
       
-      setUserRole(vData ? 'guardiao' : 'admin');
+      setUserRole((vData && !vData.is_admin) ? 'guardiao' : 'admin');
       if (vData) setVendedorRef(vData.codigo_ref);
 
       // 2. Buscar Rifas com contagem de números vendidos e pedidos pagos
@@ -112,7 +112,7 @@ export default function RifasList() {
   };
 
   const copyRifaLink = (rifa: any) => {
-    const ref = userRole === 'guardiao' && vendedorRef ? `?ref=${vendedorRef}` : '';
+    const ref = vendedorRef ? `?ref=${vendedorRef}` : '';
     const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
     const url = `${publicOrigin}/${rifa.slug || rifa.id}${ref}`;
     navigator.clipboard.writeText(url);
@@ -291,7 +291,7 @@ export default function RifasList() {
                             size="sm"
                             onClick={() => {
                               const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
-                              window.open(`${publicOrigin}/${rifa.slug || rifa.id}${userRole === 'guardiao' && vendedorRef ? `?ref=${vendedorRef}` : ''}`, '_blank');
+                              window.open(`${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`, '_blank');
                             }}
                             className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >

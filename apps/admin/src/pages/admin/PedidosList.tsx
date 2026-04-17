@@ -37,11 +37,11 @@ export default function PedidosList() {
       // 1. Identificar Role e ID se for Vendedor
       const { data: vData } = await supabase
         .from('vendedores')
-        .select('id')
+        .select('id, is_admin')
         .eq('user_id', session.user.id)
         .maybeSingle();
       
-      const role = vData ? 'guardiao' : 'admin';
+      const role = (vData && !vData.is_admin) ? 'guardiao' : 'admin';
       setUserRole(role);
       if (vData) setVendedorId(vData.id);
 
@@ -55,7 +55,7 @@ export default function PedidosList() {
           vendedor:vendedores(nome)
         `);
 
-      if (vData) {
+      if (vData && !vData.is_admin) {
         query = query.eq('vendedor_id', vData.id);
       }
 

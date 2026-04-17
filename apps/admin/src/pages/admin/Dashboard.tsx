@@ -42,13 +42,49 @@ export default function Dashboard() {
         // Verificar Role
         const { data: vData } = await supabase
           .from('vendedores')
-          .select('*')
+          .select('*, is_admin')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        const role = vData ? 'guardiao' : 'admin';
+        const role = (vData && !vData.is_admin) ? 'guardiao' : 'admin';
         setUserRole(role);
         setVendedorData(vData);
+
+        // --- LOGICA DE VENDAS PESSOAIS (Se tiver perfil de vendedor) ---
+        let minhasRifas: any[] = [];
+        let totalMeu = 0;
+        let totalCotasMinhas = 0;
+
+        if (vData) {
+          const { data: rifasAtivas } = await supabase
+            .from('rifas')
+            .select('id, titulo, meta_guardiao, slug')
+            .neq('status', 'rascunho')
+            .order('created_at', { ascending: false });
+
+          const { data: minhasVendas } = await supabase
+            .from('pedidos')
+            .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
+            .eq('vendedor_id', vData.id)
+            .eq('status', 'pago')
+            .neq('rifas.status', 'rascunho');
+
+          totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
+          totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
+
+          minhasRifas = (rifasAtivas || []).map(r => {
+            const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
+              .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
+            return {
+              id: r.id,
+              titulo: r.titulo,
+              slug: r.slug,
+              meta: r.meta_guardiao || 50,
+              vendidos: vendasDessaRifa,
+              progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
+            };
+          });
+        }
 
         if (role === 'admin') {
           // --- LOGICA ADMIN GLOBAL (ignorar rascunhos) ---
@@ -111,25 +147,29 @@ export default function Dashboard() {
             return { name: dayName, vendas: vendasDoDia };
           });
 
-          setStats({
+          setStats(prev => ({
+            ...prev,
             totalArrecadado,
             numerosVendidos: numerosVendidos || 0,
             vendedoresAtivos: totalVendedores || 0,
             taxaConversao,
-            ultimasTransacoes: [],
             chartData,
             rankingVendedores: ranking,
-            minhasRifas: []
-          });
+            minhasRifas: minhasRifas
+          }));
+
+          if (minhasRifas.length > 0) {
+            setSelectedRifaId(minhasRifas[0].id);
+          }
 
         } else {
-          // --- LOGICA GUARDIAO (acesso global a todas as rifas não rascunho) ---
-          const { data: rifasAtivas } = await supabase
-            .from('rifas')
-            .select('id, titulo, meta_guardiao, slug')
-            .neq('status', 'rascunho')
-            .order('created_at', { ascending: false });
-
+          // --- LOGICA GUARDIAO ---
+          const last7Days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return d.toISOString().split('T')[0];
+          });
+          
           const { data: minhasVendas } = await supabase
             .from('pedidos')
             .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
@@ -137,27 +177,6 @@ export default function Dashboard() {
             .eq('status', 'pago')
             .neq('rifas.status', 'rascunho');
 
-          const totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
-          const totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
-
-          const minhasRifasProcessadas = (rifasAtivas || []).map(r => {
-            const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
-              .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
-            return {
-              id: r.id,
-              titulo: r.titulo,
-              slug: r.slug,
-              meta: r.meta_guardiao || 50,
-              vendidos: vendasDessaRifa,
-              progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
-            };
-          });
-
-          const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split('T')[0];
-          });
           const chartData = last7Days.map(date => {
             const dayName = new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' });
             const vendasDoDia = minhasVendas?.filter(p => p.created_at.startsWith(date))
@@ -165,7 +184,6 @@ export default function Dashboard() {
             return { name: dayName, vendas: vendasDoDia };
           });
 
-          const rifasFinais = minhasRifasProcessadas;
           setStats({
             totalArrecadado: totalMeu,
             numerosVendidos: totalCotasMinhas,
@@ -174,12 +192,11 @@ export default function Dashboard() {
             ultimasTransacoes: [],
             chartData,
             rankingVendedores: [],
-            minhasRifas: rifasFinais
+            minhasRifas: minhasRifas
           });
 
-          // Seta a primeira rifa como selecionada
-          if (rifasFinais.length > 0) {
-            setSelectedRifaId(rifasFinais[0].id);
+          if (minhasRifas.length > 0) {
+            setSelectedRifaId(minhasRifas[0].id);
           }
         }
       } catch (error) {
@@ -222,7 +239,7 @@ export default function Dashboard() {
             {userRole === 'admin' ? 'Visão geral do sistema de rifas.' : 'Gerencie seus links e acompanhe seu desempenho.'}
           </p>
           
-          {userRole === 'guardiao' && stats.minhasRifas.length > 0 && (
+          {(userRole === 'guardiao' || (userRole === 'admin' && vendedorData)) && stats.minhasRifas.length > 0 && (
             <div className="w-full max-w-[300px] space-y-1.5">
               <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Campanha Ativa</Label>
               <Select value={selectedRifaId || ""} onValueChange={setSelectedRifaId}>
@@ -249,7 +266,7 @@ export default function Dashboard() {
       </div>
 
       {/* Seção Principal do Guardião: Link de Venda */}
-      {userRole === 'guardiao' && selectedRifa && (
+      {(userRole === 'guardiao' || (userRole === 'admin' && vendedorData)) && selectedRifa && (
         <Card className="lg:col-span-4 order-2 lg:order-2 border border-slate-100 shadow-xl shadow-slate-200/50 bg-white">
           <CardContent className="p-6 sm:p-8 space-y-8">
             {/* Link Sharing - Layout Empilhado */}
@@ -311,7 +328,7 @@ export default function Dashboard() {
       )}
 
       {/* Card de Destaque Lateral: Rumo ao Topo */}
-      {userRole === 'guardiao' && selectedRifa && (
+      {(userRole === 'guardiao' || (userRole === 'admin' && vendedorData)) && selectedRifa && (
         <Card className="lg:col-span-3 order-6 lg:order-2 bg-gradient-to-br from-[#1a6eff] to-blue-700 border-none shadow-xl rounded-3xl p-6 flex flex-col justify-center text-white relative overflow-hidden">
           <div className="absolute -bottom-10 -right-10 opacity-20 rotate-12">
             <Trophy size={200} />
