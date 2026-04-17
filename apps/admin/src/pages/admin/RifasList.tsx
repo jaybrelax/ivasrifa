@@ -113,7 +113,8 @@ export default function RifasList() {
 
   const copyRifaLink = (rifa: any) => {
     const ref = userRole === 'guardiao' && vendedorRef ? `?ref=${vendedorRef}` : '';
-    const url = `${window.location.origin}/${rifa.slug || rifa.id}${ref}`;
+    const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+    const url = `${publicOrigin}/${rifa.slug || rifa.id}${ref}`;
     navigator.clipboard.writeText(url);
     setCopiedId(rifa.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -288,8 +289,10 @@ export default function RifasList() {
                           <Button 
                             variant="secondary" 
                             size="sm"
-                            render={<Link to={`/${rifa.slug || rifa.id}${userRole === 'guardiao' ? `?ref=${vendedorRef}` : ''}`} />}
-                            nativeButton={false}
+                            onClick={() => {
+                              const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                              window.open(`${publicOrigin}/${rifa.slug || rifa.id}${userRole === 'guardiao' && vendedorRef ? `?ref=${vendedorRef}` : ''}`, '_blank');
+                            }}
                             className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                           >
                             <Eye className="h-4 w-4 mr-1.5 text-indigo-600" /> Página
@@ -303,8 +306,10 @@ export default function RifasList() {
                         <Button 
                           variant="secondary" 
                           size="sm"
-                          render={<Link to={`/${rifa.slug || rifa.id}?ref=${vendedorRef}`} />}
-                          nativeButton={false}
+                          onClick={() => {
+                            const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                            window.open(`${publicOrigin}/${rifa.slug || rifa.id}?ref=${vendedorRef}`, '_blank');
+                          }}
                           className="w-full h-11 text-sm font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
                         >
                           <Eye className="h-4 w-4 mr-2 text-indigo-600" /> Ver Página
@@ -315,7 +320,8 @@ export default function RifasList() {
                           size="sm"
                           className="w-full h-11 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 rounded-xl"
                           onClick={() => {
-                            const myRefLink = `${window.location.origin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
+                            const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                            const myRefLink = `${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
                             navigator.clipboard.writeText(myRefLink);
                             setCopiedId(rifa.id);
                             setTimeout(() => setCopiedId(null), 2000);

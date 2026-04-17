@@ -102,15 +102,32 @@ export default function PerfilVendedor() {
       const { data } = supabase.storage.from('images').getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
 
-      // Atualizar no banco de dados usando upsert para garantir que funcione para Admin
-      const { data: updatedVendedor, error: updateError } = await supabase
-        .from('vendedores')
-        .upsert({ 
-          user_id: session.user.id,
-          avatar_url: publicUrl 
-        }, { onConflict: 'user_id' })
-        .select()
-        .single();
+      let updateError;
+      let updatedVendedor;
+
+      if (vendedor?.id) {
+        // Atualizar
+        const result = await supabase
+          .from('vendedores')
+          .update({ avatar_url: publicUrl })
+          .eq('id', vendedor.id)
+          .select()
+          .single();
+        updateError = result.error;
+        updatedVendedor = result.data;
+      } else {
+        // Inserir
+        const result = await supabase
+          .from('vendedores')
+          .insert({ 
+            user_id: session.user.id,
+            avatar_url: publicUrl
+          })
+          .select()
+          .single();
+        updateError = result.error;
+        updatedVendedor = result.data;
+      }
 
       if (updateError) throw updateError;
 
@@ -130,16 +147,36 @@ export default function PerfilVendedor() {
     e.preventDefault();
     setSaving(true);
     try {
-      // Usar upsert para garantir que crie o registro se não existir (caso do Admin)
-      const { data: savedData, error } = await supabase
-        .from('vendedores')
-        .upsert({
-          user_id: vendedor.user_id,
-          nome: formData.nome,
-          telefone: formData.telefone
-        }, { onConflict: 'user_id' })
-        .select()
-        .single();
+      let error;
+      let savedData;
+      
+      if (vendedor.id) {
+        // Atualizar existente
+        const result = await supabase
+          .from('vendedores')
+          .update({
+            nome: formData.nome,
+            telefone: formData.telefone
+          })
+          .eq('id', vendedor.id)
+          .select()
+          .single();
+        error = result.error;
+        savedData = result.data;
+      } else {
+        // Inserir novo
+        const result = await supabase
+          .from('vendedores')
+          .insert({
+            user_id: vendedor.user_id,
+            nome: formData.nome,
+            telefone: formData.telefone
+          })
+          .select()
+          .single();
+        error = result.error;
+        savedData = result.data;
+      }
       
       if (error) throw error;
       setVendedor(savedData);
