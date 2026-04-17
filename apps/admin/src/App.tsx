@@ -13,14 +13,14 @@ import RankingList from './pages/admin/RankingList';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <Routes>
         {/* Auth Route */}
-        <Route path="/admin/login" element={<Login />} />
-        <Route path="/admin/recrutamento" element={<Recrutamento />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/recrutamento" element={<Recrutamento />} />
         
         {/* Admin Protected Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="rifas" element={<RifasList />} />
           <Route path="rifas/nova" element={<RifaForm />} />
@@ -33,8 +33,7 @@ export default function App() {
         </Route>
         
         {/* Fallback to Admin Dashboard */}
-        <Route path="/" element={<Navigate to="/admin" replace />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -8,6 +8,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '../../', ''); // Busca o .env na raiz do monorepo
   
   return {
+    base: '/admin',
     plugins: [
       react(), 
       tailwindcss(),

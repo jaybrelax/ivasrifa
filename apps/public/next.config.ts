@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/admin',
+        destination: 'https://ivasrifa-admin.vercel.app/admin',
+      },
+      {
+        source: '/admin/:path*',
+        destination: 'https://ivasrifa-admin.vercel.app/admin/:path*',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
