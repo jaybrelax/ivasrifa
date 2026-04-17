@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X, Plus } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X, Plus, User, CreditCard, Phone, Mail, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -60,6 +60,23 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
     }
     return { nome: "", cpf: "", email: "", telefone: "" };
   });
+
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+      .replace(/(-\d{2})\d+?$/, "$1");
+  };
+
+  const formatPhone = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{4})\d+?$/, "$1");
+  };
 
   const [pixData, setPixData] = useState<{ qr_code_base64?: string; qr_code?: string; payment_id?: string } | null>(null);
   const [pedidoId, setPedidoId] = useState<string | null>(null);
@@ -499,80 +516,246 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
       {/* Checkout Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden rounded-3xl">
-          {checkoutStep !== 3 && (
-            <div className="p-6">
-              <DialogHeader>
-                <DialogTitle>{checkoutStep === 1 ? "Seus Dados" : checkoutStep === 2 ? "Confirmar Pedido" : "Pronto! 🎉"}</DialogTitle>
-                <DialogDescription>
-                  {checkoutStep === 1 && "Preencha para garantir seus números."}
-                  {checkoutStep === 2 && "Revise antes de pagar."}
-                </DialogDescription>
-              </DialogHeader>
+        <DialogContent className="w-full h-[100dvh] sm:h-auto sm:max-w-[480px] p-0 overflow-y-auto sm:rounded-xl border-none sm:border flex flex-col">
+          {checkoutStep !== 3 && checkoutStep !== 4 && (
+            <div className="flex-1 flex flex-col p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 md:mb-8">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                    {checkoutStep === 1 ? "Seus Dados" : "Resumo da Compra"}
+                  </h2>
+                  <p className="text-gray-500 font-medium bg-gray-50 inline-block px-2 rounded mt-1">
+                    {checkoutStep === 1 ? "Preencha para garantir suas cotas" : "Confira os detalhes da reserva"}
+                  </p>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors sm:hidden">
+                  <X className="h-6 w-6 text-gray-400" />
+                </button>
+              </div>
 
               {checkoutStep === 1 && (
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Nome Completo</Label>
-                    <Input value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} placeholder="João Silva" />
+                <div className="space-y-5 flex-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                      <Input 
+                        value={formData.nome} 
+                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
+                        placeholder="Nome e Sobrenome"
+                        className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>CPF</Label>
-                    <Input value={formData.cpf} onChange={(e) => setFormData({ ...formData, cpf: e.target.value })} placeholder="000.000.000-00" />
+
+                  <div className="grid grid-cols-1 gap-5">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
+                      <div className="relative group">
+                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                        <Input 
+                          value={formData.cpf} 
+                          onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
+                          placeholder="000.000.000-00"
+                          inputMode="numeric"
+                          className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
+                      <div className="relative group">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                        <Input 
+                          value={formData.telefone} 
+                          onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
+                          placeholder="(00) 00000-0000"
+                          inputMode="numeric"
+                          className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium font-mono"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>WhatsApp</Label>
-                    <Input value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} placeholder="(00) 00000-0000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>E-mail</Label>
-                    <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="joao@email.com" />
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                      <Input 
+                        type="email" 
+                        value={formData.email} 
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                        placeholder="exemplo@email.com"
+                        className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
               {checkoutStep === 2 && (
-                <div className="space-y-4 py-4">
-                   {checkoutError && <div className="p-3 bg-red-50 text-red-700 text-sm border border-red-200 rounded-lg">{checkoutError}</div>}
-                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm">
-                      <p><strong>Quantidade:</strong> {selectedNumbers.length} números</p>
-                      <p><strong>Total:</strong> R$ {totalValue.toFixed(2)}</p>
-                   </div>
+                <div className="space-y-6 flex-1">
+                  {checkoutError && (
+                    <div className="p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl flex items-start gap-3 animate-shake">
+                      <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                      {checkoutError}
+                    </div>
+                  )}
+
+                  <div className="space-y-6 overflow-y-auto max-h-[50dvh] pr-2 scrollbar-hide">
+                    {/* User Summary */}
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
+                        <User className="h-6 w-6" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 truncate">{formData.nome}</p>
+                        <p className="text-xs text-gray-500 uppercase font-black tracking-tighter">{formData.telefone}</p>
+                      </div>
+                    </div>
+
+                    {/* Numbers Summary */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                         <h4 className="text-xs uppercase font-black text-slate-400 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
+                         <span className="text-xs font-bold text-blue-600">Pacote {padNum(selectedNumbers.length)}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNumbers.map((num) => (
+                          <div key={num} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/20 text-xs sm:text-sm border-2 border-white ring-1 ring-blue-100 animate-in zoom-in-50 duration-300">
+                            {padNum(num)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pricing Summary */}
+                    <div className="border-t border-slate-100 pt-6 mt-4">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-tight">Valor total da reserva</p>
+                          <p className="text-4xl font-black text-green-600">R$ {totalValue.toFixed(2)}</p>
+                        </div>
+                        <div className="text-right">
+                           <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 font-bold px-3 py-1">
+                             <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Pagamento Seguro
+                           </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 mt-4">
-                {checkoutStep === 2 && <Button variant="ghost" onClick={() => setCheckoutStep(1)}>Voltar</Button>}
+              <div className="flex flex-col gap-3 mt-8">
                 <Button 
                   disabled={isSubmitting} 
-                  className="bg-blue-600 flex-1"
-                  onClick={() => checkoutStep === 1 ? setCheckoutStep(2) : handleCheckout()}
+                  className={`h-16 text-lg uppercase font-black tracking-widest shadow-xl transition-all active:scale-[0.98] ${
+                    checkoutStep === 2 ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
+                  }`}
+                  onClick={() => {
+                    if (checkoutStep === 1) {
+                      if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email) {
+                        setCheckoutError("Preencha todos os campos para continuar.");
+                        setCheckoutStep(2); // Vai pro 2 pra mostrar o erro e volta 
+                        setTimeout(() => setCheckoutStep(1), 10);
+                        return;
+                      }
+                      setCheckoutStep(2);
+                    } else {
+                      handleCheckout();
+                    }
+                  }}
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin h-4 w-4" /> : checkoutStep === 1 ? "Continuar" : "Gerar PIX"}
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin h-6 w-6" />
+                  ) : checkoutStep === 1 ? (
+                    <>Prosseguir <ArrowLeft className="ml-2 h-5 w-5 rotate-180" /></>
+                  ) : (
+                    "Finalizar e Pagar via PIX"
+                  )}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="h-12 text-slate-400 font-bold text-xs uppercase hover:bg-transparent" 
+                  onClick={() => checkoutStep === 1 ? setIsModalOpen(false) : setCheckoutStep(1)}
+                >
+                  {checkoutStep === 1 ? "Cancelar Pedido" : "Voltar e Alterar Dados"}
                 </Button>
               </div>
             </div>
           )}
 
           {checkoutStep === 3 && (
-            <div className="bg-gradient-to-b from-blue-500 to-blue-700 text-white p-10 flex flex-col items-center">
-              <h2 className="text-xl font-bold mb-6">Pagamento via PIX</h2>
-              <div className="bg-white p-4 rounded-3xl shadow-xl mb-6">
-                <img src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`} alt="PIX" className="w-48 h-48 mix-blend-multiply" />
+            <div className="flex-1 flex flex-col bg-slate-900 text-white min-h-[100dvh] sm:min-h-0 sm:rounded-xl overflow-hidden">
+              <div className="p-8 pb-4">
+                <div className="flex items-center gap-2 mb-8">
+                  <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-black italic">PIX</div>
+                  <h2 className="text-xl font-black uppercase tracking-tighter">Pagamento Seguro</h2>
+                </div>
+                
+                <div className="bg-white p-6 rounded-3xl shadow-2xl flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500">
+                  {pixData?.qr_code_base64 ? (
+                    <img src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`} alt="QR Code PIX" className="w-full h-auto mix-blend-multiply" />
+                  ) : (
+                    <div className="w-48 h-48 bg-slate-50 animate-pulse rounded-2xl flex items-center justify-center text-slate-300">
+                      <Loader2 className="h-10 w-10 animate-spin" />
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-sm opacity-80 mb-2">Total: R$ {totalValue.toFixed(2)}</p>
-              <Button onClick={copyPix} className="bg-white text-blue-600 hover:bg-blue-50">
-                {pixCopied ? "Copiado!" : <><Copy className="mr-2 h-4 w-4" /> Copiar PIX</>}
-              </Button>
+
+              <div className="p-8 pt-6 space-y-6 flex-1 flex flex-col justify-end bg-slate-900">
+                <div className="space-y-1.5 text-center">
+                  <p className="text-sm font-bold text-blue-400 uppercase tracking-widest">Valor a pagar</p>
+                  <p className="text-5xl font-black">R$ {totalValue.toFixed(2)}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    onClick={copyPix} 
+                    className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                  >
+                    {pixCopied ? (
+                      <><CheckCircle2 className="mr-3 h-6 w-6" /> Copiado!</>
+                    ) : (
+                      <><Copy className="mr-3 h-6 w-6" /> Copia e Cola</>
+                    )}
+                  </Button>
+                  <p className="text-[10px] text-slate-500 text-center uppercase font-black leading-tight tracking-widest opacity-60">
+                    Aguardando confirmação automática<br />Não saia desta tela após pagar
+                  </p>
+                </div>
+
+                <Button variant="ghost" onClick={() => setCheckoutStep(2)} className="text-slate-500 hover:text-white transition-colors h-10">
+                   Cancelar e Sair
+                </Button>
+              </div>
             </div>
           )}
 
           {checkoutStep === 4 && (
-            <div className="p-10 flex flex-col items-center text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold">Reserva Confirmada!</h2>
-              <p className="text-gray-500 mt-2">Seus números foram adquiridos com sucesso.</p>
-              <Button onClick={() => setIsModalOpen(false)} className="mt-6 w-full bg-blue-600">Fechar</Button>
+            <div className="p-10 flex flex-col items-center text-center flex-1 justify-center bg-white min-h-[100dvh] sm:min-h-0">
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-500 blur-3xl opacity-20 animate-pulse"></div>
+                <div className="relative w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 mb-8">
+                  <CheckCircle2 className="h-12 w-12 text-white" />
+                </div>
+              </div>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-4">SUCESSO!</h2>
+              <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-[280px] mx-auto">
+                Parabéns, {formData.nome.split(' ')[0]}! Suas cotas foram garantidas.
+              </p>
+              
+              <div className="mt-10 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 text-green-700 text-sm font-bold">
+                 <Shield className="h-5 w-5 shrink-0" />
+                 Seu comprovante foi enviado para o WhatsApp cadastrado.
+              </div>
+
+              <Button onClick={() => setIsModalOpen(false)} className="mt-10 w-full h-16 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                Finalizar
+              </Button>
             </div>
           )}
         </DialogContent>
