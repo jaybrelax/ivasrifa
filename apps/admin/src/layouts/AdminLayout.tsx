@@ -403,7 +403,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Mobile Bottom Nav */}
-      <MobileNav />
+      <MobileNav userRole={userRole} />
     </div>
   );
 }

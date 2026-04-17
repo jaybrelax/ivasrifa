@@ -4,7 +4,9 @@ import {
   LayoutDashboard, 
   Ticket, 
   Trophy,
-  ShoppingCart
+  ShoppingCart,
+  Settings,
+  UserCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +17,7 @@ interface NavItem {
   color: string;
 }
 
-export function MobileNav() {
+export function MobileNav({ userRole }: { userRole?: 'admin' | 'guardiao' }) {
   const location = useLocation();
 
   const adminItems: NavItem[] = [
@@ -25,9 +27,16 @@ export function MobileNav() {
     { label: "Pedidos", icon: ShoppingCart, path: "/pedidos", color: "text-emerald-500" },
   ];
 
+  // Adicionar o 5º item dinâmico
+  if (userRole === 'admin') {
+    adminItems.push({ label: "Config.", icon: Settings, path: "/configuracoes", color: "text-slate-400" });
+  } else {
+    adminItems.push({ label: "Perfil", icon: UserCircle, path: "/perfil", color: "text-pink-500" });
+  }
+
   return (
     <div
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 py-3 safe-area-bottom"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-2 py-3 safe-area-bottom"
       style={{
         background: '#020617', // Slate 950
         borderTop: '1px solid rgba(255,255,255,0.05)',
@@ -40,34 +49,29 @@ export function MobileNav() {
             ? location.pathname === '/' 
             : location.pathname.startsWith(item.path);
 
-          // Extrair a cor pura para o fundo transparente
           const iconColorClass = item.color;
           
           return (
             <Link
               key={item.label}
               to={item.path}
-              className="flex flex-col items-center gap-1.5 group relative"
+              className="flex flex-col items-center gap-1 group relative min-w-[64px]"
             >
               <div
                 className={cn(
-                  "relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300",
+                  "relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300",
                   isActive ? "scale-110" : "text-slate-500 hover:text-slate-300"
                 )}
-                style={isActive ? { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)', // Fallback
-                } : {}}
               >
-                {/* Círculo de fundo para item ativo */}
                 {isActive && (
                   <div 
-                    className={cn("absolute inset-0 rounded-full opacity-15 animate-in fade-in zoom-in duration-300", 
+                    className={cn("absolute inset-0 rounded-full opacity-20 animate-in fade-in zoom-in duration-300", 
                     iconColorClass.replace('text-', 'bg-'))}
                   />
                 )}
                 
                 <item.icon 
-                  size={20} 
+                  size={18} 
                   className={cn(
                     "transition-all duration-300",
                     isActive ? item.color : "text-slate-500"
@@ -76,7 +80,7 @@ export function MobileNav() {
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-bold tracking-tight transition-colors duration-300",
+                  "text-[11px] font-bold tracking-tight transition-colors duration-300",
                   isActive ? "text-white" : "text-slate-500"
                 )}
               >

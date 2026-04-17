@@ -39,16 +39,26 @@ export default function PerfilVendedor() {
         .from('vendedores')
         .select('*')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
 
-      setVendedor(data);
-      setFormData({
-        nome: data.nome || "",
-        telefone: data.telefone || "",
-        email: session.user.email || ""
-      });
+      if (data) {
+        setVendedor(data);
+        setFormData({
+          nome: data.nome || "",
+          telefone: data.telefone || "",
+          email: session.user.email || ""
+        });
+      } else {
+        // Para Admin sem registro na tabela vendedores
+        setVendedor({ user_id: session.user.id }); 
+        setFormData({
+          nome: session.user.user_metadata?.nome || "Administrador",
+          telefone: session.user.user_metadata?.telefone || "",
+          email: session.user.email || ""
+        });
+      }
     } catch (err) {
       console.error("Erro ao buscar vendedor:", err);
     } finally {
@@ -73,9 +83,11 @@ export default function PerfilVendedor() {
 
     try {
       setUploadingAvatar(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${vendedor.id}-${Date.now()}.${fileExt}`;
+      const fileName = `avatar-${session.user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -90,15 +102,19 @@ export default function PerfilVendedor() {
       const { data } = supabase.storage.from('images').getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
 
-      // Atualizar no banco de dados
-      const { error: updateError } = await supabase
+      // Atualizar no banco de dados usando upsert para garantir que funcione para Admin
+      const { data: updatedVendedor, error: updateError } = await supabase
         .from('vendedores')
-        .update({ avatar_url: publicUrl })
-        .eq('id', vendedor.id);
+        .upsert({ 
+          user_id: session.user.id,
+          avatar_url: publicUrl 
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
 
       if (updateError) throw updateError;
 
-      setVendedor({ ...vendedor, avatar_url: publicUrl });
+      setVendedor(updatedVendedor);
       alert("Foto de perfil atualizada!");
       
     } catch (error: any) {
@@ -114,15 +130,19 @@ export default function PerfilVendedor() {
     e.preventDefault();
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Usar upsert para garantir que crie o registro se não existir (caso do Admin)
+      const { data: savedData, error } = await supabase
         .from('vendedores')
-        .update({
+        .upsert({
+          user_id: vendedor.user_id,
           nome: formData.nome,
           telefone: formData.telefone
-        })
-        .eq('id', vendedor.id);
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
       
       if (error) throw error;
+      setVendedor(savedData);
       alert("Perfil atualizado com sucesso!");
     } catch (err: any) {
       alert("Erro ao salvar: " + err.message);
