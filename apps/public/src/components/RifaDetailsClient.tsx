@@ -109,9 +109,11 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
       for (const id in newState) {
         if (id === sessionId) continue;
-        for (const presence of (newState[id] as any)) {
-          if (presence.selected && Array.isArray(presence.selected)) {
-            othersNumbers.push(...presence.selected);
+        const presences = newState[id] as any[];
+        if (presences && presences.length > 0) {
+          const latestPresence = presences[presences.length - 1];
+          if (latestPresence.selected && Array.isArray(latestPresence.selected)) {
+            othersNumbers.push(...latestPresence.selected);
           }
         }
       }
