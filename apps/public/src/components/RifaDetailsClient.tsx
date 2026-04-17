@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X, Plus, User, CreditCard, Phone, Mail, Shield } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Shuffle, Ticket, X, Plus, User, CreditCard, Phone, Mail, Shield, ChevronLeft, ArrowRight, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -516,186 +516,203 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
       {/* Checkout Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="w-full h-[100dvh] sm:h-auto sm:max-w-[480px] p-0 overflow-y-auto sm:rounded-xl border-none sm:border flex flex-col">
-          {checkoutStep !== 3 && checkoutStep !== 4 && (
-            <div className="flex-1 flex flex-col p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-6 md:mb-8">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+        <DialogContent className="w-full h-screen sm:h-auto sm:max-w-[450px] p-0 overflow-y-auto sm:rounded-[32px] border-none sm:border flex flex-col bg-white">
+          {(checkoutStep === 1 || checkoutStep === 2) && (
+            <div className="flex-1 flex flex-col pb-8">
+              {/* Custom Header Checkout */}
+              <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <button 
+                  onClick={() => checkoutStep === 1 ? setIsModalOpen(false) : setCheckoutStep(1)} 
+                  className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6 text-[#0055ff]" />
+                </button>
+                <h3 className="text-xl font-bold text-slate-800 tracking-tight">Checkout</h3>
+                <div className="w-10"></div> {/* Spacer */}
+              </div>
+
+              <div className="px-6 sm:px-8 pt-8 flex-1">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
                     {checkoutStep === 1 ? "Seus Dados" : "Resumo da Compra"}
                   </h2>
-                  <p className="text-gray-500 font-medium bg-gray-50 inline-block px-2 rounded mt-1">
+                  <p className="text-slate-500 font-medium">
                     {checkoutStep === 1 ? "Preencha para garantir suas cotas" : "Confira os detalhes da reserva"}
                   </p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors sm:hidden">
-                  <X className="h-6 w-6 text-gray-400" />
-                </button>
-              </div>
 
-              {checkoutStep === 1 && (
-                <div className="space-y-5 flex-1">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
-                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                      <Input 
-                        value={formData.nome} 
-                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
-                        placeholder="Nome e Sobrenome"
-                        className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
+                {checkoutStep === 1 && (
+                  <div className="space-y-6">
+                    <div className="bg-[#f8fafc] p-5 sm:p-6 rounded-[24px] space-y-5 border border-slate-100/50">
+                      <div className="space-y-2">
+                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</Label>
+                        <div className="relative group">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Input 
+                            value={formData.nome} 
+                            onChange={(e) => setFormData({ ...formData, nome: e.target.value })} 
+                            placeholder="Ex: João da Silva"
+                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 gap-5">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
-                      <div className="relative group">
-                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                        <Input 
-                          value={formData.cpf} 
-                          onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
-                          placeholder="000.000.000-00"
-                          inputMode="numeric"
-                          className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium font-mono"
-                        />
+                      <div className="space-y-2">
+                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">CPF</Label>
+                        <div className="relative group overflow-hidden">
+                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Input 
+                            value={formData.cpf} 
+                            onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })} 
+                            placeholder="000.000.000-00"
+                            inputMode="numeric"
+                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 font-mono placeholder:text-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
+                        <div className="relative group overflow-hidden">
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Input 
+                            value={formData.telefone} 
+                            onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
+                            placeholder="(00) 00000-0000"
+                            inputMode="numeric"
+                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 font-mono placeholder:text-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[11px] uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
+                        <div className="relative group overflow-hidden">
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#0055ff] transition-colors" />
+                          <Input 
+                            type="email" 
+                            value={formData.email} 
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                            placeholder="seu@email.com"
+                            className="h-14 pl-12 rounded-[16px] border-none shadow-sm focus:ring-4 focus:ring-[#0055ff]/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 bg-white"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">WhatsApp / Telefone</Label>
-                      <div className="relative group">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                        <Input 
-                          value={formData.telefone} 
-                          onChange={(e) => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} 
-                          placeholder="(00) 00000-0000"
-                          inputMode="numeric"
-                          className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium font-mono"
-                        />
+                    <div className="flex flex-col gap-4 mt-4">
+                      <Button 
+                        disabled={isSubmitting} 
+                        className="h-16 rounded-[24px] bg-[#0055ff] hover:bg-[#0044cc] text-lg font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 transition-all active:scale-[0.98]"
+                        onClick={() => {
+                          if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email) {
+                            setCheckoutError("Preencha todos os campos para continuar");
+                            setCheckoutStep(2); 
+                            setTimeout(() => setCheckoutStep(1), 10);
+                            return;
+                          }
+                          setCheckoutStep(2);
+                        }}
+                      >
+                        Prosseguir <ArrowRight className="ml-2 h-6 w-6" />
+                      </Button>
+                      <button 
+                        onClick={() => setIsModalOpen(false)}
+                        className="text-[13px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest py-2 transition-colors"
+                      >
+                        Cancelar Pedido
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {checkoutStep === 2 && (
+                  <div className="space-y-6">
+                    {checkoutError && (
+                      <div className="p-4 bg-red-100/80 border border-red-200 text-red-700 text-[13px] font-bold rounded-[16px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="h-6 w-6 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                          <AlertCircle className="h-4 w-4 text-white" />
+                        </div>
+                        {checkoutError}
                       </div>
-                    </div>
-                  </div>
+                    )}
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs uppercase font-black text-slate-500 ml-1 tracking-widest">E-mail</Label>
-                    <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                      <Input 
-                        type="email" 
-                        value={formData.email} 
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-                        placeholder="exemplo@email.com"
-                        className="h-14 pl-12 rounded-xl border-gray-200 text-base focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {checkoutStep === 2 && (
-                <div className="space-y-6 flex-1">
-                  {checkoutError && (
-                    <div className="p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl flex items-start gap-3 animate-shake">
-                      <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                      {checkoutError}
-                    </div>
-                  )}
-
-                  <div className="space-y-6 overflow-y-auto max-h-[50dvh] pr-2 scrollbar-hide">
-                    {/* User Summary */}
-                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
+                    {/* User Summary Card */}
+                    <div className="bg-[#f1f5f9] rounded-[24px] p-4 flex items-center gap-4 border border-slate-200/50">
+                      <div className="h-12 w-12 rounded-full bg-[#0055ff] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                         <User className="h-6 w-6" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{formData.nome}</p>
-                        <p className="text-xs text-gray-500 uppercase font-black tracking-tighter">{formData.telefone}</p>
+                        <p className="font-bold text-slate-900 text-lg leading-tight truncate">{formData.nome}</p>
+                        <p className="text-sm text-slate-500 font-semibold">{formData.telefone}</p>
                       </div>
                     </div>
 
-                    {/* Numbers Summary */}
-                    <div className="space-y-3">
+                    {/* Numbers Summary Card */}
+                    <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm space-y-4">
                       <div className="flex items-center justify-between">
-                         <h4 className="text-xs uppercase font-black text-slate-400 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
-                         <span className="text-xs font-bold text-blue-600">Pacote {padNum(selectedNumbers.length)}</span>
+                         <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
+                         <span className="text-[10px] font-black text-[#0055ff] uppercase tracking-widest">Pacote {padNum(selectedNumbers.length)}</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {selectedNumbers.map((num) => (
-                          <div key={num} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/20 text-xs sm:text-sm border-2 border-white ring-1 ring-blue-100 animate-in zoom-in-50 duration-300">
+                          <div key={num} className="w-12 h-12 rounded-full bg-[#0055ff] text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/40 text-base border-2 border-white ring-2 ring-blue-50 pulse-blue">
                             {padNum(num)}
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Pricing Summary */}
-                    <div className="border-t border-slate-100 pt-6 mt-4">
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold uppercase tracking-tight">Valor total da reserva</p>
-                          <p className="text-4xl font-black text-green-600">R$ {totalValue.toFixed(2)}</p>
-                        </div>
-                        <div className="text-right">
-                           <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 font-bold px-3 py-1">
-                             <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Pagamento Seguro
-                           </Badge>
-                        </div>
+                    {/* Pricing Display */}
+                    <div className="bg-[#f8fafc] rounded-[32px] p-8 mt-4 border border-slate-100/50 text-center space-y-2">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-[#008000] text-[11px] font-black uppercase tracking-widest border border-green-200/50 mb-2">
+                        <Shield className="h-4 w-4" /> Pagamento Seguro
                       </div>
+                      <p className="text-xs uppercase font-black text-slate-400 tracking-widest">Total a Pagar</p>
+                      <p className="text-5xl font-black text-[#008000] tracking-tighter">
+                        R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      <Button 
+                        disabled={isSubmitting} 
+                        className="h-16 rounded-[24px] bg-[#008000] hover:bg-[#006600] text-lg font-black uppercase tracking-widest shadow-xl shadow-green-500/30 transition-all active:scale-[0.98]"
+                        onClick={handleCheckout}
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="animate-spin h-6 w-6" />
+                        ) : (
+                          <><Wallet className="mr-3 h-6 w-6" /> Finalizar e Pagar via PIX</>
+                        )}
+                      </Button>
+                      <button 
+                         onClick={() => setCheckoutStep(1)}
+                         className="text-[13px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest py-2 transition-colors"
+                      >
+                         Voltar e Alterar Dados
+                      </button>
                     </div>
                   </div>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-3 mt-8">
-                <Button 
-                  disabled={isSubmitting} 
-                  className={`h-16 text-lg uppercase font-black tracking-widest shadow-xl transition-all active:scale-[0.98] ${
-                    checkoutStep === 2 ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
-                  }`}
-                  onClick={() => {
-                    if (checkoutStep === 1) {
-                      if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email) {
-                        setCheckoutError("Preencha todos os campos para continuar.");
-                        setCheckoutStep(2); // Vai pro 2 pra mostrar o erro e volta 
-                        setTimeout(() => setCheckoutStep(1), 10);
-                        return;
-                      }
-                      setCheckoutStep(2);
-                    } else {
-                      handleCheckout();
-                    }
-                  }}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="animate-spin h-6 w-6" />
-                  ) : checkoutStep === 1 ? (
-                    <>Prosseguir <ArrowLeft className="ml-2 h-5 w-5 rotate-180" /></>
-                  ) : (
-                    "Finalizar e Pagar via PIX"
-                  )}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="h-12 text-slate-400 font-bold text-xs uppercase hover:bg-transparent" 
-                  onClick={() => checkoutStep === 1 ? setIsModalOpen(false) : setCheckoutStep(1)}
-                >
-                  {checkoutStep === 1 ? "Cancelar Pedido" : "Voltar e Alterar Dados"}
-                </Button>
+                )}
               </div>
             </div>
           )}
 
           {checkoutStep === 3 && (
-            <div className="flex-1 flex flex-col bg-slate-900 text-white min-h-[100dvh] sm:min-h-0 sm:rounded-xl overflow-hidden">
+            <div className="flex-1 flex flex-col bg-slate-900 text-white min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500">
               <div className="p-8 pb-4">
-                <div className="flex items-center gap-2 mb-8">
-                  <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-black italic">PIX</div>
-                  <h2 className="text-xl font-black uppercase tracking-tighter">Pagamento Seguro</h2>
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded bg-[#0055ff] flex items-center justify-center font-black italic">PIX</div>
+                    <h2 className="text-xl font-black uppercase tracking-tighter">Pagamento Seguro</h2>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                    <X className="h-6 w-6 text-slate-400" />
+                  </button>
                 </div>
                 
-                <div className="bg-white p-6 rounded-3xl shadow-2xl flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500">
+                <div className="bg-white p-6 rounded-[32px] shadow-2xl flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500 ring-4 ring-slate-800">
                   {pixData?.qr_code_base64 ? (
                     <img src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`} alt="QR Code PIX" className="w-full h-auto mix-blend-multiply" />
                   ) : (
@@ -715,7 +732,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 <div className="space-y-3">
                   <Button 
                     onClick={copyPix} 
-                    className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white text-lg font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                    className="w-full h-16 bg-[#0055ff] hover:bg-[#0044cc] text-white text-lg font-black uppercase tracking-widest rounded-[24px] shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
                   >
                     {pixCopied ? (
                       <><CheckCircle2 className="mr-3 h-6 w-6" /> Copiado!</>
@@ -736,7 +753,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
           )}
 
           {checkoutStep === 4 && (
-            <div className="p-10 flex flex-col items-center text-center flex-1 justify-center bg-white min-h-[100dvh] sm:min-h-0">
+            <div className="p-10 flex flex-col items-center text-center flex-1 justify-center bg-white min-h-screen sm:min-h-0 sm:rounded-xl">
               <div className="relative">
                 <div className="absolute inset-0 bg-green-500 blur-3xl opacity-20 animate-pulse"></div>
                 <div className="relative w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 mb-8">
@@ -748,12 +765,12 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 Parabéns, {formData.nome.split(' ')[0]}! Suas cotas foram garantidas.
               </p>
               
-              <div className="mt-10 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 text-green-700 text-sm font-bold">
+              <div className="mt-10 p-4 bg-green-50 border border-green-100 rounded-[20px] flex items-center gap-3 text-[#008000] text-sm font-bold">
                  <Shield className="h-5 w-5 shrink-0" />
                  Seu comprovante foi enviado para o WhatsApp cadastrado.
               </div>
 
-              <Button onClick={() => setIsModalOpen(false)} className="mt-10 w-full h-16 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+              <Button onClick={() => setIsModalOpen(false)} className="mt-10 w-full h-16 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
                 Finalizar
               </Button>
             </div>
