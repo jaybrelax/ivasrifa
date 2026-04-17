@@ -468,8 +468,10 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     <span className="text-2xl font-extrabold text-green-600">R$ {totalValue.toFixed(2)}</span>
                   </div>
                   <Button
-                    className={`w-full h-12 text-base uppercase font-bold shadow-lg transition-all duration-300 ${
-                      selectedNumbers.length === 0 ? 'bg-[#1b5df1] hover:bg-[#0044cc] text-white' : 'bg-[#1b5df1] hover:bg-[#0044cc] text-white font-black'
+                    className={`w-full h-14 rounded-full text-base uppercase font-bold shadow-lg transition-all duration-300 ${
+                      selectedNumbers.length === 0 
+                        ? 'bg-black hover:bg-slate-900 text-white' 
+                        : 'bg-[#1b5df1] hover:bg-[#0044cc] text-white font-black scale-[1.02]'
                     }`}
                     onClick={() => {
                       if (selectedNumbers.length === 0) {
@@ -499,7 +501,11 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
             <p className="text-xl font-extrabold text-green-600 leading-tight">R$ {totalValue.toFixed(2)}</p>
           </div>
           <Button
-            className={`h-12 px-8 uppercase font-bold ${selectedNumbers.length === 0 ? 'bg-[#1b5df1]' : 'bg-[#1b5df1] font-black'}`}
+            className={`h-12 px-8 uppercase font-bold rounded-full transition-all duration-300 ${
+              selectedNumbers.length === 0 
+                ? 'bg-black text-white' 
+                : 'bg-[#1b5df1] text-white font-black'
+            }`}
             onClick={() => {
               if (selectedNumbers.length === 0) {
                 document.getElementById('numeros')?.scrollIntoView({ behavior: 'smooth' });
@@ -638,25 +644,31 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     )}
 
                     {/* User Summary Card */}
-                    <div className="bg-[#f8fafc] rounded-[24px] p-5 flex items-center gap-4 border border-slate-100/60 shadow-sm shadow-slate-100">
-                      <div className="h-[46px] w-[46px] rounded-full bg-[#1b5df1] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
-                        <User className="h-[22px] w-[22px]" />
+                    <div className="bg-white rounded-[24px] p-5 flex items-center gap-4 border border-slate-100 shadow-sm">
+                      <div className="h-[52px] w-[52px] rounded-full bg-slate-50 flex items-center justify-center text-[#1b5df1] shrink-0 border border-slate-100">
+                        <User className="h-[24px] w-[24px]" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-[17px] leading-tight truncate">{formData.nome}</p>
-                        <p className="text-[13px] text-slate-500 font-medium">{formData.telefone}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-slate-900 text-[18px] leading-tight truncate">{formData.nome}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                           <p className="text-[12px] text-slate-500 font-bold tracking-tight">{formData.cpf}</p>
+                           <div className="h-3 w-[1px] bg-slate-200"></div>
+                           <div className="flex items-center gap-1.5 overflow-hidden">
+                              <Phone className="h-3 w-3 text-[#1b5df1]" />
+                              <p className="text-[12px] text-slate-500 font-bold truncate">{formData.telefone}</p>
+                           </div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Numbers Summary Card */}
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-                         <h4 className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Cotas Selecionadas ({selectedNumbers.length})</h4>
-                         <span className="text-[11px] font-extrabold text-[#1b5df1] uppercase tracking-wider">Pacote {padNum(selectedNumbers.length)}</span>
+                    <div className="bg-[#eff6ff] rounded-[24px] p-6 border border-blue-100 shadow-sm space-y-4">
+                      <div className="flex items-center justify-between">
+                         <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Cotas Selecionadas ({selectedNumbers.length})</h4>
                       </div>
-                      <div className="flex flex-wrap gap-2.5 pt-1">
+                      <div className="flex flex-wrap gap-2.5">
                         {selectedNumbers.map((num) => (
-                          <div key={num} className="w-[46px] h-[46px] rounded-[16px] xl:rounded-full bg-[#1b5df1] text-white flex items-center justify-center font-bold text-[16px] shadow-[0_4px_12px_rgba(27,93,241,0.3)]">
+                           <div key={num} className="w-[46px] h-[46px] rounded-full bg-white text-[#1b5df1] flex items-center justify-center font-black text-[15px] shadow-sm border border-blue-100">
                             {padNum(num)}
                           </div>
                         ))}
