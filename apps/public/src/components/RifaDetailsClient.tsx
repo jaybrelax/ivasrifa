@@ -36,6 +36,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
   const [sessionId] = useState(() => Math.random().toString(36).substring(2, 12));
   const channelRef = useRef<any>(null);
+  const selectedNumbersRef = useRef<number[]>([]);
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,6 +92,8 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   }, [refCode]);
 
   // Sincronizar as seleções em tempo real usando Supabase Presence
+  // IMPORTANTE: O canal é criado apenas uma vez (deps: rifa.id, sessionId)
+  // para evitar race conditions ao desmarcar números.
   useEffect(() => {
     if (!rifa?.id) return;
 
@@ -116,14 +119,25 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
     })
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        room.track({ selected: selectedNumbers }).catch(() => { });
+        // Track com o valor mais recente via ref (não recria o canal)
+        channelRef.current?.track({ selected: selectedNumbersRef.current }).catch(() => {});
       }
     });
 
     return () => {
       supabase.removeChannel(room);
     };
-  }, [rifa?.id, sessionId, selectedNumbers]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rifa?.id, sessionId]);
+
+  // Atualiza o track no canal existente sempre que a seleção muda.
+  // Não recria o canal — apenas envia os dados atualizados.
+  useEffect(() => {
+    selectedNumbersRef.current = selectedNumbers;
+    if (channelRef.current) {
+      channelRef.current.track({ selected: selectedNumbers }).catch(() => {});
+    }
+  }, [selectedNumbers]);
 
   // Poll de pagamento
   useEffect(() => {
