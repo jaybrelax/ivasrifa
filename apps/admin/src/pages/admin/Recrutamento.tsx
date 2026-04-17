@@ -24,6 +24,25 @@ export default function Recrutamento() {
     senha: "",
   });
 
+  const maskCPF = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+      .replace(/(-\d{2})\d+?$/, "$1");
+  };
+
+  const maskPhone = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{4})\d+?$/, "$1");
+  };
+
+  const inputClass = "h-13 rounded-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all";
+
   useEffect(() => {
     async function fetchConfig() {
       const { data } = await supabase.from("configuracoes").select("nome_sistema").eq("id", 1).single();
@@ -118,27 +137,62 @@ export default function Recrutamento() {
 
                 <div className="space-y-1.5">
                   <Label>Nome Completo</Label>
-                  <Input required placeholder="Ex: João Silva" value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} />
+                  <Input 
+                    required 
+                    placeholder="Ex: João Silva" 
+                    className={inputClass}
+                    value={formData.nome} 
+                    onChange={e => setFormData({...formData, nome: e.target.value})} 
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>CPF</Label>
-                    <Input required placeholder="000.000.000-00" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} />
+                    <Input 
+                      required 
+                      placeholder="000.000.000-00" 
+                      className={inputClass}
+                      inputMode="numeric"
+                      value={formData.cpf} 
+                      onChange={e => setFormData({...formData, cpf: maskCPF(e.target.value)})} 
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>WhatsApp</Label>
-                    <Input required placeholder="(00) 00000-0000" value={formData.telefone} onChange={e => setFormData({...formData, telefone: e.target.value})} />
+                    <Input 
+                      required 
+                      placeholder="(00) 00000-0000" 
+                      className={inputClass}
+                      inputMode="numeric"
+                      value={formData.telefone} 
+                      onChange={e => setFormData({...formData, telefone: maskPhone(e.target.value)})} 
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-1.5 pt-3 border-t">
                   <Label>E-mail de acesso</Label>
-                  <Input required type="email" placeholder="Para acessar a conta" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                  <Input 
+                    required 
+                    type="email" 
+                    placeholder="Para acessar a conta" 
+                    className={inputClass}
+                    value={formData.email} 
+                    onChange={e => setFormData({...formData, email: e.target.value})} 
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Criar Senha</Label>
-                  <Input required type="password" minLength={6} placeholder="No mínimo 6 caracteres" value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} />
+                  <Input 
+                    required 
+                    type="password" 
+                    minLength={6} 
+                    placeholder="No mínimo 6 caracteres" 
+                    className={inputClass}
+                    value={formData.senha} 
+                    onChange={e => setFormData({...formData, senha: e.target.value})} 
+                  />
                 </div>
 
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 mt-4" disabled={submitting}>
