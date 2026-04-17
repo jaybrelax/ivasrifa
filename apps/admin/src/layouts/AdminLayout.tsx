@@ -33,6 +33,7 @@ export default function AdminLayout() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
   const [vendedorData, setVendedorData] = useState<any>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Timeout de segurança: Se não carregar em 3 segundos, libera o loader
@@ -337,21 +338,55 @@ export default function AdminLayout() {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
             </button>
 
-            {/* Profile Dropdown simples */}
-            <div
-              onClick={() => navigate(userRole === 'guardiao' ? '/perfil' : '/configuracoes')}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"
-            >
-              <div className="text-right hidden sm:block">
-                <p className="text-[12px] font-bold text-slate-800 leading-none">{displayName.split(' ')[0]}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 capitalize">{userRole}</p>
+            {/* Profile Menu Container */}
+            <div className="relative group">
+              <div
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-all duration-200",
+                  isProfileMenuOpen ? "bg-slate-100" : ""
+                )}
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-[12px] font-bold text-slate-800 leading-none">{displayName.split(' ')[0]}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 capitalize">{userRole}</p>
+                </div>
+                <Avatar className="h-8 w-8 ring-2 ring-white shadow">
+                  <AvatarImage src={vendedorData?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-xs font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              <Avatar className="h-8 w-8 ring-2 ring-white shadow">
-                <AvatarImage src={vendedorData?.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-violet-600 text-white text-xs font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+
+              {/* Floating Menu */}
+              {isProfileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl shadow-blue-900/10 border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
+                    <div className="px-4 py-2 mb-1 sm:hidden">
+                      <p className="text-xs font-bold text-slate-800">{displayName}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{session.user.email}</p>
+                    </div>
+                    <Link
+                      to="/perfil"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <UserCircle className="h-4 w-4" />
+                      Meu Perfil
+                    </Link>
+                    <div className="h-px bg-slate-50 my-1 mx-2" />
+                    <button
+                      onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
