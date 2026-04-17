@@ -39,6 +39,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
@@ -715,7 +716,41 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
           )}
 
           {checkoutStep === 3 && (
-            <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-blue-900 to-[#0055ff] text-white min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500">
+            <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-blue-900 to-[#0055ff] text-white min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500 relative">
+              {/* Close Confirmation Popup */}
+              {showCloseConfirmation && (
+                <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowCloseConfirmation(false)}></div>
+                  <div className="relative bg-white rounded-[32px] p-8 max-w-[320px] w-full text-center shadow-2xl border border-white/10">
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <AlertCircle className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">Atenção!</h3>
+                    <p className="text-slate-500 text-sm font-bold leading-relaxed mb-8">
+                      Você ainda não confirmou o pagamento. Se fechar agora, perderá sua reserva em alguns minutos. Deseja realmente sair?
+                    </p>
+                    <div className="space-y-3">
+                       <Button 
+                         onClick={() => {
+                           setShowCloseConfirmation(false);
+                           setIsModalOpen(false);
+                         }} 
+                         variant="ghost" 
+                         className="w-full h-12 text-slate-400 font-bold hover:text-slate-600 hover:bg-slate-50 rounded-2xl"
+                       >
+                         Sim, desejo sair
+                       </Button>
+                       <Button 
+                         onClick={() => setShowCloseConfirmation(false)} 
+                         className="w-full h-14 bg-[#1b5df1] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                       >
+                         Voltar ao PIX
+                       </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="p-8 pb-4">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex flex-col gap-1">
@@ -726,7 +761,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     />
                     <h2 className="text-xl font-black uppercase tracking-tighter text-blue-100">Pagamento PIX</h2>
                   </div>
-                  <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <button onClick={() => setShowCloseConfirmation(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors relative z-10">
                     <X className="h-6 w-6 text-white/70" />
                   </button>
                 </div>
@@ -769,10 +804,6 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     </p>
                   </div>
                 </div>
-
-                <Button variant="ghost" onClick={() => setCheckoutStep(2)} className="text-white/40 hover:text-white transition-colors h-10 hover:bg-transparent">
-                   Cancelar e Sair
-                </Button>
               </div>
             </div>
           )}
