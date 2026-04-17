@@ -114,6 +114,20 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
           const latestPresence = presences[presences.length - 1];
           if (latestPresence.selected && Array.isArray(latestPresence.selected)) {
             othersNumbers.push(...latestPresence.selected);
+
+            // Resolução de Conflitos (Race Condition de milissegundos)
+            // Se o outro dispositivo também capturou números que eu capturei:
+            const conflitos = latestPresence.selected.filter((n: number) => 
+               selectedNumbersRef.current.includes(n)
+            );
+            
+            if (conflitos.length > 0) {
+              // Tie-breaker determinístico: a menor string de ID ganha o número.
+              if (id < sessionId) {
+                // Eu perdi o conflito. Removo localmente os do meu carrinho.
+                setSelectedNumbers(prev => prev.filter(n => !conflitos.includes(n)));
+              }
+            }
           }
         }
       }
