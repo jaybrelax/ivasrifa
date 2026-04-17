@@ -105,13 +105,14 @@ export default async function Home() {
                         </Badge>
                       </div>
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md border border-white/30 text-white mb-2 shadow-sm">
+                          RIFA
+                        </div>
                         <h3 className="text-2xl font-bold text-white group-hover:text-blue-200 transition-colors">{rifa.titulo}</h3>
                       </div>
                     </div>
                   </Link>
                   <CardContent className="p-6 flex flex-col flex-grow">
-                    <p className="text-gray-600 mb-6 line-clamp-2 h-12">{rifa.descricao}</p>
-                    
                     <div className="space-y-4 mb-6 mt-auto">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
@@ -141,7 +142,7 @@ export default async function Home() {
                       </div>
                       <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 uppercase font-black px-8">
                         <Link href={`/${rifa.slug || rifa.id}`}>
-                          Participar
+                          EU QUERO!
                         </Link>
                       </Button>
                     </div>

@@ -72,7 +72,7 @@ export default async function RootLayout({
                 href="/minhas-compras" 
                 className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
               >
-                <User className="h-5 w-5" />
+                <Ticket className="h-5 w-5" />
                 <span className="text-sm">Meus Números</span>
               </Link>
             </div>

@@ -253,7 +253,9 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 to-transparent">
           <div className="max-w-5xl mx-auto">
-            <Badge className="bg-green-500 mb-2 border-0">Sorteio Ativo</Badge>
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.2em] bg-white/20 backdrop-blur-md border border-white/30 text-white mb-3 shadow-lg">
+              RIFA
+            </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-white mb-1 leading-tight">{rifa.titulo}</h1>
             <div className="flex items-center text-gray-300 text-xs sm:text-sm">
               <Clock className="h-3.5 w-3.5 mr-1.5 shrink-0" />
@@ -507,7 +509,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
       </div>
 
       {/* Floating Mobile Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-gray-100 px-4 py-3 safe-area-bottom shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-xl border-t border-white/20 px-4 py-4 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-all duration-300">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 pr-2 flex-1">
             {selectedNumbers.length > 0 ? (
@@ -527,7 +529,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
             className={`h-12 px-6 uppercase text-xs sm:text-sm font-bold rounded-full transition-all duration-300 ${
               selectedNumbers.length === 0 
                 ? 'bg-black text-white' 
-                : 'bg-[#1b5df1] text-white font-black'
+                : 'bg-[#22c55e] hover:bg-[#16a34a] text-white font-black shadow-lg shadow-green-500/20'
             }`}
             onClick={() => {
               if (selectedNumbers.length === 0) {
