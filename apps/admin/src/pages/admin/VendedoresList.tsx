@@ -10,6 +10,7 @@ import {
   TableBody
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Search, MoreHorizontal, Trash, Copy, Loader2, Shield, CheckCircle2, ExternalLink, Users } from "lucide-react";
 import {
   DropdownMenu,
