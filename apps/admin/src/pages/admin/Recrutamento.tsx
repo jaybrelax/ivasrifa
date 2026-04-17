@@ -70,7 +70,13 @@ export default function Recrutamento() {
 
       if (vendedorError) throw vendedorError;
 
-      setStep(2);
+      // Se o Supabase retornar uma sessão imediatamente (confirmação desativada),
+      // o usuário já está logado.
+      if (authData.session) {
+        navigate("/");
+      } else {
+        setStep(2);
+      }
     } catch (err: any) {
       console.error("Erro no recrutamento:", err);
       let msg = err.message || "Tente novamente.";
