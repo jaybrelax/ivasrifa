@@ -715,24 +715,23 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
           )}
 
           {checkoutStep === 3 && (
-            <div className="flex-1 flex flex-col bg-[#f8fafc] text-slate-900 min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500">
+            <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-blue-900 to-[#0055ff] text-white min-h-screen sm:min-h-0 sm:rounded-xl overflow-hidden animate-in fade-in duration-500">
               <div className="p-8 pb-4">
                 <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-[#32BCAD] p-1.5 rounded-lg">
-                      <svg width="24" height="24" viewBox="0 0 512 512" fill="white" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M129.5 137.5L165.5 101.5L256 192L346.5 101.5L382.5 137.5L292 228L382.5 318.5L346.5 354.5L256 264L165.5 354.5L129.5 318.5L220 228L129.5 137.5Z"/>
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M256 0C114.6 0 0 114.6 0 256C0 397.4 114.6 512 256 512C397.4 512 512 397.4 512 256C512 114.6 397.4 0 256 0ZM256 460.8C142.9 460.8 51.2 369.1 51.2 256C51.2 142.9 142.9 51.2 256 51.2C369.1 51.2 460.8 142.9 460.8 256C460.8 369.1 369.1 460.8 256 460.8Z"/>
-                      </svg>
-                    </div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter text-[#32BCAD]">Pagamento PIX</h2>
+                  <div className="flex flex-col gap-1">
+                    <img 
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png/1280px-Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png" 
+                      alt="Logo Pix" 
+                      className="h-5 w-auto object-contain brightness-0 invert mb-1" 
+                    />
+                    <h2 className="text-xl font-black uppercase tracking-tighter text-blue-100">Pagamento PIX</h2>
                   </div>
-                  <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                    <X className="h-6 w-6 text-slate-400" />
+                  <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <X className="h-6 w-6 text-white/70" />
                   </button>
                 </div>
                 
-                <div className="bg-white p-6 rounded-[32px] shadow-xl shadow-slate-200/50 flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500 ring-4 ring-white border border-slate-100">
+                <div className="bg-white p-6 rounded-[32px] shadow-2xl flex items-center justify-center max-w-[280px] mx-auto transition-transform hover:scale-105 duration-500 ring-4 ring-white/10 border border-white/5">
                   {pixData?.qr_code_base64 ? (
                     <img src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`} alt="QR Code PIX" className="w-full h-auto mix-blend-multiply" />
                   ) : (
@@ -743,16 +742,16 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 </div>
               </div>
 
-              <div className="p-8 pt-6 space-y-6 flex-1 flex flex-col justify-end">
+              <div className="p-8 pt-6 space-y-6 flex-1 flex flex-col justify-end bg-black/10 backdrop-blur-sm">
                 <div className="space-y-1.5 text-center">
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Valor a pagar</p>
-                  <p className="text-5xl font-black text-slate-900">R$ {totalValue.toFixed(2)}</p>
+                  <p className="text-sm font-bold text-blue-300 uppercase tracking-widest">Valor a pagar</p>
+                  <p className="text-5xl font-black text-white">R$ {totalValue.toFixed(2)}</p>
                 </div>
 
                 <div className="space-y-3">
                   <Button 
                     onClick={copyPix} 
-                    className="w-full h-16 bg-[#32BCAD] hover:bg-[#2ba89c] text-white text-lg font-black uppercase tracking-widest rounded-[24px] shadow-xl shadow-[#32BCAD]/20 active:scale-95 transition-all border-none"
+                    className="w-full h-16 bg-white text-[#1b5df1] hover:bg-blue-50 text-lg font-black uppercase tracking-widest rounded-[24px] shadow-xl shadow-black/20 active:scale-95 transition-all border-none"
                   >
                     {pixCopied ? (
                       <><CheckCircle2 className="mr-3 h-6 w-6" /> Copiado!</>
@@ -761,22 +760,23 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     )}
                   </Button>
                   <div className="flex flex-col items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-600 border border-green-100 animate-pulse">
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white border border-white/10 animate-pulse">
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-300" />
                       <span className="text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 text-center uppercase font-bold leading-tight tracking-widest opacity-80">
+                    <p className="text-[10px] text-white/60 text-center uppercase font-bold leading-tight tracking-widest opacity-80">
                       Não saia desta tela após pagar<br />A confirmação é automática
                     </p>
                   </div>
                 </div>
 
-                <Button variant="ghost" onClick={() => setCheckoutStep(2)} className="text-slate-400 hover:text-slate-600 transition-colors h-10 hover:bg-transparent">
+                <Button variant="ghost" onClick={() => setCheckoutStep(2)} className="text-white/40 hover:text-white transition-colors h-10 hover:bg-transparent">
                    Cancelar e Sair
                 </Button>
               </div>
             </div>
           )}
+
 
           {checkoutStep === 4 && (
             <div className="p-10 flex flex-col items-center text-center flex-1 justify-center bg-white min-h-screen sm:min-h-0 sm:rounded-xl">
