@@ -178,7 +178,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
       // Note: In Next.js, we might need to point correctly to the Admin API
       // Since they are on different domains in production, we'll need the absolute URL or a proxy
       // For now, I'll assume standard proxying or absolute URL from env
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://admin.ivasrifas.com.br";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://admin.rifa.virtudes.net.br";
       
       const response = await fetch(`${apiUrl}/api/pagamento/pix`, {
         method: "POST",
