@@ -234,7 +234,7 @@ export default function Dashboard() {
             {userRole === 'admin' ? 'Visão geral do sistema de rifas.' : 'Gerencie seus links e acompanhe seu desempenho.'}
           </p>
           
-          {(userRole === 'guardiao' || (userRole === 'admin' && vendedorData)) && stats.minhasRifas.length > 0 && (
+          {(userRole === 'guardiao' || (userRole === 'admin' && vendedorData)) && stats.minhasRifas.length > 1 && (
             <div className="w-full max-w-[300px] space-y-1.5">
               <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Campanha Ativa</Label>
               <Select value={selectedRifaId || ""} onValueChange={setSelectedRifaId}>

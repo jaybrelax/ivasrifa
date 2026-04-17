@@ -69,13 +69,13 @@ export default function RifasList() {
         };
       });
 
-      setRifas(rifasComProgresso);
-    } catch (error) {
-      console.error("Erro ao buscar rifas:", error);
-    } finally {
-      setLoading(false);
+      return {
+        rifas: rifasComProgresso,
+        role,
+        vendedor: vData
+      };
     }
-  }
+  });
 
   const confirmDelete = async () => {
     if (!rifaToDelete) return;
