@@ -13,7 +13,7 @@ import RankingList from './pages/admin/RankingList';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/admin">
+    <BrowserRouter>
       <Routes>
         {/* Auth Route */}
         <Route path="/login" element={<Login />} />
