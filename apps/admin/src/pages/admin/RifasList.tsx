@@ -40,7 +40,7 @@ export default function RifasList() {
         .eq('user_id', session.user.id)
         .maybeSingle();
       
-      setUserRole((vData && !vData.is_admin) ? 'guardiao' : 'admin');
+      setUserRole((vData && vData.is_admin === false) ? 'guardiao' : 'admin');
       if (vData) setVendedorRef(vData.codigo_ref);
 
       // 2. Buscar Rifas com contagem de números vendidos e pedidos pagos

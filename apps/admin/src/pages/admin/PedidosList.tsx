@@ -41,7 +41,7 @@ export default function PedidosList() {
         .eq('user_id', session.user.id)
         .maybeSingle();
       
-      const role = (vData && !vData.is_admin) ? 'guardiao' : 'admin';
+      const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
       setUserRole(role);
       if (vData) setVendedorId(vData.id);
 
@@ -55,7 +55,7 @@ export default function PedidosList() {
           vendedor:vendedores(nome)
         `);
 
-      if (vData && !vData.is_admin) {
+      if (vData && vData.is_admin === false) {
         query = query.eq('vendedor_id', vData.id);
       }
 

@@ -84,6 +84,29 @@ export default function VendedoresList() {
     setTimeout(() => setLinkCopiado(false), 2500);
   };
 
+  const handleToggleAdmin = async (vendedor: any) => {
+    const isCurrentlyAdmin = vendedor.is_admin === true;
+    const action = isCurrentlyAdmin ? 'remover o acesso de Administrador de' : 'tornar Administrador o';
+    
+    if (!window.confirm(`Tem certeza que deseja ${action} "${vendedor.nome}"? Ela(e) terá controle total sobre o sistema.`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('vendedores')
+        .update({ is_admin: !isCurrentlyAdmin })
+        .eq('id', vendedor.id);
+
+      if (error) throw error;
+      
+      setVendedores(vendedores.map(v => 
+        v.id === vendedor.id ? { ...v, is_admin: !isCurrentlyAdmin } : v
+      ));
+      
+    } catch (err: any) {
+      alert("Erro ao atualizar cargo: " + err.message);
+    }
+  };
+
   const vendedoresFiltrados = vendedores.filter(v =>
     v.nome?.toLowerCase().includes(search.toLowerCase()) ||
     v.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -196,7 +219,14 @@ export default function VendedoresList() {
                               {vendedor.nome ? vendedor.nome.charAt(0).toUpperCase() : 'G'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-slate-900">{vendedor.nome}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-900 flex items-center gap-1.5">
+                              {vendedor.nome}
+                              {vendedor.is_admin === true && (
+                                <Badge className="h-4 px-1 text-[10px] bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">Admin</Badge>
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -262,6 +292,10 @@ export default function VendedoresList() {
                                 navigator.clipboard.writeText(`${window.location.origin}?ref=${vendedor.codigo_ref}`);
                               }}>
                                 <Copy className="mr-2 h-4 w-4" /> Copiar Link
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleAdmin(vendedor)}>
+                                <Shield className={cn("mr-2 h-4 w-4", vendedor.is_admin === true ? "text-slate-400" : "text-blue-600")} />
+                                {vendedor.is_admin === true ? "Remover Admin" : "Tornar Admin"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(vendedor.id, vendedor.nome)}>

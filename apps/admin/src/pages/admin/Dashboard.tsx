@@ -46,7 +46,7 @@ export default function Dashboard() {
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        const role = (vData && !vData.is_admin) ? 'guardiao' : 'admin';
+        const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
         setUserRole(role);
         setVendedorData(vData);
 

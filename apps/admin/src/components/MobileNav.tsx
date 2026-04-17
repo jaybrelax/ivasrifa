@@ -80,7 +80,7 @@ export function MobileNav({ userRole }: { userRole?: 'admin' | 'guardiao' }) {
               </div>
               <span
                 className={cn(
-                  "text-[11px] font-bold tracking-tight transition-colors duration-300",
+                  "text-[12px] font-bold tracking-tight transition-colors duration-300",
                   isActive ? "text-white" : "text-slate-500"
                 )}
               >

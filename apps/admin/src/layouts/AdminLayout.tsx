@@ -70,7 +70,7 @@ export default function AdminLayout() {
     try {
       const { data } = await supabase.from('vendedores').select('*').eq('user_id', userId).maybeSingle();
       if (data) { 
-        setUserRole(data.is_admin ? 'admin' : 'guardiao'); 
+        setUserRole(data.is_admin === false ? 'guardiao' : 'admin'); 
         setVendedorData(data); 
       }
       else { 
@@ -133,7 +133,7 @@ export default function AdminLayout() {
     { icon: Trophy, label: 'Ranking', path: '/ranking', roles: ['admin', 'guardiao'], color: 'text-amber-500', bg: 'bg-amber-50', activeBg: 'bg-amber-500' },
     { icon: ShoppingCart, label: 'Pedidos', path: '/pedidos', roles: ['admin', 'guardiao'], color: 'text-emerald-500', bg: 'bg-emerald-50', activeBg: 'bg-emerald-600' },
     { icon: Shield, label: 'Guardiões', path: '/vendedores', roles: ['admin'], color: 'text-indigo-500', bg: 'bg-indigo-50', activeBg: 'bg-indigo-600' },
-    { icon: UserCircle, label: 'Meu Perfil', path: '/perfil', roles: ['guardiao'], color: 'text-pink-500', bg: 'bg-pink-50', activeBg: 'bg-pink-600' },
+    { icon: UserCircle, label: 'Meu Perfil', path: '/perfil', roles: ['admin', 'guardiao'], color: 'text-pink-500', bg: 'bg-pink-50', activeBg: 'bg-pink-600' },
     { icon: Settings, label: 'Configurações', path: '/configuracoes', roles: ['admin'], color: 'text-slate-500', bg: 'bg-slate-50', activeBg: 'bg-slate-600' },
   ];
 
@@ -158,7 +158,7 @@ export default function AdminLayout() {
   const isForbidden = forbiddenPaths.some(path => location.pathname.startsWith(path));
   if (userRole === 'guardiao' && isForbidden) return <Navigate to="/" replace />;
 
-  const displayName = userRole === 'admin' ? 'Administrador' : (vendedorData?.nome || 'Guardião');
+  const displayName = vendedorData?.nome || (userRole === 'admin' ? 'Administrador' : 'Guardião');
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
@@ -338,12 +338,6 @@ export default function AdminLayout() {
 
           {/* Right: Actions + Avatar */}
           <div className="flex items-center gap-2">
-            {/* Notificação decorativa */}
-            <button className="relative p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
-            </button>
-
             {/* Profile Menu Container */}
             <div className="relative group">
               <div
@@ -353,7 +347,7 @@ export default function AdminLayout() {
                   isProfileMenuOpen ? "bg-slate-100" : ""
                 )}
               >
-                <div className="text-right hidden sm:block">
+                <div className="text-right">
                   <p className="text-[12px] font-bold text-slate-800 leading-none">{displayName.split(' ')[0]}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5 capitalize">{userRole}</p>
                 </div>
@@ -382,6 +376,16 @@ export default function AdminLayout() {
                       <UserCircle className="h-4 w-4" />
                       Meu Perfil
                     </Link>
+                    {userRole === 'admin' && (
+                      <Link
+                        to="/configuracoes"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Configurações
+                      </Link>
+                    )}
                     <div className="h-px bg-slate-50 my-1 mx-2" />
                     <button
                       onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }}
