@@ -129,7 +129,7 @@ export default function RifaForm() {
     } catch (error) {
       console.error("Erro ao buscar rifa:", error);
       alert("Erro ao carregar dados da rifa.");
-      navigate(/rifas);
+      navigate("/rifas");
     } finally {
       setInitialLoading(false);
     }
@@ -363,7 +363,7 @@ export default function RifaForm() {
         if (insertError) throw insertError;
       }
 
-      navigate(/rifas);
+      navigate("/rifas");
     } catch (error: any) {
       console.error("Erro ao salvar rifa:", error);
       alert(`Erro ao salvar a rifa: ${error?.message || JSON.stringify(error)}`);
@@ -378,7 +378,7 @@ export default function RifaForm() {
     try {
       const { error } = await supabase.from('rifas').delete().eq('id', id);
       if (error) throw error;
-      navigate(/rifas);
+      navigate("/rifas");
     } catch (error) {
       console.error("Erro ao excluir rifa:", error);
       alert("Erro ao excluir a rifa.");
@@ -399,7 +399,7 @@ export default function RifaForm() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" render={<Link to=/rifas />} nativeButton={false}>
+        <Button variant="ghost" size="icon" render={<Link to="/rifas" />} nativeButton={false}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -828,7 +828,7 @@ export default function RifaForm() {
                   )}
                   {isEditing ? "Salvar Alterações" : "Criar Rifa"}
                 </Button>
-                <Button type="button" variant="outline" className="w-full" render={<Link to=/rifas />} nativeButton={false} disabled={loading || uploadingImage}>
+                <Button type="button" variant="outline" className="w-full" render={<Link to="/rifas" />} nativeButton={false} disabled={loading || uploadingImage}>
                   Cancelar
                 </Button>
               </CardContent>
