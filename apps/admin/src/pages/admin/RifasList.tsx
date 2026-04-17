@@ -12,13 +12,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export default function RifasList() {
   const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: rifasData, isLoading: loading, refetch: refetchRifas } = useQuery({
     queryKey: ['rifas-list'],
@@ -83,7 +84,7 @@ export default function RifasList() {
     try {
       const { error } = await supabase.from('rifas').delete().eq('id', rifaToDelete);
       if (error) throw error;
-      setRifas(rifas.filter(r => r.id !== rifaToDelete));
+      queryClient.invalidateQueries({ queryKey: ['rifas-list'] });
       setRifaToDelete(null);
     } catch (error) {
       console.error("Erro ao excluir rifa:", error);
@@ -100,7 +101,7 @@ export default function RifasList() {
   };
 
   const copyRifaLink = (rifa: any) => {
-    const ref = vendedorRef ? `?ref=${vendedorRef}` : '';
+    const ref = vendedorData?.codigo_ref ? `?ref=${vendedorData.codigo_ref}` : '';
     const publicOrigin = "http://rifa.virtudes.net.br";
     const url = `${publicOrigin}/${rifa.slug || rifa.id}${ref}`;
     navigator.clipboard.writeText(url);
