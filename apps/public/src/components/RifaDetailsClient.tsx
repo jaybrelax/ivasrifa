@@ -516,7 +516,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
       {/* Checkout Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="!fixed !inset-0 !m-0 !max-w-none !w-full !h-[100dvh] !rounded-none border-none p-0 overflow-y-auto flex flex-col bg-white sm:!relative sm:!max-w-[450px] sm:!h-auto sm:!rounded-[32px] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:!top-[50%] sm:!left-[50%] sm:border">
+        <DialogContent className="!fixed !top-0 !left-0 !translate-x-0 !translate-y-0 !m-0 !w-full !max-w-none !h-[100dvh] !rounded-none border-none p-0 overflow-y-auto flex flex-col bg-white sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:!max-w-[450px] sm:!h-auto sm:!max-h-[90vh] sm:!rounded-[32px] sm:border">
           {(checkoutStep === 1 || checkoutStep === 2) && (
             <div className="flex-1 flex flex-col pb-8">
               {/* Custom Header Checkout */}
