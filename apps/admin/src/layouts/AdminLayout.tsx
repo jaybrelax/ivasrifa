@@ -117,17 +117,17 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/admin/login');
+    navigate('/login');
   };
 
   const allNavItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', roles: ['admin', 'guardiao'], color: 'text-violet-500', bg: 'bg-violet-50', activeBg: 'bg-violet-600' },
-    { icon: Ticket, label: 'Rifas', path: '/admin/rifas', roles: ['admin', 'guardiao'], color: 'text-blue-500', bg: 'bg-blue-50', activeBg: 'bg-blue-600' },
-    { icon: Trophy, label: 'Ranking', path: '/admin/ranking', roles: ['admin', 'guardiao'], color: 'text-amber-500', bg: 'bg-amber-50', activeBg: 'bg-amber-500' },
-    { icon: ShoppingCart, label: 'Pedidos', path: '/admin/pedidos', roles: ['admin', 'guardiao'], color: 'text-emerald-500', bg: 'bg-emerald-50', activeBg: 'bg-emerald-600' },
-    { icon: Shield, label: 'Guardiões', path: '/admin/vendedores', roles: ['admin'], color: 'text-indigo-500', bg: 'bg-indigo-50', activeBg: 'bg-indigo-600' },
-    { icon: UserCircle, label: 'Meu Perfil', path: '/admin/perfil', roles: ['guardiao'], color: 'text-pink-500', bg: 'bg-pink-50', activeBg: 'bg-pink-600' },
-    { icon: Settings, label: 'Configurações', path: '/admin/configuracoes', roles: ['admin'], color: 'text-slate-500', bg: 'bg-slate-50', activeBg: 'bg-slate-600' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'guardiao'], color: 'text-violet-500', bg: 'bg-violet-50', activeBg: 'bg-violet-600' },
+    { icon: Ticket, label: 'Rifas', path: '/rifas', roles: ['admin', 'guardiao'], color: 'text-blue-500', bg: 'bg-blue-50', activeBg: 'bg-blue-600' },
+    { icon: Trophy, label: 'Ranking', path: '/ranking', roles: ['admin', 'guardiao'], color: 'text-amber-500', bg: 'bg-amber-50', activeBg: 'bg-amber-500' },
+    { icon: ShoppingCart, label: 'Pedidos', path: '/pedidos', roles: ['admin', 'guardiao'], color: 'text-emerald-500', bg: 'bg-emerald-50', activeBg: 'bg-emerald-600' },
+    { icon: Shield, label: 'Guardiões', path: '/vendedores', roles: ['admin'], color: 'text-indigo-500', bg: 'bg-indigo-50', activeBg: 'bg-indigo-600' },
+    { icon: UserCircle, label: 'Meu Perfil', path: '/perfil', roles: ['guardiao'], color: 'text-pink-500', bg: 'bg-pink-50', activeBg: 'bg-pink-600' },
+    { icon: Settings, label: 'Configurações', path: '/configuracoes', roles: ['admin'], color: 'text-slate-500', bg: 'bg-slate-50', activeBg: 'bg-slate-600' },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
@@ -145,11 +145,11 @@ export default function AdminLayout() {
     );
   }
 
-  if (!session) return <Navigate to="/admin/login" replace />;
+  if (!session) return <Navigate to="/login" replace />;
 
-  const forbiddenPaths = ['/admin/vendedores', '/admin/configuracoes'];
+  const forbiddenPaths = ['/vendedores', '/configuracoes'];
   const isForbidden = forbiddenPaths.some(path => location.pathname.startsWith(path));
-  if (userRole === 'guardiao' && isForbidden) return <Navigate to="/admin" replace />;
+  if (userRole === 'guardiao' && isForbidden) return <Navigate to="/" replace />;
 
   const displayName = userRole === 'admin' ? 'Administrador' : (vendedorData?.nome || 'Guardião');
   const initials = displayName.charAt(0).toUpperCase();
@@ -224,7 +224,7 @@ export default function AdminLayout() {
           <ul className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path ||
-                (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                (item.path !== '/' && location.pathname.startsWith(item.path));
               return (
                 <li key={item.path}>
                   <Link
@@ -339,7 +339,7 @@ export default function AdminLayout() {
 
             {/* Profile Dropdown simples */}
             <div
-              onClick={() => navigate(userRole === 'guardiao' ? '/admin/perfil' : '/admin/configuracoes')}
+              onClick={() => navigate(userRole === 'guardiao' ? '/perfil' : '/configuracoes')}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"
             >
               <div className="text-right hidden sm:block">
