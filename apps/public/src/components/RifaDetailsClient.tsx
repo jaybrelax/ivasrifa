@@ -345,14 +345,14 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                               </div>
                               <h4 className={`
                                 font-bold text-gray-900 
-                                ${premio.posicao === 1 ? 'text-xl sm:text-2xl leading-snug' : 'text-sm truncate'}
+                                ${premio.posicao === 1 ? 'text-xl sm:text-2xl leading-snug' : 'text-sm leading-snug'}
                               `}>
                                 {premio.titulo}
                               </h4>
                               {premio.descricao && (
                                 <p className={`
-                                  text-gray-500 mt-1
-                                  ${premio.posicao === 1 ? 'text-base line-clamp-3' : 'text-xs line-clamp-1 italic'}
+                                  text-gray-500 mt-1 whitespace-pre-line
+                                  ${premio.posicao === 1 ? 'text-base' : 'text-xs italic'}
                                 `}>
                                   {premio.descricao}
                                 </p>
@@ -388,7 +388,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                                 )}
                               </div>
                               <h4 className="font-bold text-gray-900 text-lg sm:text-xl leading-snug">{premio.titulo}</h4>
-                              {premio.descricao && <p className="text-gray-500 mt-1 text-sm line-clamp-2">{premio.descricao}</p>}
+                              {premio.descricao && <p className="text-gray-500 mt-1 text-sm whitespace-pre-line leading-relaxed">{premio.descricao}</p>}
                             </div>
                           </div>
                         ))}
@@ -572,9 +572,9 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                   onClick={() => checkoutStep === 1 ? setIsModalOpen(false) : setCheckoutStep(1)} 
                   className="p-2 hover:bg-slate-50 rounded-full transition-colors relative z-10"
                 >
-                  <ArrowLeft className={`h-[22px] w-[22px] ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-slate-800'}`} />
+                  <ArrowLeft className={`h-[22px] w-[22px] ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-[#006b2d]'}`} />
                 </button>
-                <h3 className={`text-lg font-bold absolute left-1/2 -translate-x-1/2 tracking-tight ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-slate-900'}`}>Checkout</h3>
+                <h3 className={`text-lg font-bold absolute left-1/2 -translate-x-1/2 tracking-tight ${checkoutStep === 1 ? 'text-[#0055ff]' : 'text-[#006b2d]'}`}>Checkout</h3>
                 <div className="w-10"></div> {/* Spacer */}
               </div>
 
@@ -677,7 +677,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                         <AlertCircle className="h-4 w-4 text-white" />
                       </div>
                       <p className="text-[#92400e] text-[13px] font-bold leading-tight">
-                        Seus números ficam reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 min</span>
+                        Seus números estão reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 minutos</span>
                       </p>
                     </div>
 
@@ -709,13 +709,13 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     </div>
 
                     {/* Numbers Summary Card */}
-                    <div className="bg-[#eff6ff] rounded-[20px] p-5 border border-blue-100 shadow-sm space-y-3">
+                    <div className="bg-[#eff6ff] rounded-[20px] p-5 border border-blue-100 shadow-sm space-y-3 mb-[14px]">
                       <div className="flex items-center justify-between">
                          <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Cotas ({selectedNumbers.length})</h4>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2.5">
                         {selectedNumbers.map((num) => (
-                           <div key={num} className="w-10 h-10 rounded-full bg-white text-[#1b5df1] flex items-center justify-center font-black text-[14px] shadow-sm border border-blue-100">
+                           <div key={num} className="w-[46px] h-[46px] rounded-full text-[#1b5df1] flex items-center justify-center font-black text-[15px] border border-blue-200/50 shadow-[inset_-2px_-3px_6px_rgba(0,0,0,0.06),0_4px_8px_rgba(27,93,241,0.08)] bg-[radial-gradient(circle_at_35%_25%,_#ffffff_0%,_#f8fafc_40%,_#e2e8f0_100%)]">
                             {padNum(num)}
                           </div>
                         ))}
