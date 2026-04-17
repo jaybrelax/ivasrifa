@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,25 +15,17 @@ import {
 } from "@/components/ui/dialog";
 
 export default function PedidosList() {
-  const [pedidos, setPedidos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
-  const [vendedorId, setVendedorId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPedidos();
-  }, []);
-
-  async function fetchPedidos() {
-    setLoading(true);
-    try {
+  const { data: pedidosData, isLoading: loading, refetch: fetchPedidos } = useQuery({
+    queryKey: ['pedidos-list'],
+    queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) throw new Error("Não autenticado");
 
       // 1. Identificar Role e ID se for Vendedor
       const { data: vData } = await supabase
@@ -42,8 +35,6 @@ export default function PedidosList() {
         .maybeSingle();
       
       const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
-      setUserRole(role);
-      if (vData) setVendedorId(vData.id);
 
       // 2. Query de Pedidos
       let query = supabase
@@ -55,20 +46,24 @@ export default function PedidosList() {
           vendedor:vendedores(nome)
         `);
 
-      if (vData && vData.is_admin === false) {
+      if (role === 'guardiao' && vData) {
         query = query.eq('vendedor_id', vData.id);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
-
       if (error) throw error;
-      setPedidos(data || []);
-    } catch (error) {
-      console.error("Erro ao buscar pedidos:", error);
-    } finally {
-      setLoading(false);
+
+      return {
+        pedidos: data || [],
+        role,
+        vendedorId: vData?.id
+      };
     }
-  }
+  });
+
+  const pedidos = pedidosData?.pedidos || [];
+  const userRole = pedidosData?.role || 'admin';
+  const vendedorId = pedidosData?.vendedorId;
 
   const handleAprovar = async (pedidoId: string) => {
     if (!confirm("Tem certeza que deseja aprovar este pedido manualmente?")) return;

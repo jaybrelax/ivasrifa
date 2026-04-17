@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,138 +18,126 @@ import {
 import { supabase } from "@/lib/supabase";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    totalArrecadado: 0,
-    numerosVendidos: 0,
-    vendedoresAtivos: 0,
-    taxaConversao: 0,
-    ultimasTransacoes: [] as any[],
-    chartData: [] as any[],
-    rankingVendedores: [] as any[],
-    minhasRifas: [] as any[]
-  });
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
-  const [vendedorData, setVendedorData] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [selectedRifaId, setSelectedRifaId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchDashboardData() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+  const queryClient = useQueryClient();
 
-        // Verificar Role
-        const { data: vData } = await supabase
-          .from('vendedores')
-          .select('*, is_admin')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+  const { data: dashboardData, isLoading: loading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
 
-        const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
-        setUserRole(role);
-        setVendedorData(vData);
+      // Verificar Role
+      const { data: vData } = await supabase
+        .from('vendedores')
+        .select('*, is_admin')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
 
-        // --- LOGICA DE VENDAS PESSOAIS (Se tiver perfil de vendedor) ---
-        let minhasRifas: any[] = [];
-        let totalMeu = 0;
-        let totalCotasMinhas = 0;
+      const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
+      
+      // --- LOGICA DE VENDAS PESSOAIS ---
+      let minhasRifas: any[] = [];
+      let totalMeu = 0;
+      let totalCotasMinhas = 0;
 
-        if (vData) {
-          const { data: rifasAtivas } = await supabase
+      if (vData) {
+        let rifasQuery = supabase
+          .from('rifas')
+          .select('id, titulo, meta_guardiao, slug, status')
+          .neq('status', 'rascunho'); // Para guardião, sempre ocultar rascunhos
+
+        if (vData.is_admin === true) {
+          // Se for admin, buscar todas (inclusive rascunho) na lista de campanhas
+          rifasQuery = supabase
             .from('rifas')
-            .select('id, titulo, meta_guardiao, slug')
-            .neq('status', 'rascunho')
+            .select('id, titulo, meta_guardiao, slug, status')
             .order('created_at', { ascending: false });
-
-          const { data: minhasVendas } = await supabase
-            .from('pedidos')
-            .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
-            .eq('vendedor_id', vData.id)
-            .eq('status', 'pago')
-            .neq('rifas.status', 'rascunho');
-
-          totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
-          totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
-
-          minhasRifas = (rifasAtivas || []).map(r => {
-            const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
-              .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
-            return {
-              id: r.id,
-              titulo: r.titulo,
-              slug: r.slug,
-              meta: r.meta_guardiao || 50,
-              vendidos: vendasDessaRifa,
-              progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
-            };
-          });
         }
 
-        if (role === 'admin') {
-          // --- LOGICA ADMIN GLOBAL (ignorar rascunhos) ---
-          const { data: pedidosPagos } = await supabase
-            .from('pedidos')
-            .select('valor_total, created_at, vendedor_id, vendedores(nome), rifas!inner(status)')
-            .eq('status', 'pago')
-            .neq('rifas.status', 'rascunho');
+        const { data: rifasAtivas } = await rifasQuery;
 
-          const totalArrecadado = pedidosPagos?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
+        const { data: minhasVendas } = await supabase
+          .from('pedidos')
+          .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
+          .eq('vendedor_id', vData.id)
+          .eq('status', 'pago');
 
-          const { count: numerosVendidos } = await supabase
-            .from('numeros_rifa')
-            .select('*, rifas!inner(status)', { count: 'exact', head: true })
-            .eq('status', 'vendido')
-            .neq('rifas.status', 'rascunho');
+        totalMeu = minhasVendas?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
+        totalCotasMinhas = minhasVendas?.reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
 
-          const { count: totalVendedores } = await supabase
-            .from('vendedores')
-            .select('*', { count: 'exact', head: true });
+        minhasRifas = (rifasAtivas || []).map(r => {
+          const vendasDessaRifa = minhasVendas?.filter(v => v.rifa_id === r.id)
+            .reduce((acc, curr) => acc + curr.quantidade, 0) || 0;
+          return {
+            id: r.id,
+            titulo: r.titulo,
+            slug: r.slug,
+            meta: r.meta_guardiao || 50,
+            vendidos: vendasDessaRifa,
+            progresso: Math.min((vendasDessaRifa / (r.meta_guardiao || 50)) * 100, 100)
+          };
+        });
+      }
 
-          const { count: totalPedidos } = await supabase
-            .from('pedidos')
-            .select('*, rifas!inner(status)', { count: 'exact', head: true })
-            .neq('rifas.status', 'rascunho');
+      if (role === 'admin') {
+        // --- LOGICA ADMIN GLOBAL ---
+        const { data: pedidosPagos } = await supabase
+          .from('pedidos')
+          .select('valor_total, created_at, vendedor_id, vendedores(nome), rifas!inner(status)')
+          .eq('status', 'pago');
 
-          const pedidosPagosCount = pedidosPagos?.length || 0;
-          const taxaConversao = totalPedidos && totalPedidos > 0
-            ? (pedidosPagosCount / totalPedidos) * 100
-            : 0;
+        const totalArrecadado = pedidosPagos?.reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
 
-          // Ranking de Guardiões (ignorar rascunhos)
-          const { data: vendasVendedores } = await supabase
-            .from('pedidos')
-            .select('vendedor_id, valor_total, vendedores(nome), rifas!inner(status)')
-            .eq('status', 'pago')
-            .not('vendedor_id', 'is', null)
-            .neq('rifas.status', 'rascunho');
+        const { count: numerosVendidos } = await supabase
+          .from('numeros_rifa')
+          .select('*, rifas!inner(status)', { count: 'exact', head: true })
+          .eq('status', 'vendido');
 
-          const rankingMap = new Map();
-          vendasVendedores?.forEach((v: any) => {
-            const nome = Array.isArray(v.vendedores) ? v.vendedores[0]?.nome : (v.vendedores as any)?.nome;
-            const current = rankingMap.get(v.vendedor_id) || { nome, total: 0 };
-            rankingMap.set(v.vendedor_id, { ...current, total: current.total + Number(v.valor_total) });
-          });
-          const ranking = Array.from(rankingMap.values())
-            .sort((a, b) => b.total - a.total)
-            .slice(0, 5);
+        const { count: totalVendedores } = await supabase
+          .from('vendedores')
+          .select('*', { count: 'exact', head: true });
 
-          // Chart Data (7 dias)
-          const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split('T')[0];
-          });
-          const chartData = last7Days.map(date => {
-            const dayName = new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' });
-            const vendasDoDia = pedidosPagos?.filter(p => p.created_at.startsWith(date))
-              .reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
-            return { name: dayName, vendas: vendasDoDia };
-          });
+        const { count: totalPedidos } = await supabase
+          .from('pedidos')
+          .select('*, rifas!inner(status)', { count: 'exact', head: true });
 
-          setStats(prev => ({
-            ...prev,
+        const pedidosPagosCount = pedidosPagos?.length || 0;
+        const taxaConversao = totalPedidos && totalPedidos > 0
+          ? (pedidosPagosCount / totalPedidos) * 100
+          : 0;
+
+        // Ranking
+        const rankingMap = new Map();
+        pedidosPagos?.forEach((v: any) => {
+          if (!v.vendedor_id) return;
+          const nome = Array.isArray(v.vendedores) ? v.vendedores[0]?.nome : (v.vendedores as any)?.nome;
+          const current = rankingMap.get(v.vendedor_id) || { nome, total: 0 };
+          rankingMap.set(v.vendedor_id, { ...current, total: current.total + Number(v.valor_total) });
+        });
+        const ranking = Array.from(rankingMap.values())
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 5);
+
+        // Chart Data
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          return d.toISOString().split('T')[0];
+        });
+        const chartData = last7Days.map(date => {
+          const dayName = new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' });
+          const vendasDoDia = pedidosPagos?.filter(p => p.created_at.startsWith(date))
+            .reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
+          return { name: dayName, vendas: vendasDoDia };
+        });
+
+        return {
+          role,
+          vendedorData: vData,
+          stats: {
             totalArrecadado,
             numerosVendidos: numerosVendidos || 0,
             vendedoresAtivos: totalVendedores || 0,
@@ -156,62 +145,68 @@ export default function Dashboard() {
             chartData,
             rankingVendedores: ranking,
             minhasRifas: minhasRifas
-          }));
-
-          if (minhasRifas.length > 0) {
-            setSelectedRifaId(minhasRifas[0].id);
           }
+        };
+      } else {
+        // --- LOGICA GUARDIAO ---
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          return d.toISOString().split('T')[0];
+        });
+        
+        const { data: minhasVendas } = await supabase
+          .from('pedidos')
+          .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
+          .eq('vendedor_id', vData.id)
+          .eq('status', 'pago')
+          .neq('rifas.status', 'rascunho');
 
-        } else {
-          // --- LOGICA GUARDIAO ---
-          const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return d.toISOString().split('T')[0];
-          });
-          
-          const { data: minhasVendas } = await supabase
-            .from('pedidos')
-            .select('valor_total, created_at, quantidade, rifa_id, rifas!inner(status)')
-            .eq('vendedor_id', vData.id)
-            .eq('status', 'pago')
-            .neq('rifas.status', 'rascunho');
+        const chartData = last7Days.map(date => {
+          const dayName = new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' });
+          const vendasDoDia = minhasVendas?.filter(p => p.created_at.startsWith(date))
+            .reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
+          return { name: dayName, vendas: vendasDoDia };
+        });
 
-          const chartData = last7Days.map(date => {
-            const dayName = new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' });
-            const vendasDoDia = minhasVendas?.filter(p => p.created_at.startsWith(date))
-              .reduce((acc, curr) => acc + Number(curr.valor_total), 0) || 0;
-            return { name: dayName, vendas: vendasDoDia };
-          });
-
-          setStats({
+        return {
+          role,
+          vendedorData: vData,
+          stats: {
             totalArrecadado: totalMeu,
             numerosVendidos: totalCotasMinhas,
             vendedoresAtivos: 0,
             taxaConversao: 0,
-            ultimasTransacoes: [],
             chartData,
             rankingVendedores: [],
             minhasRifas: minhasRifas
-          });
-
-          if (minhasRifas.length > 0) {
-            setSelectedRifaId(minhasRifas[0].id);
           }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dashboard:", error);
-      } finally {
-        setLoading(false);
+        };
       }
     }
+  });
 
-    fetchDashboardData();
-  }, []);
+  const stats = dashboardData?.stats || {
+    totalArrecadado: 0,
+    numerosVendidos: 0,
+    vendedoresAtivos: 0,
+    taxaConversao: 0,
+    chartData: [],
+    rankingVendedores: [],
+    minhasRifas: []
+  };
+  const userRole = dashboardData?.role || 'admin';
+  const vendedorData = dashboardData?.vendedorData;
+
+  useEffect(() => {
+    if (!selectedRifaId && stats.minhasRifas.length > 0) {
+      setSelectedRifaId(stats.minhasRifas[0].id);
+    }
+  }, [stats.minhasRifas]);
 
   const copyLink = (rifaSlug: string) => {
     if (!vendedorData) return;
-    const link = `${window.location.origin}/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
+    const link = `http://rifa.virtudes.net.br/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(rifaSlug);
     setTimeout(() => setCopiedLink(null), 2000);
@@ -278,7 +273,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 <div className="relative group">
                   <div className="bg-blue-50/40 border border-blue-400/30 hover:border-blue-500 transition-all rounded-md px-4 py-3 text-sm text-slate-500 break-all font-mono leading-relaxed shadow-sm">
-                    <span className="text-slate-400">{window.location.origin}/</span><span className="text-[#1a6eff] font-bold">{selectedRifa?.slug}</span><span className="text-slate-400">?ref=</span><span className="text-slate-800 font-bold">{vendedorData?.codigo_ref}</span>
+                    <span className="text-slate-400">http://rifa.virtudes.net.br/</span><span className="text-[#1a6eff] font-bold">{selectedRifa?.slug}</span><span className="text-slate-400">?ref=</span><span className="text-slate-800 font-bold">{vendedorData?.codigo_ref}</span>
                   </div>
                 </div>
                 <button

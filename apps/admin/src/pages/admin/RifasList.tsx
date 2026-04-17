@@ -11,39 +11,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export default function RifasList() {
-  const [rifas, setRifas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [rifaToDelete, setRifaToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
-  const [vendedorRef, setVendedorRef] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRifas();
-  }, []);
-
-  async function fetchRifas() {
-    setLoading(true);
-    try {
+  const { data: rifasData, isLoading: loading, refetch: refetchRifas } = useQuery({
+    queryKey: ['rifas-list'],
+    queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) throw new Error("Não autenticado");
 
-      // 1. Identificar Role e ID se for Vendedor
+      // 1. Identificar Role
       const { data: vData } = await supabase
         .from('vendedores')
         .select('*, is_admin')
         .eq('user_id', session.user.id)
         .maybeSingle();
       
-      setUserRole((vData && vData.is_admin === false) ? 'guardiao' : 'admin');
-      if (vData) setVendedorRef(vData.codigo_ref);
+      const role = (vData && vData.is_admin === false) ? 'guardiao' : 'admin';
 
-      // 2. Buscar Rifas com contagem de números vendidos e pedidos pagos
+      // 2. Query de Rifas
       let rifasQuery = supabase
         .from('rifas')
         .select(`
@@ -52,21 +44,17 @@ export default function RifasList() {
           pedidos(status, valor_total)
         `);
 
-      if (vData) {
+      if (role === 'guardiao') {
         // Se for guardião, ocultar rascunhos
         rifasQuery = rifasQuery.neq('status', 'rascunho');
       }
 
       const { data, error } = await rifasQuery.order('created_at', { ascending: false });
-      
       if (error) throw error;
 
       // Calcular progresso real para cada rifa
       const rifasComProgresso = (data || []).map(rifa => {
-        // Contagem de números vendidos (pela tabela de números)
         const vendidos = rifa.numeros_rifa?.filter((n: any) => n.status === 'vendido').length || 0;
-        
-        // Faturamento real pelos pedidos pagos
         const pedidosPagos = rifa.pedidos?.filter((p: any) => p.status === 'pago') || [];
         const brutoTotal = pedidosPagos.reduce((acc: number, p: any) => acc + Number(p.valor_total || 0), 0);
         
@@ -105,7 +93,7 @@ export default function RifasList() {
   };
 
   const copyRecruitLink = () => {
-    const url = `${window.location.origin}/recrutamento`;
+    const url = `http://rifa.virtudes.net.br/recrutamento`;
     navigator.clipboard.writeText(url);
     setCopiedId('recruit');
     setTimeout(() => setCopiedId(null), 2000);
@@ -113,7 +101,7 @@ export default function RifasList() {
 
   const copyRifaLink = (rifa: any) => {
     const ref = vendedorRef ? `?ref=${vendedorRef}` : '';
-    const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+    const publicOrigin = "http://rifa.virtudes.net.br";
     const url = `${publicOrigin}/${rifa.slug || rifa.id}${ref}`;
     navigator.clipboard.writeText(url);
     setCopiedId(rifa.id);
@@ -290,7 +278,7 @@ export default function RifasList() {
                             variant="secondary" 
                             size="sm"
                             onClick={() => {
-                              const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                              const publicOrigin = "http://rifa.virtudes.net.br";
                               window.open(`${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`, '_blank');
                             }}
                             className="h-10 text-xs font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
@@ -307,7 +295,7 @@ export default function RifasList() {
                           variant="secondary" 
                           size="sm"
                           onClick={() => {
-                            const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                            const publicOrigin = "http://rifa.virtudes.net.br";
                             window.open(`${publicOrigin}/${rifa.slug || rifa.id}?ref=${vendedorRef}`, '_blank');
                           }}
                           className="w-full h-11 text-sm font-bold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm rounded-xl"
@@ -320,7 +308,7 @@ export default function RifasList() {
                           size="sm"
                           className="w-full h-11 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 rounded-xl"
                           onClick={() => {
-                            const publicOrigin = window.location.origin.includes('admin.') ? window.location.origin.replace('admin.', '') : window.location.origin;
+                            const publicOrigin = "http://rifa.virtudes.net.br";
                             const myRefLink = `${publicOrigin}/${rifa.slug || rifa.id}${vendedorRef ? `?ref=${vendedorRef}` : ''}`;
                             navigator.clipboard.writeText(myRefLink);
                             setCopiedId(rifa.id);

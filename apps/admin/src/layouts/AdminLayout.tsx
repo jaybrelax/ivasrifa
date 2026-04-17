@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { cn } from "@/lib/utils";
 import { MobileNav } from '@/components/MobileNav';
 import { InstallPWA } from '@/components/InstallPWA';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
@@ -121,6 +122,33 @@ export default function AdminLayout() {
       );
     }
   }, []);
+
+  const queryClient = useQueryClient();
+
+  // Realtime updates for orders and stats
+  useEffect(() => {
+    const channel = supabase
+      .channel('pedido-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedidos',
+        },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['pedidos-list'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
