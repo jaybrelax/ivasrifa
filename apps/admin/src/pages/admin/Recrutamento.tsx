@@ -89,13 +89,17 @@ export default function Recrutamento() {
 
       if (vendedorError) throw vendedorError;
 
-      // Se o Supabase retornar uma sessão imediatamente (confirmação desativada),
-      // o usuário já está logado.
-      if (authData.session) {
-        navigate("/");
-      } else {
-        setStep(2);
+      // Se o Supabase não retornar uma sessão imediatamente (mesmo com confirmação desativada),
+      // forçamos o login para garantir que o usuário acesse o painel logado.
+      if (!authData.session) {
+        await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.senha,
+        });
       }
+
+      // Redireciona diretamente para o Dashboard logado
+      navigate("/");
     } catch (err: any) {
       console.error("Erro no recrutamento:", err);
       let msg = err.message || "Tente novamente.";
