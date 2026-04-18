@@ -677,7 +677,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                         <AlertCircle className="h-4 w-4 text-white" />
                       </div>
                       <p className="text-[#92400e] text-[13px] font-bold leading-tight">
-                        Seus números estão reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 minutos</span>
+                        Seus números estão reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 min</span>
                       </p>
                     </div>
 
@@ -711,7 +711,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                     {/* Numbers Summary Card */}
                     <div className="bg-[#eff6ff] rounded-[20px] p-5 border border-blue-100 shadow-sm space-y-3 mb-[14px]">
                       <div className="flex items-center justify-between">
-                         <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Cotas ({selectedNumbers.length})</h4>
+                         <h4 className="text-[11px] uppercase font-black text-blue-600 tracking-widest">Números escolhidos ({selectedNumbers.length})</h4>
                       </div>
                       <div className="flex flex-wrap gap-2.5">
                         {selectedNumbers.map((num) => (

@@ -24,7 +24,7 @@ export function MobileNav({ userRole }: { userRole?: 'admin' | 'guardiao' }) {
     { label: "Dashboard", icon: LayoutDashboard, path: "/", color: "text-violet-500" },
     { label: "Rifas", icon: Ticket, path: "/rifas", color: "text-blue-500" },
     { label: "Ranking", icon: Trophy, path: "/ranking", color: "text-amber-500" },
-    { label: "Pedidos", icon: ShoppingCart, path: "/pedidos", color: "text-emerald-500" },
+    { label: "Vendas", icon: ShoppingCart, path: "/vendas", color: "text-emerald-500" },
   ];
 
   // Adicionar o 5º item dinâmico

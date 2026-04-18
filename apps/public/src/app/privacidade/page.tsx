@@ -24,7 +24,7 @@ export default function PrivacidadePage() {
           <p className="text-gray-600 leading-relaxed">Coletamos apenas os dados necessários para o processamento de suas compras e comunicação sobre os sorteios:</p>
           <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
             <li><strong>Nome Completo:</strong> Para identificação do ganhador.</li>
-            <li><strong>CPF:</strong> Para validação legal da compra e entrega de prêmios.</li>
+            <li><strong>CPF:</strong> Para validação legal da compra e emissão de cobrança via PIX.</li>
             <li><strong>WhatsApp/Telefone:</strong> Para envio de comprovantes e contato prioritário em caso de sorteio.</li>
             <li><strong>E-mail (opcional):</strong> Para envio de notificações do sistema.</li>
           </ul>

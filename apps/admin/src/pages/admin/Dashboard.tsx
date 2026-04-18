@@ -206,7 +206,7 @@ export default function Dashboard() {
 
   const copyLink = (rifaSlug: string) => {
     if (!vendedorData) return;
-    const link = `http://rifa.virtudes.net.br/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
+    const link = `https://rifa.virtudes.net.br/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(rifaSlug);
     setTimeout(() => setCopiedLink(null), 2000);
@@ -273,7 +273,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 <div className="relative group">
                   <div className="bg-blue-50/40 border border-blue-400/30 hover:border-blue-500 transition-all rounded-md px-4 py-3 text-sm text-slate-500 break-all font-mono leading-relaxed shadow-sm">
-                    <span className="text-slate-400">http://rifa.virtudes.net.br/</span><span className="text-[#1a6eff] font-bold">{selectedRifa?.slug}</span><span className="text-slate-400">?ref=</span><span className="text-slate-800 font-bold">{vendedorData?.codigo_ref}</span>
+                    <span className="text-slate-400">https://rifa.virtudes.net.br/</span><span className="text-[#1a6eff] font-bold">{selectedRifa?.slug}</span><span className="text-slate-400">?ref=</span><span className="text-slate-800 font-bold">{vendedorData?.codigo_ref}</span>
                   </div>
                 </div>
                 <button
