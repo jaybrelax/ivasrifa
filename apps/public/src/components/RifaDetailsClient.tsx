@@ -44,6 +44,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600);
 
   const [formData, setFormData] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -177,6 +178,21 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
     return () => { if (interval) clearInterval(interval); };
   }, [checkoutStep, pedidoId, formData]);
 
+  // Timer do PIX
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (checkoutStep === 3 && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && checkoutStep === 3) {
+      setCheckoutStep(1);
+      setCheckoutError("O tempo para pagamento expirou. Por favor, gere um novo PIX.");
+      setTimeLeft(600);
+    }
+    return () => { if (timer) clearInterval(timer); };
+  }, [checkoutStep, timeLeft]);
+
   const handleNumberClick = (num: number) => {
     if (numerosVendidos.includes(num) || numerosReservados.includes(num) || numerosEmSelecao.includes(num)) return;
     setSelectedNumbers((prev) =>
@@ -225,6 +241,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
       if (!response.ok) throw new Error(data.error || "Erro ao processar pedido");
       setPedidoId(data.pedido_id);
       setPixData(data);
+      setTimeLeft(600);
       setCheckoutStep(3);
     } catch (error: any) {
       if (error.message?.includes("Invalid user identification number") || error.message?.includes("invalid identification.number")) {
@@ -671,16 +688,6 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
                 {checkoutStep === 2 && (
                   <div className="space-y-3.5">
-                    {/* Reservation Banner */}
-                    <div className="bg-[#fffbeb] border border-[#fde68a] p-3.5 rounded-[20px] flex items-center gap-3 shadow-sm">
-                      <div className="h-6 w-6 rounded-full bg-[#f59e0b] flex items-center justify-center shrink-0">
-                        <AlertCircle className="h-4 w-4 text-white" />
-                      </div>
-                      <p className="text-[#92400e] text-[13px] font-bold leading-tight">
-                        Seus números estão reservados por <span className="text-[#78350f] font-black underline decoration-amber-300">10 min</span>
-                      </p>
-                    </div>
-
                     {checkoutError && (
                       <div className="p-3 bg-[#ffecec] border border-[#ffcccc] text-[#d32f2f] text-[13px] font-bold rounded-[16px] flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                         <div className="h-6 w-6 rounded-full bg-[#d32f2f] flex items-center justify-center shrink-0">
@@ -719,6 +726,12 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                             {padNum(num)}
                           </div>
                         ))}
+                      </div>
+                      <div className="pt-2 mt-2 border-t border-blue-200/50 flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-blue-500" />
+                        <p className="text-[#1b5df1] text-[11px] font-bold leading-tight">
+                          Seus números estão reservados por <span className="font-black text-blue-800 underline decoration-blue-300">10 min</span>
+                        </p>
                       </div>
                     </div>
 
@@ -810,8 +823,26 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
 
               {/* QR Code area — flex-1 so it takes available space */}
               <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 gap-5">
+                
+                {/* Timer Area */}
+                <div className="w-full max-w-[260px] mb-2">
+                   <div className="flex justify-between items-center mb-2">
+                     <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Tempo restante</span>
+                     <span className="text-[14px] font-black text-white">{Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                   </div>
+                   <div className="w-full bg-blue-900/50 rounded-full h-2 overflow-hidden border border-white/10">
+                     <div 
+                       className="bg-green-400 h-full rounded-full transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(74,222,128,0.5)]"
+                       style={{ 
+                         width: `${(timeLeft / 600) * 100}%`,
+                         backgroundColor: timeLeft < 120 ? '#ef4444' : timeLeft < 300 ? '#eab308' : '#4ade80'
+                       }}
+                     />
+                   </div>
+                </div>
+
                 {/* QR Code Card */}
-                <div className="bg-white rounded-[28px] shadow-2xl p-5 flex items-center justify-center w-full max-w-[260px] aspect-square">
+                <div className="bg-white rounded-[28px] shadow-2xl p-5 flex items-center justify-center w-full max-w-[260px] aspect-square relative z-10">
                   {pixData?.qr_code_base64 ? (
                     <img
                       src={`data:image/jpeg;base64,${pixData?.qr_code_base64}`}
