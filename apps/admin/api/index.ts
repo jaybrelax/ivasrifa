@@ -267,7 +267,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     if (action === "payment.updated" || action === "payment.created") {
       const paymentId = data?.id;
       const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-      const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token").single();
+      const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token, webhook_pago").single();
       const payment = new Payment(new MercadoPagoConfig({ accessToken: config!.mp_access_token }));
       const info = await payment.get({ id: paymentId });
       
@@ -279,7 +279,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 
           const { data: pedidoFull } = await supabaseAdmin
             .from("pedidos")
-            .select("*, cliente:clientes(nome_completo, telefone), rifa:rifas(id, titulo)")
+            .select("*, cliente:clientes(nome_completo, telefone, cpf, email), rifa:rifas(id, titulo), vendedor:vendedores(nome)")
             .eq("id", p.id)
             .single();
 
@@ -287,6 +287,28 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte!🍀`;
             await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
+
+            // POST para Webhook Pago
+            if (config?.webhook_pago) {
+              const payload = {
+                nome_comprador: pedidoFull.cliente.nome_completo,
+                cpf: pedidoFull.cliente.cpf,
+                telefone: pedidoFull.cliente.telefone,
+                email: pedidoFull.cliente.email,
+                pedido_id: pedidoFull.id,
+                codigo_transacao: paymentId.toString(),
+                valor_total: pedidoFull.valor_total,
+                status: "pago",
+                numeros_escolhidos: pedidoFull.numeros,
+                vendedor: pedidoFull.vendedor?.nome || "Direto"
+              };
+              
+              fetch(config.webhook_pago, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              }).catch(err => console.error("[WEBHOOK PAGO] Erro ao enviar:", err));
+            }
 
             // Bônus
             const { data: bonusPremios } = await supabaseAdmin.from("premios").select("titulo, link_bonus").eq("rifa_id", pedidoFull.rifa_id).eq("is_bonus", true).not("link_bonus", "is", null);
@@ -342,7 +364,7 @@ app.get("*", async (req, res) => {
 
 // Inicialização
 if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => console.log(`[ADMIN API] Servidor em http://localhost:${PORT}`));
 }
 

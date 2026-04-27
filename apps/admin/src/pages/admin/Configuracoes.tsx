@@ -34,7 +34,8 @@ export default function Configuracoes() {
     hero_descricao: "",
     hero_imagem_url: "",
     whatsapp: "",
-    admin_dark_mode: false
+    admin_dark_mode: false,
+    webhook_pago: ""
   });
 
   useEffect(() => {
@@ -75,7 +76,8 @@ export default function Configuracoes() {
             hero_descricao: data.hero_descricao || "",
             hero_imagem_url: data.hero_imagem_url || "",
             whatsapp: data.whatsapp || "",
-            admin_dark_mode: data.admin_dark_mode === true
+            admin_dark_mode: data.admin_dark_mode === true,
+            webhook_pago: data.webhook_pago || ""
           });
         }
       } catch (error) {
@@ -581,6 +583,18 @@ export default function Configuracoes() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500">Chave de autenticação para enviar mensagens automáticas.</p>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t mt-4">
+                    <Label htmlFor="webhook_pago">Webhook (Pedido Pago)</Label>
+                    <Input 
+                      id="webhook_pago" 
+                      placeholder="https://sua-automacao.com/webhook" 
+                      value={formData.webhook_pago}
+                      onChange={handleChange}
+                      disabled={authError}
+                    />
+                    <p className="text-xs text-gray-500">URL que receberá um POST com os dados do pedido (Nome, Valor, Telefone, Guardião, etc) quando aprovado.</p>
                   </div>
 
                   <div className="pt-2">

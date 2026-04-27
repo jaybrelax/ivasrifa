@@ -94,6 +94,13 @@ export default function RankingList() {
     }
   };
 
+  const formatShortName = (name: string) => {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length <= 1) return name;
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-blue-50">
@@ -155,7 +162,7 @@ export default function RankingList() {
                       </Avatar>
 
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{vendedor.nome}</p>
+                        <p className="font-bold text-gray-900 truncate">{formatShortName(vendedor.nome)}</p>
                         <p className="text-xs text-gray-500 truncate">@{vendedor.codigo_ref}</p>
                       </div>
                     </div>
