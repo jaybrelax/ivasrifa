@@ -922,8 +922,9 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                   if (bonus?.link_bonus) {
                     window.open(bonus.link_bonus, '_blank');
                   }
+                  window.location.reload();
                 }} 
-                className="mt-10 w-full h-16 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                className="mt-10 w-full h-16 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all cursor-pointer"
               >
                 {premios?.find(p => p.is_bonus && p.link_bonus) ? 'Acessar Bônus' : 'Finalizar'}
               </Button>
