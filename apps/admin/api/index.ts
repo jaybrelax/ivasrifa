@@ -292,15 +292,21 @@ app.get("/api/pagamento/status/:pedido_id", async (req, res) => {
 app.post("/api/webhooks/mercadopago", async (req, res) => {
   try {
     const { action, data } = req.body;
+    const paymentId = data?.id;
+    console.log(`[MP Webhook] Recebido: ${action} | ID: ${paymentId}`);
+
     if (action === "payment.updated" || action === "payment.created") {
-      const paymentId = data?.id;
       const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
       const { data: config } = await supabaseAdmin.from("configuracoes").select("mp_access_token, webhook_pago").single();
       const payment = new Payment(new MercadoPagoConfig({ accessToken: config!.mp_access_token }));
       const info = await payment.get({ id: paymentId });
+
+      console.log(`[MP Webhook] Status MP para ${paymentId}: ${info.status}`);
       
       if (info.status === "approved") {
         const { data: p } = await supabaseAdmin.from("pedidos").select("id").eq("mp_payment_id", paymentId.toString()).single();
+        console.log(`[MP Webhook] Pedido no DB encontrado:`, p ? "SIM" : "NÃO");
+        
         if (p) {
           await supabaseAdmin.from("pedidos").update({ status: "pago", pago_em: new Date().toISOString() }).eq("id", p.id);
           await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
@@ -338,12 +344,18 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
                   whatsapp: pedidoFull.vendedor?.whatsapp || ""
                 }
               };
-              
-              fetch(config.webhook_pago, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              }).catch(err => console.error("[WEBHOOK PAGO] Erro ao enviar:", err));
+
+              console.log("[WEBHOOK PAGO] Enviando para:", config.webhook_pago);
+              try {
+                const response = await fetch(config.webhook_pago, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                });
+                console.log("[WEBHOOK PAGO] Status da resposta:", response.status);
+              } catch (err) {
+                console.error("[WEBHOOK PAGO] Erro crítico ao enviar:", err);
+              }
             }
 
             // Bônus

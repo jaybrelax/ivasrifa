@@ -112,24 +112,24 @@ export default function Configuracoes() {
 
     try {
       setUploadingLogo(true);
-      
+
       const fileExt = file.name.split('.').pop();
       const fileName = `logo-${Date.now()}.${fileExt}`;
       const filePath = `logos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file, { 
+        .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true 
+          upsert: true
         });
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-      
+
       setFormData({ ...formData, logo_url: data.publicUrl });
-      
+
     } catch (error: any) {
       console.error("Erro ao fazer upload da logo:", error);
       alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
@@ -168,7 +168,7 @@ export default function Configuracoes() {
 
       const { data } = supabase.storage.from('images').getPublicUrl(filePath);
       setFormData({ ...formData, hero_imagem_url: data.publicUrl });
-      
+
     } catch (error: any) {
       console.error("Erro ao fazer upload do banner:", error);
       alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
@@ -180,15 +180,15 @@ export default function Configuracoes() {
 
   const handleTestEvolution = async () => {
     if (!formData.evolution_api_url || !formData.evolution_api_key || !formData.evolution_api_instance) {
-       // Note: the field id is evolution_instance but in state it might be different?
-       // Let me check state names.
+      // Note: the field id is evolution_instance but in state it might be different?
+      // Let me check state names.
     }
     setTestingEvo(true);
     try {
       // Como o backend Express já tem o helper, podemos criar um endpoint de teste ou fazer direto
       // Vamos fazer um POST para o endpoint de mensagens da Evolution direto do front para teste (se CORS permitir)
       // Ou melhor, avisar o usuário para salvar antes.
-      
+
       const numLimpo = formData.whatsapp.replace(/\D/g, "");
       if (!numLimpo) {
         alert("Defina um WhatsApp de Suporte para receber o teste.");
@@ -290,10 +290,10 @@ export default function Configuracoes() {
         });
 
       if (error) throw error;
-      
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-      
+
     } catch (error: any) {
       console.error("Erro ao salvar configurações:", error);
       if (error.message?.includes('RLS') || error.code === '42501') {
@@ -327,7 +327,7 @@ export default function Configuracoes() {
           <div>
             <h3 className="font-bold">Acesso Negado (Extrema Segurança)</h3>
             <p className="text-sm mt-1">
-              As configurações e chaves de API estão protegidas por políticas de segurança (RLS). 
+              As configurações e chaves de API estão protegidas por políticas de segurança (RLS).
               Você precisa implementar o login de administrador e estar autenticado no Supabase para visualizar ou editar estes dados.
             </p>
           </div>
@@ -345,9 +345,9 @@ export default function Configuracoes() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nome_sistema">Nome do Sistema</Label>
-                <Input 
-                  id="nome_sistema" 
-                  placeholder="Ex: Sorteios Online" 
+                <Input
+                  id="nome_sistema"
+                  placeholder="Ex: Sorteios Online"
                   value={formData.nome_sistema}
                   onChange={handleChange}
                   disabled={authError}
@@ -363,7 +363,7 @@ export default function Configuracoes() {
                     type="button"
                     role="switch"
                     aria-checked={formData.admin_dark_mode}
-                    onClick={() => setFormData({...formData, admin_dark_mode: !formData.admin_dark_mode})}
+                    onClick={() => setFormData({ ...formData, admin_dark_mode: !formData.admin_dark_mode })}
                     disabled={authError}
                     className={`
                       relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50
@@ -380,10 +380,10 @@ export default function Configuracoes() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <Label>Logo do Sistema</Label>
-              
+
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
                   <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
@@ -394,12 +394,12 @@ export default function Configuracoes() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex-1 space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Input 
-                      id="logo_url" 
-                      placeholder="https://exemplo.com/logo.png" 
+                    <Input
+                      id="logo_url"
+                      placeholder="https://exemplo.com/logo.png"
                       value={formData.logo_url}
                       onChange={handleChange}
                       disabled={authError}
@@ -407,17 +407,17 @@ export default function Configuracoes() {
                     />
                     <span className="text-sm text-gray-500 font-medium">OU</span>
                     <div>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
                         ref={logoInputRef}
                         onChange={handleLogoUpload}
                         disabled={authError || uploadingLogo}
                       />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => logoInputRef.current?.click()}
                         disabled={authError || uploadingLogo}
                       >
@@ -449,12 +449,12 @@ export default function Configuracoes() {
               </div>
               <div className="flex items-center space-x-2">
                 <Label htmlFor="hero_enabled" className="cursor-pointer">Ativado</Label>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="hero_enabled"
                   className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                   checked={formData.hero_enabled}
-                  onChange={(e) => setFormData({...formData, hero_enabled: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, hero_enabled: e.target.checked })}
                   disabled={authError}
                 />
               </div>
@@ -463,22 +463,22 @@ export default function Configuracoes() {
           <CardContent className={formData.hero_enabled ? "space-y-6 opacity-100" : "space-y-6 opacity-40 grayscale pointer-events-none transition-all"}>
             <div className="space-y-2">
               <Label htmlFor="hero_titulo">Título de Destaque</Label>
-              <Input 
-                id="hero_titulo" 
-                placeholder="Ex: Realize seus sonhos..." 
+              <Input
+                id="hero_titulo"
+                placeholder="Ex: Realize seus sonhos..."
                 value={formData.hero_titulo}
-                onChange={(e) => setFormData({...formData, hero_titulo: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, hero_titulo: e.target.value })}
                 disabled={authError}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="hero_descricao">Descrição Curta</Label>
-              <Input 
-                id="hero_descricao" 
-                placeholder="Ex: Participe de rifas seguras..." 
+              <Input
+                id="hero_descricao"
+                placeholder="Ex: Participe de rifas seguras..."
                 value={formData.hero_descricao}
-                onChange={(e) => setFormData({...formData, hero_descricao: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, hero_descricao: e.target.value })}
                 disabled={authError}
               />
             </div>
@@ -491,17 +491,17 @@ export default function Configuracoes() {
                     <img src={formData.hero_imagem_url} alt="Hero Preview" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                       <Button variant="secondary" size="sm" type="button" onClick={() => heroInputRef.current?.click()} disabled={uploadingHero}>
-                         Alterar Imagem
+                        Alterar Imagem
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center p-4">
-                     <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                     <p className="text-sm text-gray-500 mb-2">Sem imagem de fundo definida</p>
-                     <Button variant="outline" size="sm" type="button" onClick={() => heroInputRef.current?.click()}>
-                       Selecionar Imagem
-                     </Button>
+                    <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 mb-2">Sem imagem de fundo definida</p>
+                    <Button variant="outline" size="sm" type="button" onClick={() => heroInputRef.current?.click()}>
+                      Selecionar Imagem
+                    </Button>
                   </div>
                 )}
                 {uploadingHero && (
@@ -509,21 +509,21 @@ export default function Configuracoes() {
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   </div>
                 )}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
                   ref={heroInputRef}
                   onChange={handleHeroUpload}
                   disabled={authError || uploadingHero}
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <Input 
-                  id="hero_imagem_url" 
-                  placeholder="URL personalizada da imagem..." 
+                <Input
+                  id="hero_imagem_url"
+                  placeholder="URL personalizada da imagem..."
                   value={formData.hero_imagem_url}
-                  onChange={(e) => setFormData({...formData, hero_imagem_url: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, hero_imagem_url: e.target.value })}
                   disabled={authError}
                   className="text-xs"
                 />
@@ -545,23 +545,23 @@ export default function Configuracoes() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            
+
             {/* Mercado Pago */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Mercado Pago</h3>
               <div className="space-y-2">
                 <Label htmlFor="mp_access_token">Access Token (Produção)</Label>
                 <div className="relative">
-                  <Input 
-                    id="mp_access_token" 
+                  <Input
+                    id="mp_access_token"
                     type={showMpToken ? "text" : "password"}
-                    placeholder="APP_USR-..." 
+                    placeholder="APP_USR-..."
                     value={formData.mp_access_token}
                     onChange={handleChange}
                     disabled={authError}
                     className="pr-10 font-mono"
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowMpToken(!showMpToken)}
                     className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
@@ -575,124 +575,124 @@ export default function Configuracoes() {
             </div>
 
             {/* Evolution API */}
-              <div className="space-y-4 pt-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
-                  Evolution API (WhatsApp)
-                  <div className="flex items-center space-x-2 text-sm font-normal">
-                    <Label htmlFor="evolution_enabled" className="cursor-pointer">Ativado</Label>
-                    <input 
-                      type="checkbox" 
-                      id="evolution_enabled"
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
-                      checked={formData.evolution_enabled}
-                      onChange={(e) => setFormData({...formData, evolution_enabled: e.target.checked})}
-                      disabled={authError}
-                    />
-                  </div>
-                </h3>
-                
-                <div className={formData.evolution_enabled ? "space-y-4 opacity-100" : "space-y-4 opacity-40 grayscale pointer-events-none transition-all"}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="evolution_api_url">URL da API</Label>
-                      <Input 
-                        id="evolution_api_url" 
-                        placeholder="https://sua-api.com" 
-                        value={formData.evolution_api_url}
-                        onChange={handleChange}
-                        disabled={authError}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="evolution_instance">Nome da Instância</Label>
-                      <Input 
-                        id="evolution_instance" 
-                        placeholder="Ex: Admin" 
-                        value={formData.evolution_instance}
-                        onChange={handleChange}
-                        disabled={authError}
-                      />
-                    </div>
-                  </div>
+            <div className="space-y-4 pt-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
+                Evolution API (WhatsApp)
+                <div className="flex items-center space-x-2 text-sm font-normal">
+                  <Label htmlFor="evolution_enabled" className="cursor-pointer">Ativado</Label>
+                  <input
+                    type="checkbox"
+                    id="evolution_enabled"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                    checked={formData.evolution_enabled}
+                    onChange={(e) => setFormData({ ...formData, evolution_enabled: e.target.checked })}
+                    disabled={authError}
+                  />
+                </div>
+              </h3>
 
+              <div className={formData.evolution_enabled ? "space-y-4 opacity-100" : "space-y-4 opacity-40 grayscale pointer-events-none transition-all"}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="evolution_api_key">Global API Key</Label>
-                    <div className="relative">
-                      <Input 
-                        id="evolution_api_key" 
-                        type={showEvoKey ? "text" : "password"}
-                        placeholder="Sua chave secreta..." 
-                        value={formData.evolution_api_key}
-                        onChange={handleChange}
-                        disabled={authError}
-                        className="pr-10 font-mono"
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => setShowEvoKey(!showEvoKey)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                        disabled={authError}
-                      >
-                        {showEvoKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Chave de autenticação para enviar mensagens automáticas.</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t mt-4">
-                    <Label htmlFor="webhook_pago">Webhook (Pedido Pago)</Label>
-                    <Input 
-                      id="webhook_pago" 
-                      placeholder="https://sua-automacao.com/webhook" 
-                      value={formData.webhook_pago}
+                    <Label htmlFor="evolution_api_url">URL da API</Label>
+                    <Input
+                      id="evolution_api_url"
+                      placeholder="https://sua-api.com"
+                      value={formData.evolution_api_url}
                       onChange={handleChange}
                       disabled={authError}
                     />
-                    <p className="text-xs text-gray-500">URL que receberá um POST com os dados do pedido (Nome, Valor, Telefone, Guardião, etc) quando aprovado.</p>
                   </div>
-
-                  <div className="pt-2 flex flex-wrap gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleTestEvolution}
-                      disabled={testingEvo || !formData.evolution_api_url}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                    >
-                      {testingEvo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
-                      Testar Conexão (Envia para o Suporte)
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleTestWebhook}
-                      disabled={testingWebhook || !formData.webhook_pago}
-                      className="text-green-600 border-green-200 hover:bg-green-50"
-                    >
-                      {testingWebhook ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                      Enviar POST de teste no Webhook
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-medium text-gray-900">Contatos e Suporte</h3>
-                <div className="grid gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="whatsapp">WhatsApp de Suporte</Label>
-                    <Input 
-                      id="whatsapp" 
-                      placeholder="Ex: (11) 98888-8888" 
-                      value={formData.whatsapp} 
-                      onChange={handleChange} 
+                  <div className="space-y-2">
+                    <Label htmlFor="evolution_instance">Nome da Instância</Label>
+                    <Input
+                      id="evolution_instance"
+                      placeholder="Ex: Admin"
+                      value={formData.evolution_instance}
+                      onChange={handleChange}
+                      disabled={authError}
                     />
-                    <p className="text-xs text-gray-500">Este número será usado para o link de suporte na navegação mobile.</p>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="evolution_api_key">Global API Key</Label>
+                  <div className="relative">
+                    <Input
+                      id="evolution_api_key"
+                      type={showEvoKey ? "text" : "password"}
+                      placeholder="Sua chave secreta..."
+                      value={formData.evolution_api_key}
+                      onChange={handleChange}
+                      disabled={authError}
+                      className="pr-10 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEvoKey(!showEvoKey)}
+                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      disabled={authError}
+                    >
+                      {showEvoKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">Chave de autenticação para enviar mensagens automáticas.</p>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t mt-4">
+                  <Label htmlFor="webhook_pago">Webhook (Pedido Pago)</Label>
+                  <Input
+                    id="webhook_pago"
+                    placeholder="https://sua-automacao.com/webhook"
+                    value={formData.webhook_pago}
+                    onChange={handleChange}
+                    disabled={authError}
+                  />
+                  <p className="text-xs text-gray-500">URL que receberá um POST com os dados do pedido (Nome, Valor, Telefone, Guardião, etc) quando aprovado.</p>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestEvolution}
+                    disabled={testingEvo || !formData.evolution_api_url}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    {testingEvo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                    Testar Conexão (Envia para o Suporte)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestWebhook}
+                    disabled={testingWebhook || !formData.webhook_pago}
+                    className="text-green-600 border-green-200 hover:bg-green-50"
+                  >
+                    {testingWebhook ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                    Enviar POST de teste no Webhook
+                  </Button>
+                </div>
               </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-medium text-gray-900">Contatos e Suporte</h3>
+              <div className="grid gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="whatsapp">WhatsApp de Suporte</Label>
+                  <Input
+                    id="whatsapp"
+                    placeholder="Ex: (11) 98888-8888"
+                    value={formData.whatsapp}
+                    onChange={handleChange}
+                  />
+                  <p className="text-xs text-gray-500">Este número será usado para o link de suporte na navegação mobile.</p>
+                </div>
+              </div>
+            </div>
 
           </CardContent>
         </Card>
@@ -700,7 +700,7 @@ export default function Configuracoes() {
         <div className="flex items-center justify-end space-x-4">
           <AnimatePresence>
             {showSuccess && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
