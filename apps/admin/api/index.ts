@@ -319,11 +319,10 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 
           if (pedidoFull?.cliente?.telefone) {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
-            const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte!🍀`;
-            await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
-
-            // POST para Webhook Pago
+            
+            // 1. POST para Webhook Pago (Prioridade para evitar timeout)
             if (config?.webhook_pago) {
+              console.log("[WEBHOOK PAGO] Destino:", config.webhook_pago);
               const payload = {
                 pedido: {
                   id: pedidoFull.id,
@@ -345,18 +344,23 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
                 }
               };
 
-              console.log("[WEBHOOK PAGO] Enviando para:", config.webhook_pago);
               try {
                 const response = await fetch(config.webhook_pago, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(payload)
                 });
-                console.log("[WEBHOOK PAGO] Status da resposta:", response.status);
+                console.log("[WEBHOOK PAGO] Sucesso. Status:", response.status);
               } catch (err) {
-                console.error("[WEBHOOK PAGO] Erro crítico ao enviar:", err);
+                console.error("[WEBHOOK PAGO] Erro ao enviar:", err);
               }
+            } else {
+              console.log("[WEBHOOK PAGO] Ignorado: URL não configurada no DB.");
             }
+
+            // 2. Envio de WhatsApp de Confirmação
+            const msgConfirm = `✅ *PAGAMENTO CONFIRMADO!*\n\nOlá *${pedidoFull.cliente.nome_completo}*!\n\nConfirmamos o pagamento do seu pedido *#${pedidoIdCurto}*.\n\n🎉 *RIFA:* ${pedidoFull.rifa?.titulo}\n🎫 *SEUS NÚMEROS:* ${pedidoFull.numeros.join(', ')}\n\nBoa sorte!🍀`;
+            await enviarMensagemWhatsApp(pedidoFull.cliente.telefone, msgConfirm);
 
             // Bônus
             const { data: bonusPremios } = await supabaseAdmin.from("premios").select("titulo, link_bonus").eq("rifa_id", pedidoFull.rifa_id).eq("is_bonus", true).not("link_bonus", "is", null);
