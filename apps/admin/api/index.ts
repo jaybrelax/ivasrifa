@@ -321,6 +321,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
               const payload = {
                 pedido: {
                   id: pedidoFull.id,
+                  display_id: pedidoFull.display_id,
                   codigo_transacao: paymentId.toString(),
                   valor_total: pedidoFull.valor_total,
                   status: "pago",

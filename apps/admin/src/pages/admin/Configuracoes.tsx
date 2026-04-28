@@ -232,10 +232,11 @@ export default function Configuracoes() {
       const payload = {
         pedido: {
           id: "test-1234-5678-90ab-cdef12345678",
+          display_id: "ABC123",
           codigo_transacao: "9876543210",
           valor_total: 50.00,
           status: "pago",
-          numeros_escolhidos: ["001", "002", "003", "004", "005"]
+          numeros_escolhidos: ["01", "02", "03", "55", "155", "160", "185"]
         },
         cliente: {
           nome: "João da Silva (Teste)",
@@ -244,7 +245,7 @@ export default function Configuracoes() {
           email: "joao@teste.com"
         },
         vendedor: {
-          nome: "Maria Silva (Guardiã Teste)",
+          nome: "Maria Silva",
           whatsapp: "5511988887777"
         }
       };
