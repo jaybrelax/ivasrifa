@@ -915,8 +915,17 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                  Seu comprovante foi enviado para o WhatsApp cadastrado.
               </div>
 
-              <Button onClick={() => setIsModalOpen(false)} className="mt-10 w-full h-16 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-                Finalizar
+              <Button 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  const bonus = premios?.find(p => p.is_bonus && p.link_bonus);
+                  if (bonus?.link_bonus) {
+                    window.open(bonus.link_bonus, '_blank');
+                  }
+                }} 
+                className="mt-10 w-full h-16 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+              >
+                {premios?.find(p => p.is_bonus && p.link_bonus) ? 'Acessar Bônus' : 'Finalizar'}
               </Button>
             </div>
           )}
