@@ -320,41 +320,8 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
           if (pedidoFull) {
             const pedidoIdCurto = pedidoFull.display_id || pedidoFull.id.substring(0, 8).toUpperCase();
             
-            // 1. POST para Webhook Pago (IMEDIATO)
-            if (config?.webhook_pago) {
-              console.log("[WEBHOOK PAGO] Destino:", config.webhook_pago);
-              const payload = {
-                pedido: {
-                  id: pedidoFull.id,
-                  display_id: pedidoFull.display_id,
-                  codigo_transacao: paymentId.toString(),
-                  valor_total: pedidoFull.valor_total,
-                  status: "pago",
-                  numeros_escolhidos: pedidoFull.numeros
-                },
-                cliente: {
-                  nome: pedidoFull.cliente?.nome_completo || "Cliente",
-                  cpf: pedidoFull.cliente?.cpf || "",
-                  telefone: pedidoFull.cliente?.telefone || "",
-                  email: pedidoFull.cliente?.email || ""
-                },
-                vendedor: {
-                  nome: pedidoFull.vendedor?.nome || "Direto",
-                  whatsapp: pedidoFull.vendedor?.whatsapp || ""
-                }
-              };
-
-              try {
-                const response = await fetch(config.webhook_pago, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload)
-                });
-                console.log("[WEBHOOK PAGO] Sucesso. Status:", response.status);
-              } catch (err) {
-                console.error("[WEBHOOK PAGO] Erro ao enviar:", err);
-              }
-            }
+            // 1. O POST para o Webhook Pago agora é feito via Supabase Edge Function e Database Trigger.
+            // Isso garante entrega instantânea e zero timeouts da Vercel.
 
             // 2. Envio de WhatsApp de Confirmação (Se houver telefone)
             if (pedidoFull.cliente?.telefone) {
