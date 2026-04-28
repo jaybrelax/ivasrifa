@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import dotenv from "dotenv";
+import fs from "node:fs";
 
 dotenv.config();
 
@@ -14,6 +15,31 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Proxy para testar webhook (evitar CORS no front)
+app.post("/api/webhook-test-proxy", async (req, res) => {
+  console.log("[DEBUG] Proxy Webhook disparado para:", req.body.url);
+  try {
+    const { url, payload } = req.body;
+    if (!url) return res.status(400).json({ error: "URL ausente" });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      res.json({ success: true });
+    } else {
+      const status = response.status;
+      res.status(status).json({ error: `Erro no Webhook: Status ${status}` });
+    }
+  } catch (error: any) {
+    console.error("[DEBUG] Erro no Proxy:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Helper para gerar ID secundário aleatório
 function gerarDisplayId(tamanho: number = 6): string {
@@ -251,6 +277,8 @@ app.post("/api/pagamento/pix", async (req, res) => {
   }
 });
 
+
+
 // STATUS WEBHOOKS
 app.get("/api/pagamento/status/:pedido_id", async (req, res) => {
   try {
@@ -279,7 +307,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 
           const { data: pedidoFull } = await supabaseAdmin
             .from("pedidos")
-            .select("*, cliente:clientes(nome_completo, telefone, cpf, email), rifa:rifas(id, titulo), vendedor:vendedores(nome)")
+            .select("*, cliente:clientes(nome_completo, telefone, cpf, email), rifa:rifas(id, titulo), vendedor:vendedores(nome, whatsapp)")
             .eq("id", p.id)
             .single();
 
@@ -291,16 +319,23 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
             // POST para Webhook Pago
             if (config?.webhook_pago) {
               const payload = {
-                nome_comprador: pedidoFull.cliente.nome_completo,
-                cpf: pedidoFull.cliente.cpf,
-                telefone: pedidoFull.cliente.telefone,
-                email: pedidoFull.cliente.email,
-                pedido_id: pedidoFull.id,
-                codigo_transacao: paymentId.toString(),
-                valor_total: pedidoFull.valor_total,
-                status: "pago",
-                numeros_escolhidos: pedidoFull.numeros,
-                vendedor: pedidoFull.vendedor?.nome || "Direto"
+                pedido: {
+                  id: pedidoFull.id,
+                  codigo_transacao: paymentId.toString(),
+                  valor_total: pedidoFull.valor_total,
+                  status: "pago",
+                  numeros_escolhidos: pedidoFull.numeros
+                },
+                cliente: {
+                  nome: pedidoFull.cliente.nome_completo,
+                  cpf: pedidoFull.cliente.cpf,
+                  telefone: pedidoFull.cliente.telefone,
+                  email: pedidoFull.cliente.email
+                },
+                vendedor: {
+                  nome: pedidoFull.vendedor?.nome || "Direto",
+                  whatsapp: pedidoFull.vendedor?.whatsapp || ""
+                }
               };
               
               fetch(config.webhook_pago, {

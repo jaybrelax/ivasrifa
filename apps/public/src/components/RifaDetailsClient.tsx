@@ -730,7 +730,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                       <div className="pt-2 mt-2 border-t border-blue-200/50 flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5 text-blue-500" />
                         <p className="text-[#1b5df1] text-[11px] font-bold leading-tight">
-                          Seus números estão reservados por <span className="font-black text-blue-800 underline decoration-blue-300">10 min</span>
+                          Seus números serão reservados por <span className="font-black text-blue-800 underline decoration-blue-300">10 min</span>
                         </p>
                       </div>
                     </div>

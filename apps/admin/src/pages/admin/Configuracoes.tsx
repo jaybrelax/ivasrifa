@@ -220,6 +220,59 @@ export default function Configuracoes() {
     }
   };
 
+  const [testingWebhook, setTestingWebhook] = useState(false);
+
+  const handleTestWebhook = async () => {
+    if (!formData.webhook_pago) {
+      alert("Defina a URL do Webhook (Pedido Pago) para testar.");
+      return;
+    }
+    setTestingWebhook(true);
+    try {
+      const payload = {
+        pedido: {
+          id: "test-1234-5678-90ab-cdef12345678",
+          codigo_transacao: "9876543210",
+          valor_total: 50.00,
+          status: "pago",
+          numeros_escolhidos: ["001", "002", "003", "004", "005"]
+        },
+        cliente: {
+          nome: "João da Silva (Teste)",
+          cpf: "12345678900",
+          telefone: "5511999999999",
+          email: "joao@teste.com"
+        },
+        vendedor: {
+          nome: "Maria Silva (Guardiã Teste)",
+          whatsapp: "5511988887777"
+        }
+      };
+
+      const response = await fetch('/api/webhook-test-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: formData.webhook_pago,
+          payload
+        })
+      });
+
+      if (response.ok) {
+        alert("Webhook enviado com sucesso!");
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || `Status ${response.status}`);
+      }
+    } catch (err: any) {
+      alert("Falha no envio para o webhook: " + err.message);
+    } finally {
+      setTestingWebhook(false);
+    }
+  };
+
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -597,7 +650,7 @@ export default function Configuracoes() {
                     <p className="text-xs text-gray-500">URL que receberá um POST com os dados do pedido (Nome, Valor, Telefone, Guardião, etc) quando aprovado.</p>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 flex flex-wrap gap-2">
                     <Button 
                       type="button" 
                       variant="outline" 
@@ -608,6 +661,17 @@ export default function Configuracoes() {
                     >
                       {testingEvo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
                       Testar Conexão (Envia para o Suporte)
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleTestWebhook}
+                      disabled={testingWebhook || !formData.webhook_pago}
+                      className="text-green-600 border-green-200 hover:bg-green-50"
+                    >
+                      {testingWebhook ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                      Enviar POST de teste no Webhook
                     </Button>
                   </div>
                 </div>
