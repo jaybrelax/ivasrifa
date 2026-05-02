@@ -140,7 +140,7 @@ export default function Recrutamento() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Nome Completo</Label>
+                  <Label>Nome e Sobrenome</Label>
                   <Input 
                     required 
                     placeholder="Ex: João Silva" 

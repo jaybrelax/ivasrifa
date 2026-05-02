@@ -611,7 +611,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                       
                       {/* Nome */}
                       <div className="relative group">
-                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">Nome Completo</Label>
+                        <Label className="absolute -top-2.5 left-4 px-1.5 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-widest z-10 peer-focus:text-[#1b5df1] transition-colors rounded">Nome e Sobrenome</Label>
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 h-[20px] w-[20px] text-slate-400 group-focus-within:text-[#1b5df1] z-10 transition-colors" />
                         <Input 
                           value={formData.nome} 
