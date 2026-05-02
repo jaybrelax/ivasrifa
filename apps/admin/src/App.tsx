@@ -11,6 +11,7 @@ import VendasList from './pages/admin/PedidosList';
 import PerfilVendedor from './pages/admin/PerfilVendedor';
 import Recrutamento from './pages/admin/Recrutamento';
 import RankingList from './pages/admin/RankingList';
+import NovaSenha from './pages/admin/NovaSenha';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ export default function App() {
           {/* Auth Route */}
           <Route path="/login" element={<Login />} />
           <Route path="/recrutamento" element={<Recrutamento />} />
+          <Route path="/nova-senha" element={<NovaSenha />} />
           
           {/* Admin Protected Routes */}
           <Route path="/" element={<AdminLayout />}>
