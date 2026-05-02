@@ -182,9 +182,24 @@ app.post("/api/pagamento/pix", async (req, res) => {
     expiraEm.setMinutes(expiraEm.getMinutes() + timeout);
 
     let vendedorIdDB = null;
+    let vendaDireta = false;
+    
     if (vendedor_ref) {
       const { data: vInfo } = await supabaseAdmin.from('vendedores').select('id').eq('codigo_ref', vendedor_ref).maybeSingle();
       if (vInfo) vendedorIdDB = vInfo.id;
+    } else {
+      vendaDireta = true;
+      // Checa se a distribuição aleatória está ligada
+      const { data: configDist } = await supabaseAdmin.from("configuracoes").select("distribuicao_aleatoria_guardiao").eq("id", 1).single();
+      
+      if (configDist?.distribuicao_aleatoria_guardiao) {
+        // Busca todos os vendedores ativos
+        const { data: vendedoresAtivos } = await supabaseAdmin.from('vendedores').select('id').eq('ativo', true);
+        if (vendedoresAtivos && vendedoresAtivos.length > 0) {
+          const randomIndex = Math.floor(Math.random() * vendedoresAtivos.length);
+          vendedorIdDB = vendedoresAtivos[randomIndex].id;
+        }
+      }
     }
 
     const displayId = gerarDisplayId();
@@ -230,6 +245,7 @@ app.post("/api/pagamento/pix", async (req, res) => {
         rifa_id,
         cliente_id: clienteId,
         vendedor_id: vendedorIdDB,
+        venda_direta: vendaDireta,
         numeros,
         quantidade: numeros.length,
         valor_total: valorTotal,

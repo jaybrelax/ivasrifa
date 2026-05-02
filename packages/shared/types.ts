@@ -21,6 +21,7 @@ export interface Pedido {
   quantidade: number;
   valor_total: number;
   status: 'pendente' | 'pago' | 'cancelado';
+  venda_direta?: boolean;
   expira_em: string;
   display_id?: string;
   mp_payment_id?: string;

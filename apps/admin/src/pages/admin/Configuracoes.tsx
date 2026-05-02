@@ -35,7 +35,8 @@ export default function Configuracoes() {
     hero_imagem_url: "",
     whatsapp: "",
     admin_dark_mode: false,
-    webhook_pago: ""
+    webhook_pago: "",
+    distribuicao_aleatoria_guardiao: false
   });
 
   useEffect(() => {
@@ -77,7 +78,8 @@ export default function Configuracoes() {
             hero_imagem_url: data.hero_imagem_url || "",
             whatsapp: data.whatsapp || "",
             admin_dark_mode: data.admin_dark_mode === true,
-            webhook_pago: data.webhook_pago || ""
+            webhook_pago: data.webhook_pago || "",
+            distribuicao_aleatoria_guardiao: data.distribuicao_aleatoria_guardiao === true
           });
         }
       } catch (error) {
@@ -374,6 +376,31 @@ export default function Configuracoes() {
                       className={`
                         pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform
                         ${formData.admin_dark_mode ? 'translate-x-5' : 'translate-x-0'}
+                      `}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 transition-colors mt-2">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="distribuicao_aleatoria_guardiao" className="text-sm font-medium text-green-700">Distribuir Vendas Diretas</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Para Guardião Aleatório</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.distribuicao_aleatoria_guardiao}
+                    onClick={() => setFormData({ ...formData, distribuicao_aleatoria_guardiao: !formData.distribuicao_aleatoria_guardiao })}
+                    disabled={authError}
+                    className={`
+                      relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50
+                      ${formData.distribuicao_aleatoria_guardiao ? 'bg-green-600' : 'bg-muted'}
+                    `}
+                  >
+                    <span
+                      className={`
+                        pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform
+                        ${formData.distribuicao_aleatoria_guardiao ? 'translate-x-5' : 'translate-x-0'}
                       `}
                     />
                   </button>

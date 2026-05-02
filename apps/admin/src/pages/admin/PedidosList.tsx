@@ -233,10 +233,24 @@ export default function VendasList() {
                     </td>
                     {userRole === 'admin' && (
                       <td className="px-6 py-4">
-                        {pedido.vendedor ? (
-                          <div className="text-blue-600 font-medium">{pedido.vendedor.nome}</div>
+                        {pedido.venda_direta ? (
+                          <div className="flex items-center gap-1.5">
+                            {pedido.vendedor ? (
+                              <span className="text-blue-600 font-medium flex items-center gap-1" title="Atribuído aleatoriamente">
+                                <Search className="h-3 w-3 text-purple-500" /> {pedido.vendedor.nome}
+                              </span>
+                            ) : (
+                              <Badge variant="outline" className="text-gray-400 font-normal bg-gray-50 flex items-center gap-1">
+                                <Search className="h-3 w-3" /> Direto
+                              </Badge>
+                            )}
+                          </div>
                         ) : (
-                          <Badge variant="outline" className="text-gray-400 font-normal">Direto</Badge>
+                          pedido.vendedor ? (
+                            <div className="text-blue-600 font-medium">{pedido.vendedor.nome}</div>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-400 font-normal">Nenhum</Badge>
+                          )
                         )}
                       </td>
                     )}
@@ -291,6 +305,33 @@ export default function VendasList() {
                   <p className="text-sm text-gray-600 truncate">{selectedPedido.cliente?.email}</p>
                 </div>
               </div>
+
+              {userRole === 'admin' && (
+                <div className="border-t pt-4">
+                  <p className="text-sm text-gray-500 mb-2">Guardião / Origem da Venda</p>
+                  <div className="flex items-center gap-3">
+                    {selectedPedido.venda_direta ? (
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                        <Search className="h-3 w-3 mr-1" /> Venda Direta
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Link de Indicação
+                      </Badge>
+                    )}
+                    
+                    {selectedPedido.vendedor && (
+                      <span className="font-medium text-gray-900">
+                        {selectedPedido.vendedor.nome} 
+                        {selectedPedido.venda_direta && <span className="text-xs text-gray-500 font-normal ml-2">(Atribuído Aleatoriamente)</span>}
+                      </span>
+                    )}
+                    {!selectedPedido.vendedor && selectedPedido.venda_direta && (
+                      <span className="text-gray-500 italic text-sm">Nenhum guardião atribuído</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="border-t pt-4">
                 <p className="text-sm text-gray-500 mb-3">Números Escolhidos ({selectedPedido.quantidade})</p>
