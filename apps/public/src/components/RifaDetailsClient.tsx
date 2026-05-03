@@ -753,7 +753,10 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                         onClick={handleCheckout}
                       >
                         {isSubmitting ? (
-                          <Loader2 className="animate-spin h-6 w-6" />
+                          <>
+                            <Loader2 className="animate-spin h-5 w-5 mr-2 shrink-0" />
+                            Gerando QR Code, aguarde...
+                          </>
                         ) : (
                           <>
                            <Wallet className="mr-2.5 h-5 w-5" /> 

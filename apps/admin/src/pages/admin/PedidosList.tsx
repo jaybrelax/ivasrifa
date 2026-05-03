@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, Clock, Search, Eye, Trash, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Search, Eye, Trash, AlertTriangle, Send, User, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -152,6 +152,27 @@ export default function VendasList() {
     }
   };
 
+  const handleResendComprovante = async (pedidoId: string) => {
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('webhook-pago', {
+        body: { 
+          type: 'UPDATE', 
+          table: 'pedidos', 
+          record: { id: pedidoId } 
+        }
+      });
+
+      if (error) throw error;
+      alert("Comprovante enviado com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao reenviar comprovante:", error);
+      alert("Erro ao reenviar comprovante: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const filteredPedidos = pedidos.filter(p => 
     p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.display_id && p.display_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -286,7 +307,12 @@ export default function VendasList() {
               <span className="text-gray-900 font-black">Código: #{selectedPedido?.display_id}</span>
               <span className="text-[10px] text-gray-400">UUID: {selectedPedido?.id}</span>
               {selectedPedido?.mp_payment_id && (
-                <span className="text-blue-600 font-semibold">ID Transação: {selectedPedido.mp_payment_id}</span>
+                <span className="text-blue-600 font-semibold">ID MP: {selectedPedido.mp_payment_id}</span>
+              )}
+              {selectedPedido?.pix_transaction_id && (
+                <span className="text-green-600 font-semibold text-xs truncate" title={selectedPedido.pix_transaction_id}>
+                  ID Pix: {selectedPedido.pix_transaction_id}
+                </span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -295,13 +321,24 @@ export default function VendasList() {
             <div className="space-y-6 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Cliente</p>
+                  <p className="text-sm text-gray-500 flex items-center gap-1.5 mb-1">
+                    <User className="h-3.5 w-3.5" /> Cliente
+                  </p>
                   <p className="font-medium text-gray-900">{selectedPedido.cliente?.nome_completo}</p>
                   <p className="text-sm text-gray-600">{selectedPedido.cliente?.cpf}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Contato</p>
-                  <p className="font-medium text-gray-900">{selectedPedido.cliente?.telefone}</p>
+                  <p className="text-sm text-gray-500 flex items-center gap-1.5 mb-1">
+                    <Phone className="h-3.5 w-3.5" /> Contato
+                  </p>
+                  <a 
+                    href={`https://wa.me/55${selectedPedido.cliente?.telefone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    {selectedPedido.cliente?.telefone}
+                  </a>
                   <p className="text-sm text-gray-600 truncate">{selectedPedido.cliente?.email}</p>
                 </div>
               </div>
@@ -380,17 +417,30 @@ export default function VendasList() {
                     </div>
                   )}
                   
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-red-400 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      setIsDeleteConfirmed(false);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                    disabled={actionLoading}
-                  >
-                    <Trash className="h-4 w-4 mr-2" /> Excluir Registro Permanente
-                  </Button>
+                  <div className="flex justify-between items-center w-full">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => {
+                        setIsDeleteConfirmed(false);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      disabled={actionLoading}
+                      title="Excluir Registro Permanente"
+                    >
+                      <Trash className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => handleResendComprovante(selectedPedido.id)}
+                      disabled={actionLoading}
+                    >
+                      <Send className="h-4 w-4 mr-2" /> Re-enviar comprovante
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

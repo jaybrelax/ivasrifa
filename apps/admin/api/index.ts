@@ -272,21 +272,24 @@ app.post("/api/pagamento/pix", async (req, res) => {
       .from("numeros_rifa")
       .upsert(numerosParaReservar, { onConflict: "rifa_id,numero" });
 
-    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const msgPix = `📌 *PEDIDO REALIZADO: #${displayId}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._\n\n*💸 CÓDIGO PIX COPIA E COLA:* 👇`;
-    
-    await enviarMensagemWhatsApp(cliente.telefone, msgPix);
-    if (mpResponse.point_of_interaction?.transaction_data?.qr_code) {
-      await wait(2000); 
-      await enviarMensagemWhatsApp(cliente.telefone, mpResponse.point_of_interaction?.transaction_data?.qr_code.trim());
-    }
-
+    // ✅ Responde IMEDIATAMENTE com o QR Code — não espera o WhatsApp
     res.json({
       qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64,
       qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code,
       payment_id: mpResponse.id,
       pedido_id: pedido.id
     });
+
+    // 📲 Envia WhatsApp em background (não bloqueia a resposta)
+    const pixCode = mpResponse.point_of_interaction?.transaction_data?.qr_code;
+    const msgPix = `📌 *PEDIDO REALIZADO: #${displayId}*\n\nOlá *${cliente.nome}*!\n\nSua reserva para a rifa *${rifa?.titulo || 'Sorteio'}* foi gerada com sucesso.\n\n🔢 *NÚMEROS:* ${numeros.join(', ')}\n💰 *TOTAL:* R$ ${valorTotal.toFixed(2).replace('.', ',')}\n\n⚠️ _Sua reserva expira em ${timeout} minutos._\n\n*💸 CÓDIGO PIX COPIA E COLA:* 👇`;
+
+    enviarMensagemWhatsApp(cliente.telefone, msgPix).then(async () => {
+      if (pixCode) {
+        await new Promise(r => setTimeout(r, 2000));
+        await enviarMensagemWhatsApp(cliente.telefone, pixCode.trim());
+      }
+    }).catch(err => console.error("[WhatsApp Background] Erro:", err));
   } catch (error: any) {
     console.error("ERRO CRITICO:", error);
     res.status(500).json({ error: error.message || "Erro interno" });
@@ -324,7 +327,12 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
         console.log(`[MP Webhook] Pedido no DB encontrado:`, p ? "SIM" : "NÃO");
         
         if (p) {
-          await supabaseAdmin.from("pedidos").update({ status: "pago", pago_em: new Date().toISOString() }).eq("id", p.id);
+          const pixTransactionId = (info as any).point_of_interaction?.transaction_data?.transaction_id;
+          await supabaseAdmin.from("pedidos").update({ 
+            status: "pago", 
+            pago_em: new Date().toISOString(),
+            pix_transaction_id: pixTransactionId
+          }).eq("id", p.id);
           await supabaseAdmin.from("numeros_rifa").update({ status: "vendido" }).eq("pedido_id", p.id);
 
           const { data: pedidoFull } = await supabaseAdmin
