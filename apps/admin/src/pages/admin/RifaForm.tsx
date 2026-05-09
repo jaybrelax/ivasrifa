@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function RifaForm() {
   const navigate = useNavigate();
@@ -128,7 +129,7 @@ export default function RifaForm() {
       }
     } catch (error) {
       console.error("Erro ao buscar rifa:", error);
-      alert("Erro ao carregar dados da rifa.");
+      toast.error("Erro ao carregar dados da rifa.");
       navigate("/rifas");
     } finally {
       setInitialLoading(false);
@@ -187,12 +188,12 @@ export default function RifaForm() {
     // Validações básicas
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      alert("Por favor, selecione uma imagem válida (JPG, PNG, WEBP ou GIF).");
+      toast.warning("Por favor, selecione uma imagem válida (JPG, PNG, WEBP ou GIF).");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) { // 5MB
-      alert("A imagem é muito grande. O limite é de 5MB.");
+      toast.warning("A imagem é muito grande. O limite é de 5MB.");
       return;
     }
 
@@ -219,7 +220,7 @@ export default function RifaForm() {
       
     } catch (error: any) {
       console.error("Erro ao fazer upload da imagem:", error);
-      alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro no upload: ${error.message || "Erro desconhecido"}`);
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -231,7 +232,7 @@ export default function RifaForm() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("A imagem do prêmio é muito grande. O limite é de 2MB.");
+      toast.warning("A imagem do prêmio é muito grande. O limite é de 2MB.");
       return;
     }
 
@@ -254,7 +255,7 @@ export default function RifaForm() {
       
     } catch (error: any) {
       console.error("Erro ao fazer upload da imagem do prêmio:", error);
-      alert(`Erro no upload: ${error.message}`);
+      toast.error(`Erro no upload: ${error.message}`);
     } finally {
       setUploadingPremioId(null);
       if (premioFileInputRef.current) premioFileInputRef.current.value = '';
@@ -267,7 +268,7 @@ export default function RifaForm() {
     // Validação de Preço Promocional
     if (formData.offPrice && formData.valorNumero) {
       if (parseFloat(formData.offPrice) >= parseFloat(formData.valorNumero)) {
-        alert("O preço promocional deve ser menor que o preço normal da cota.");
+        toast.warning("O preço promocional deve ser menor que o preço normal da cota.");
         return;
       }
     }
@@ -366,7 +367,7 @@ export default function RifaForm() {
       navigate("/rifas");
     } catch (error: any) {
       console.error("Erro ao salvar rifa:", error);
-      alert(`Erro ao salvar a rifa: ${error?.message || JSON.stringify(error)}`);
+      toast.error(`Erro ao salvar a rifa: ${error?.message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -381,7 +382,7 @@ export default function RifaForm() {
       navigate("/rifas");
     } catch (error) {
       console.error("Erro ao excluir rifa:", error);
-      alert("Erro ao excluir a rifa.");
+      toast.error("Erro ao excluir a rifa.");
     } finally {
       setIsDeleting(false);
       setRifaToDelete(null);

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Camera, UserCircle, Save, Key } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function PerfilVendedor() {
   const [loading, setLoading] = useState(true);
@@ -72,12 +73,12 @@ export default function PerfilVendedor() {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      alert("Por favor, selecione uma imagem válida (JPG, PNG ou WEBP).");
+      toast.warning("Por favor, selecione uma imagem válida (JPG, PNG ou WEBP).");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("A imagem é muito grande. O limite é de 2MB.");
+      toast.warning("A imagem é muito grande. O limite é de 2MB.");
       return;
     }
 
@@ -132,11 +133,11 @@ export default function PerfilVendedor() {
       if (updateError) throw updateError;
 
       setVendedor(updatedVendedor);
-      alert("Foto de perfil atualizada!");
+      toast.success("Foto de perfil atualizada!");
       
     } catch (error: any) {
       console.error("Erro ao fazer upload do avatar:", error);
-      alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro no upload: ${error.message || "Erro desconhecido"}`);
     } finally {
       setUploadingAvatar(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
@@ -180,9 +181,9 @@ export default function PerfilVendedor() {
       
       if (error) throw error;
       setVendedor(savedData);
-      alert("Perfil atualizado com sucesso!");
+      toast.success("Perfil atualizado com sucesso!");
     } catch (err: any) {
-      alert("Erro ao salvar: " + err.message);
+      toast.error("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -191,11 +192,11 @@ export default function PerfilVendedor() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordData.password !== passwordData.confirmPassword) {
-      alert("As senhas não coincidem!");
+      toast.warning("As senhas não coincidem!");
       return;
     }
     if (passwordData.password.length < 6) {
-      alert("A senha deve ter pelo menos 6 caracteres.");
+      toast.warning("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
 
@@ -205,10 +206,10 @@ export default function PerfilVendedor() {
         password: passwordData.password
       });
       if (error) throw error;
-      alert("Senha alterada com sucesso!");
+      toast.success("Senha alterada com sucesso!");
       setPasswordData({ password: "", confirmPassword: "" });
     } catch (err: any) {
-      alert("Erro ao alterar senha: " + err.message);
+      toast.error("Erro ao alterar senha: " + err.message);
     } finally {
       setChangingPassword(false);
     }
@@ -278,7 +279,7 @@ export default function PerfilVendedor() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Nome Completo</Label>
+                <Label>Nome e Sobrenome</Label>
                 <Input value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} />
               </div>
               

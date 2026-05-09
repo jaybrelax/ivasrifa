@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield, Loader2, PartyPopper } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function Recrutamento() {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ export default function Recrutamento() {
         msg = "Este e-mail ou CPF já está cadastrado como guardião.";
       }
       
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

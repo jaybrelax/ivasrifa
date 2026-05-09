@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function VendedoresList() {
   const [vendedores, setVendedores] = useState<any[]>([]);
@@ -74,7 +75,7 @@ export default function VendedoresList() {
       if (error) throw error;
       setVendedores(vendedores.filter(v => v.id !== id));
     } catch (err: any) {
-      alert("Erro ao excluir: " + err.message);
+      toast.error("Erro ao excluir: " + err.message);
     }
   };
 
@@ -104,7 +105,7 @@ export default function VendedoresList() {
       ));
       
     } catch (err: any) {
-      alert("Erro ao atualizar cargo: " + err.message);
+      toast.error("Erro ao atualizar cargo: " + err.message);
     }
   };
 

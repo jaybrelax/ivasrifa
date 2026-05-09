@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Save, ShieldAlert, Loader2, Eye, EyeOff, Upload, Image as ImageIcon, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function Configuracoes() {
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,8 @@ export default function Configuracoes() {
     whatsapp: "",
     admin_dark_mode: false,
     webhook_pago: "",
-    distribuicao_aleatoria_guardiao: false
+    distribuicao_aleatoria_guardiao: false,
+    surpresinha_enabled: false
   });
 
   useEffect(() => {
@@ -79,7 +81,8 @@ export default function Configuracoes() {
             whatsapp: data.whatsapp || "",
             admin_dark_mode: data.admin_dark_mode === true,
             webhook_pago: data.webhook_pago || "",
-            distribuicao_aleatoria_guardiao: data.distribuicao_aleatoria_guardiao === true
+            distribuicao_aleatoria_guardiao: data.distribuicao_aleatoria_guardiao === true,
+            surpresinha_enabled: data.surpresinha_enabled === true
           });
         }
       } catch (error) {
@@ -103,12 +106,12 @@ export default function Configuracoes() {
     // Validações básicas
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      alert("Por favor, selecione uma imagem válida (JPG, PNG, WEBP ou SVG).");
+      toast.warning("Por favor, selecione uma imagem válida (JPG, PNG, WEBP ou SVG).");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) { // 2MB para logo
-      alert("A logo é muito grande. O limite é de 2MB.");
+      toast.warning("A logo é muito grande. O limite é de 2MB.");
       return;
     }
 
@@ -134,7 +137,7 @@ export default function Configuracoes() {
 
     } catch (error: any) {
       console.error("Erro ao fazer upload da logo:", error);
-      alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro no upload: ${error.message || "Erro desconhecido"}`);
     } finally {
       setUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = '';
@@ -147,12 +150,12 @@ export default function Configuracoes() {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      alert("Por favor, selecione uma imagem válida (JPG, PNG ou WEBP).");
+      toast.warning("Por favor, selecione uma imagem válida (JPG, PNG ou WEBP).");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) { // 5MB para Hero
-      alert("A imagem é muito grande. O limite é de 5MB.");
+      toast.warning("A imagem é muito grande. O limite é de 5MB.");
       return;
     }
 
@@ -173,7 +176,7 @@ export default function Configuracoes() {
 
     } catch (error: any) {
       console.error("Erro ao fazer upload do banner:", error);
-      alert(`Erro no upload: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro no upload: ${error.message || "Erro desconhecido"}`);
     } finally {
       setUploadingHero(false);
       if (heroInputRef.current) heroInputRef.current.value = '';
@@ -193,7 +196,7 @@ export default function Configuracoes() {
 
       const numLimpo = formData.whatsapp.replace(/\D/g, "");
       if (!numLimpo) {
-        alert("Defina um WhatsApp de Suporte para receber o teste.");
+        toast.warning("Defina um WhatsApp de Suporte para receber o teste.");
         return;
       }
 
@@ -210,13 +213,13 @@ export default function Configuracoes() {
       });
 
       if (response.ok) {
-        alert("Mensagem de teste enviada com sucesso!");
+        toast.success("Mensagem de teste enviada com sucesso!");
       } else {
         const err = await response.json();
         throw new Error(err.message || "Erro na API");
       }
     } catch (err: any) {
-      alert("Falha no teste: " + err.message);
+      toast.error("Falha no teste: " + err.message);
     } finally {
       setTestingEvo(false);
     }
@@ -226,7 +229,7 @@ export default function Configuracoes() {
 
   const handleTestWebhook = async () => {
     if (!formData.webhook_pago) {
-      alert("Defina a URL do Webhook (Pedido Pago) para testar.");
+      toast.warning("Defina a URL do Webhook (Pedido Pago) para testar.");
       return;
     }
     setTestingWebhook(true);
@@ -264,13 +267,13 @@ export default function Configuracoes() {
       });
 
       if (response.ok) {
-        alert("Webhook enviado com sucesso!");
+        toast.success("Webhook enviado com sucesso!");
       } else {
         const data = await response.json();
         throw new Error(data.error || `Status ${response.status}`);
       }
     } catch (err: any) {
-      alert("Falha no envio para o webhook: " + err.message);
+      toast.error("Falha no envio para o webhook: " + err.message);
     } finally {
       setTestingWebhook(false);
     }
@@ -294,15 +297,12 @@ export default function Configuracoes() {
       if (error) throw error;
 
       setShowSuccess(true);
+      toast.success("Configurações salvas com sucesso!");
       setTimeout(() => setShowSuccess(false), 3000);
 
     } catch (error: any) {
       console.error("Erro ao salvar configurações:", error);
-      if (error.message?.includes('RLS') || error.code === '42501') {
-        alert("Erro de Permissão: Você precisa estar autenticado como administrador para salvar configurações de extrema segurança.");
-      } else {
-        alert("Erro ao salvar configurações. Verifique o console.");
-      }
+        toast.error("Erro ao salvar configurações. Verifique o console.");
     } finally {
       setSaving(false);
     }
@@ -401,6 +401,31 @@ export default function Configuracoes() {
                       className={`
                         pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform
                         ${formData.distribuicao_aleatoria_guardiao ? 'translate-x-5' : 'translate-x-0'}
+                      `}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 transition-colors mt-2">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="surpresinha_enabled" className="text-sm font-medium text-blue-700">Ativar Surpresinha</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Seleção Aleatória de Números</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.surpresinha_enabled}
+                    onClick={() => setFormData({ ...formData, surpresinha_enabled: !formData.surpresinha_enabled })}
+                    disabled={authError}
+                    className={`
+                      relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50
+                      ${formData.surpresinha_enabled ? 'bg-blue-600' : 'bg-muted'}
+                    `}
+                  >
+                    <span
+                      className={`
+                        pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform
+                        ${formData.surpresinha_enabled ? 'translate-x-5' : 'translate-x-0'}
                       `}
                     />
                   </button>

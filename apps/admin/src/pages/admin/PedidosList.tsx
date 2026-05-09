@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, Clock, Search, Eye, Trash, AlertTriangle, Send, User, Phone } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Search, Eye, Trash, AlertTriangle, Send, User, Phone, Edit2, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -20,6 +21,8 @@ export default function VendasList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
+  const [isEditingGuardian, setIsEditingGuardian] = useState(false);
+  const [newGuardianId, setNewGuardianId] = useState("");
 
   const { data: pedidosData, isLoading: loading, refetch: fetchPedidos } = useQuery({
     queryKey: ['pedidos-list'],
@@ -61,6 +64,19 @@ export default function VendasList() {
     }
   });
 
+  const { data: vendedores } = useQuery({
+    queryKey: ['vendedores-select'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vendedores')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const pedidos = pedidosData?.pedidos || [];
   const userRole = pedidosData?.role || 'admin';
   const vendedorId = pedidosData?.vendedorId;
@@ -85,12 +101,12 @@ export default function VendasList() {
 
       if (numerosError) throw numerosError;
 
-      alert("Venda aprovada com sucesso!");
+      toast.success("Venda aprovada com sucesso!");
       fetchPedidos();
       setSelectedPedido(null);
     } catch (error) {
       console.error("Erro ao aprovar venda:", error);
-      alert("Erro ao aprovar venda.");
+      toast.error("Erro ao aprovar venda.");
     } finally {
       setActionLoading(false);
     }
@@ -116,12 +132,12 @@ export default function VendasList() {
 
       if (numerosError) throw numerosError;
 
-      alert("Venda cancelada com sucesso!");
+      toast.success("Venda cancelada com sucesso!");
       fetchPedidos();
       setSelectedPedido(null);
     } catch (error) {
       console.error("Erro ao cancelar venda:", error);
-      alert("Erro ao cancelar venda.");
+      toast.error("Erro ao cancelar venda.");
     } finally {
       setActionLoading(false);
     }
@@ -140,34 +156,67 @@ export default function VendasList() {
 
       if (error) throw error;
 
-      alert("Venda excluída permanentemente!");
+      toast.success("Venda excluída permanentemente!");
       fetchPedidos();
       setSelectedPedido(null);
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Erro ao excluir venda:", error);
-      alert("Erro ao excluir venda.");
+      toast.error("Erro ao excluir venda.");
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleResendComprovante = async (pedidoId: string) => {
+  const handleResendComprovante = async (pedidoId: string, isNotifyTroca = false) => {
     setActionLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('webhook-pago', {
         body: { 
           type: 'UPDATE', 
           table: 'pedidos', 
-          record: { id: pedidoId } 
+          record: { 
+            id: pedidoId,
+            guardiao_alterado: isNotifyTroca,
+            ...(isNotifyTroca ? { venda_direta: false } : { only_buyer: true })
+          } 
         }
       });
 
       if (error) throw error;
-      alert("Comprovante enviado com sucesso!");
+      toast.success(isNotifyTroca ? "Notificação de troca enviada!" : "Comprovante enviado com sucesso!");
     } catch (error: any) {
-      console.error("Erro ao reenviar comprovante:", error);
-      alert("Erro ao reenviar comprovante: " + (error.message || "Erro desconhecido"));
+      console.error("Erro ao processar webhook:", error);
+      toast.error("Erro ao processar: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateGuardian = async (pedidoId: string) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ vendedor_id: newGuardianId || null })
+        .eq('id', pedidoId);
+
+      if (error) throw error;
+
+      toast.success("Guardião atualizado com sucesso!");
+      setIsEditingGuardian(false);
+      fetchPedidos();
+      
+      // Update local state for the modal
+      const updatedVendedor = vendedores?.find(v => v.id === newGuardianId);
+      setSelectedPedido({
+        ...selectedPedido,
+        vendedor_id: newGuardianId,
+        vendedor: updatedVendedor ? { nome: updatedVendedor.nome } : null
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar guardião:", error);
+      toast.error("Erro ao atualizar guardião.");
     } finally {
       setActionLoading(false);
     }
@@ -299,7 +348,12 @@ export default function VendasList() {
       </Card>
 
       {/* Modal de Detalhes */}
-      <Dialog open={!!selectedPedido} onOpenChange={(open) => !open && setSelectedPedido(null)}>
+      <Dialog open={!!selectedPedido} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedPedido(null);
+          setIsEditingGuardian(false);
+        }
+      }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Detalhes da Venda</DialogTitle>
@@ -345,28 +399,86 @@ export default function VendasList() {
 
               {userRole === 'admin' && (
                 <div className="border-t pt-4">
-                  <p className="text-sm text-gray-500 mb-2">Guardião / Origem da Venda</p>
-                  <div className="flex items-center gap-3">
-                    {selectedPedido.venda_direta ? (
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                        <Search className="h-3 w-3 mr-1" /> Venda Direta
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        Link de Indicação
-                      </Badge>
-                    )}
-                    
-                    {selectedPedido.vendedor && (
-                      <span className="font-medium text-gray-900">
-                        {selectedPedido.vendedor.nome} 
-                        {selectedPedido.venda_direta && <span className="text-xs text-gray-500 font-normal ml-2">(Atribuído Aleatoriamente)</span>}
-                      </span>
-                    )}
-                    {!selectedPedido.vendedor && selectedPedido.venda_direta && (
-                      <span className="text-gray-500 italic text-sm">Nenhum guardião atribuído</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-sm text-gray-500">Guardião / Origem da Venda</p>
+                    {!isEditingGuardian && (
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-8 px-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 ${selectedPedido.status === 'pago' ? 'cursor-pointer' : ''}`}
+                          onClick={() => handleResendComprovante(selectedPedido.id, true)}
+                          disabled={actionLoading || selectedPedido.status !== 'pago'}
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" /> Notificar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            setNewGuardianId(selectedPedido.vendedor_id || "");
+                            setIsEditingGuardian(true);
+                          }}
+                        >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" /> Editar
+                        </Button>
+                      </div>
                     )}
                   </div>
+
+                  {isEditingGuardian ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={newGuardianId}
+                        onChange={(e) => setNewGuardianId(e.target.value)}
+                      >
+                        <option value="">Sem guardião (Venda Direta)</option>
+                        {vendedores?.map((v: any) => (
+                          <option key={v.id} value={v.id}>{v.nome}</option>
+                        ))}
+                      </select>
+                      <Button 
+                        size="sm" 
+                        className="h-9 w-9 p-0 bg-green-600 hover:bg-green-700"
+                        onClick={() => handleUpdateGuardian(selectedPedido.id)}
+                        disabled={actionLoading}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 w-9 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsEditingGuardian(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {selectedPedido.venda_direta ? (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          <Search className="h-3 w-3 mr-1" /> Venda Direta
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Link de Indicação
+                        </Badge>
+                      )}
+                      
+                      {selectedPedido.vendedor && (
+                        <span className="font-medium text-gray-900">
+                          {selectedPedido.vendedor.nome} 
+                          {selectedPedido.venda_direta && <span className="text-xs text-gray-500 font-normal ml-2">(Atribuído Aleatoriamente)</span>}
+                        </span>
+                      )}
+                      {!selectedPedido.vendedor && selectedPedido.venda_direta && (
+                        <span className="text-gray-500 italic text-sm">Nenhum guardião atribuído</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -434,9 +546,9 @@ export default function VendasList() {
 
                     <Button 
                       variant="outline"
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      className={`text-blue-600 border-blue-200 hover:bg-blue-50 ${selectedPedido.status === 'pago' ? 'cursor-pointer' : ''}`}
                       onClick={() => handleResendComprovante(selectedPedido.id)}
-                      disabled={actionLoading}
+                      disabled={actionLoading || selectedPedido.status !== 'pago'}
                     >
                       <Send className="h-4 w-4 mr-2" /> Re-enviar comprovante
                     </Button>

@@ -282,9 +282,9 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   const selectRandom = (qtd: number) => {
     if (!rifa) return;
     const available = Array.from({ length: rifa.total_numeros }, (_, i) => i + 1)
-      .filter((n) => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !selectedNumbers.includes(n) && !numerosEmSelecao.includes(n));
+      .filter((n) => !numerosVendidos.includes(n) && !numerosReservados.includes(n) && !numerosEmSelecao.includes(n));
     const selected = available.sort(() => 0.5 - Math.random()).slice(0, qtd);
-    setSelectedNumbers((prev) => [...prev, ...selected]);
+    setSelectedNumbers(selected);
   };
 
   const getNumberStatusClass = (num: number) => {
@@ -535,15 +535,26 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                   <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Escolha seus números</h2>
                 </div>
 
-                <div className="flex items-center gap-3 mb-5 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider flex items-center shrink-0">
-                    <Shuffle className="h-3 w-3 mr-1.5" /> Surpresinha:
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => selectRandom(3)} className="bg-white hover:bg-blue-600 hover:text-white transition-colors border-blue-200 text-blue-700 font-bold h-10 px-6 text-base">+3</Button>
-                    <Button variant="outline" size="sm" onClick={() => selectRandom(5)} className="bg-white hover:bg-blue-600 hover:text-white transition-colors border-blue-200 text-blue-700 font-bold h-10 px-6 text-base">+5</Button>
+                {config.surpresinha_enabled && (
+                  <div className="flex items-center gap-3 mb-5 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider flex items-center shrink-0">
+                      <Shuffle className="h-3 w-3 mr-1.5" /> Surpresinha:
+                    </span>
+                    <div className="flex gap-2">
+                      {[3, 4, 5, 6].map((num) => (
+                        <Button 
+                          key={num} 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => selectRandom(num)} 
+                          className="bg-white hover:bg-blue-600 hover:text-white transition-colors border-blue-200 text-blue-700 font-bold h-10 px-4 text-base"
+                        >
+                          {num}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1.5 mb-6 text-[11px] text-gray-600 font-medium bg-gray-50/50 p-2 rounded-lg border border-gray-100">
                   <div className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 rounded bg-white border border-gray-300" /> Disponível</div>
