@@ -47,6 +47,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   const [timeLeft, setTimeLeft] = useState(600);
   const [recentBuyers, setRecentBuyers] = useState<any[]>([]);
   const [toastBuyer, setToastBuyer] = useState<any | null>(null);
+  const toastCountRef = useRef(0);
 
   const [formData, setFormData] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -216,6 +217,8 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
     let hideTimeout: NodeJS.Timeout;
     
     const showNotification = () => {
+      if (toastCountRef.current >= 3) return;
+
       // Escolhe um comprador aleatório
       const randomBuyer = recentBuyers[Math.floor(Math.random() * recentBuyers.length)];
       // Gera quantidade aleatória (mínimo 1) e adiciona +1 (garantindo no mínimo 2)
@@ -226,6 +229,8 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
         nome: randomBuyer.nome,
         quantidade: totalQty
       });
+      
+      toastCountRef.current += 1;
       
       // Oculta a notificação após 6 segundos
       if (hideTimeout) clearTimeout(hideTimeout);
@@ -1048,7 +1053,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
       </Dialog>
 
       {/* Toast Notificação de Compra Recente */}
-      {toastBuyer && (
+      {toastBuyer && !isModalOpen && (
         <>
           <style>{`
             @keyframes toastFadeInUp {

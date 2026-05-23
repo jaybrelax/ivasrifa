@@ -4,6 +4,7 @@ import "./globals.css";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Ticket, User } from "lucide-react";
+import HeaderActions from "@/components/HeaderActions";
 
 // Cache de 1 hora para as configurações do sistema no servidor
 export const revalidate = 3600; 
@@ -68,13 +69,7 @@ export default async function RootLayout({
             </Link>
 
             <div className="flex items-center gap-4">
-              <Link 
-                href="/minhas-compras" 
-                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                <Ticket className="h-5 w-5" />
-                <span className="text-sm">Meus Números</span>
-              </Link>
+              <HeaderActions />
             </div>
           </div>
         </header>

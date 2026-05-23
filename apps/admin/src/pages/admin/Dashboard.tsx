@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink } from "lucide-react";
+import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { LaserBorder } from "@/components/magic/LaserBorder";
 export default function Dashboard() {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [selectedRifaId, setSelectedRifaId] = useState<string | null>(null);
+  const [endAtivado, setEndAtivado] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -205,9 +207,15 @@ export default function Dashboard() {
     }
   }, [stats.minhasRifas]);
 
+  const buildLink = (rifaSlug: string) => {
+    if (!vendedorData) return '';
+    const base = `https://rifa.virtudes.net.br/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
+    return endAtivado ? `${base}&end=5` : base;
+  };
+
   const copyLink = (rifaSlug: string) => {
     if (!vendedorData) return;
-    const link = `https://rifa.virtudes.net.br/${rifaSlug}?ref=${vendedorData.codigo_ref}`;
+    const link = buildLink(rifaSlug);
     navigator.clipboard.writeText(link);
     setCopiedLink(rifaSlug);
     setTimeout(() => setCopiedLink(null), 2000);
@@ -291,34 +299,59 @@ export default function Dashboard() {
                       <span className="text-[#1a6eff] dark:text-[#3b82f6] font-bold">{selectedRifa?.slug}</span>
                       <span className="text-slate-400 dark:text-slate-500">?ref=</span>
                       <span className="text-slate-800 dark:text-slate-200 font-bold">{vendedorData?.codigo_ref}</span>
+                      {endAtivado && <span className="text-orange-500 font-bold">&end=5</span>}
                     </div>
                   </div>
                 </LaserBorder>
-                <button
-                  onClick={() => selectedRifa && copyLink(selectedRifa.slug)}
-                  className={`w-full flex items-center justify-center gap-2 h-11 rounded-md font-bold uppercase tracking-wider text-xs transition-all duration-300 ${
-                    copiedLink === selectedRifa?.slug
-                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                    : "bg-[#1a6eff] text-white shadow-md shadow-blue-500/20 hover:bg-blue-600 active:scale-[0.98]"
-                  }`}
-                >
-                  {copiedLink === selectedRifa?.slug ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      <span>Copiar link</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Switch Ativar Fim */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 leading-none">Timer</span>
+                    <div className="flex items-center gap-1.5">
+                      <Timer className={`h-4 w-4 transition-colors ${endAtivado ? 'text-orange-500' : 'text-slate-400 dark:text-slate-600'}`} />
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={endAtivado}
+                        onClick={() => setEndAtivado(!endAtivado)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-all duration-200 focus-visible:outline-none ${
+                          endAtivado
+                            ? 'bg-orange-500 shadow-orange-200 dark:shadow-orange-950 shadow-inner'
+                            : 'bg-slate-200 dark:bg-slate-800'
+                        }`}
+                      >
+                        <span className={`pointer-events-none block h-5 w-5 rounded-full bg-white dark:bg-slate-100 shadow-md ring-0 transition-transform duration-200 ${endAtivado ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botão Copiar Link */}
+                  <button
+                    onClick={() => selectedRifa && copyLink(selectedRifa.slug)}
+                    className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-md font-bold uppercase tracking-wider text-xs transition-all duration-300 ${
+                      copiedLink === selectedRifa?.slug
+                      ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                      : "bg-[#1a6eff] text-white shadow-md shadow-blue-500/20 hover:bg-blue-600 active:scale-[0.98]"
+                    }`}
+                  >
+                    {copiedLink === selectedRifa?.slug ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>Copiar link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Progress Meta */}
-            <div className="space-y-3 pt-4 border-t border-slate-50 dark:border-slate-800/60">
+            <div className="space-y-2 pt-3 border-t border-slate-50 dark:border-slate-800/60">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Desempenho nesta Rifa</span>
@@ -332,7 +365,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Progress value={selectedRifa.progresso} className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full" />
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold italic text-center bg-slate-50 dark:bg-slate-950 py-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold italic text-center -mb-2 mt-1">
                 Você já atingiu {selectedRifa.progresso.toFixed(1)}% do seu objetivo!
               </p>
             </div>
