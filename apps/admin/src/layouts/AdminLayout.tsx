@@ -26,6 +26,7 @@ import { InstallPWA } from '@/components/InstallPWA';
 import { useQueryClient } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { toast } from 'sonner';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
@@ -452,19 +453,20 @@ export default function AdminLayout() {
                         Tema {isDarkMode ? 'Claro' : 'Escuro'}
                       </div>
                     </button>
-                    {isInstallable && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          installPWA();
-                          setIsProfileMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
-                      >
-                        <Download className="h-4 w-4" />
-                        Instalar App
-                      </button>
-                    )}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setIsProfileMenuOpen(false);
+                        const success = await installPWA();
+                        if (!success) {
+                          toast.info("Para instalar o app, clique nas opções/compartilhar do seu navegador e selecione 'Adicionar à tela de início' ou 'Instalar'.");
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      Instalar App
+                    </button>
                     <div className="h-px bg-slate-200/20 dark:bg-slate-800/40 my-1 mx-2" />
                     <button
                       onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }}
