@@ -162,3 +162,36 @@
 .animate-bounce-subtle {
   animation: bounce-subtle 2s infinite;
 }
+
+/* Liquid Glass Menu (Sem Aberração nas Bordas) */
+.liquid-glass-menu {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.45),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .liquid-glass-menu {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.chromatic-text {
+  text-shadow: 
+    -0.5px -0.5px 0 rgba(255, 0, 80, 0.5), 
+    0.5px 0.5px 0 rgba(0, 243, 255, 0.5);
+}
+
+.chromatic-icon {
+  filter: drop-shadow(-0.5px -0.5px 0 rgba(255, 0, 80, 0.5)) drop-shadow(0.5px 0.5px 0 rgba(0, 243, 255, 0.5));
+}

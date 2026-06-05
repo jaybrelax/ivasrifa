@@ -1,46 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Smartphone, Download, X } from 'lucide-react';
 import { Button } from './ui/button';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export function InstallPWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showBanner, setShowBanner] = useState(false);
+  const { isInstallable, isInstalled, installPWA } = usePWAInstall();
 
   useEffect(() => {
-    const handler = (e: any) => {
-      // Impede o Chrome 67 e anteriores de mostrar o prompt automaticamente
-      e.preventDefault();
-      // Guarda o evento para ser usado mais tarde
-      setDeferredPrompt(e);
-      // Mostra o banner apenas em mobile
-      if (window.innerWidth < 1024) {
-        setShowBanner(true);
-      }
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Verifica se já está instalado
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Mostra o banner apenas em mobile e se for instalável
+    if (isInstallable && !isInstalled && window.innerWidth < 1024) {
+      setShowBanner(true);
+    } else {
       setShowBanner(false);
     }
-
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+  }, [isInstallable, isInstalled]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    // Mostra o prompt de instalação
-    deferredPrompt.prompt();
-
-    // Espera pela escolha do usuário
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`Usuário escolheu: ${outcome}`);
-
-    // Limpa o evento
-    setDeferredPrompt(null);
-    setShowBanner(false);
+    const success = await installPWA();
+    if (success) {
+      setShowBanner(false);
+    }
   };
 
   if (!showBanner) return null;

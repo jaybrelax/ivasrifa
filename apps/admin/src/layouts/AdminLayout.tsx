@@ -17,13 +17,15 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
 import { cn } from "@/lib/utils";
 import { MobileNav } from '@/components/MobileNav';
 import { InstallPWA } from '@/components/InstallPWA';
 import { useQueryClient } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
@@ -37,10 +39,13 @@ export default function AdminLayout() {
   const [userRole, setUserRole] = useState<'admin' | 'guardiao'>('admin');
   const [vendedorData, setVendedorData] = useState<any>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   
   const [localTheme, setLocalTheme] = useState<'light' | 'dark' | null>(() => {
     return localStorage.getItem('theme_preference') as 'light' | 'dark' | null;
   });
+
+  const { isInstallable, installPWA } = usePWAInstall();
 
   const isDarkMode = localTheme === 'dark' || (localTheme === null && config.admin_dark_mode);
 
@@ -49,6 +54,20 @@ export default function AdminLayout() {
     setLocalTheme(newTheme);
     localStorage.setItem('theme_preference', newTheme);
   };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileMenuOpen]);
 
   useEffect(() => {
     // Timeout de segurança: Se não carregar em 3 segundos, libera o loader
@@ -333,7 +352,7 @@ export default function AdminLayout() {
 
         {/* Header */}
         <header
-          className="h-[70px] flex items-center justify-between px-5 sm:px-7 shrink-0 z-30 relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-indigo-500/5 dark:border-slate-700/50 shadow-sm transition-colors duration-200"
+          className="h-[70px] flex items-center justify-between px-5 sm:px-7 shrink-0 z-30 relative bg-white/95 dark:bg-slate-900/95 border-b border-indigo-500/5 dark:border-slate-700/50 shadow-sm transition-colors duration-200"
         >
           {/* Left: Hamburger + Title */}
           <div className="flex items-center gap-4">
@@ -375,7 +394,7 @@ export default function AdminLayout() {
           {/* Right: Actions + Avatar */}
           <div className="flex items-center gap-2">
             {/* Profile Menu Container */}
-            <div className="relative group">
+            <div className="relative" ref={menuRef}>
               <div
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className={cn(
@@ -397,17 +416,16 @@ export default function AdminLayout() {
 
               {/* Floating Menu */}
               {isProfileMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-blue-900/10 dark:shadow-black/30 border border-slate-100 dark:border-slate-850 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
-                    <div className="px-4 py-2 mb-1 sm:hidden border-b border-slate-50 dark:border-slate-800">
+                <div className="absolute right-0 mt-2 w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
+                  <div className="liquid-glass-menu rounded-2xl py-2">
+                    <div className="px-4 py-2 mb-1 sm:hidden border-b border-slate-200/20 dark:border-slate-800/40">
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{displayName}</p>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{session.user.email}</p>
                     </div>
                     <Link
                       to="/perfil"
                       onClick={() => setIsProfileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
                     >
                       <UserCircle className="h-4 w-4" />
                       Meu Perfil
@@ -416,7 +434,7 @@ export default function AdminLayout() {
                       <Link
                         to="/configuracoes"
                         onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
                       >
                         <Settings className="h-4 w-4" />
                         Configurações
@@ -427,23 +445,36 @@ export default function AdminLayout() {
                         e.stopPropagation();
                         toggleTheme();
                       }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                         Tema {isDarkMode ? 'Claro' : 'Escuro'}
                       </div>
                     </button>
-                    <div className="h-px bg-slate-50 dark:bg-slate-800 my-1 mx-2" />
+                    {isInstallable && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          installPWA();
+                          setIsProfileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Instalar App
+                      </button>
+                    )}
+                    <div className="h-px bg-slate-200/20 dark:bg-slate-800/40 my-1 mx-2" />
                     <button
                       onClick={() => { setIsProfileMenuOpen(false); handleLogout(); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       Sair
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
