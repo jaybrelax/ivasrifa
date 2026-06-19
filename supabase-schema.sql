@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS public.configuracoes (
     distribuicao_aleatoria_guardiao BOOLEAN DEFAULT false,
     surpresinha_enabled BOOLEAN DEFAULT false,
     notificacoes_compradores_enabled BOOLEAN DEFAULT true,
+    ocultar_numeros_comprados BOOLEAN DEFAULT false,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -219,7 +220,8 @@ SELECT
     hero_imagem_url, 
     whatsapp, 
     surpresinha_enabled,
-    notificacoes_compradores_enabled
+    notificacoes_compradores_enabled,
+    ocultar_numeros_comprados
 FROM public.configuracoes;
 
 -- Garantir acesso público à view

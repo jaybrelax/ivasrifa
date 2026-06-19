@@ -299,6 +299,12 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   }, [checkoutStep, timeLeft]);
 
   const handleNumberClick = (num: number) => {
+    console.log("Clicked:", num, { 
+      vendido: numerosVendidos.includes(num), 
+      reservado: numerosReservados.includes(num), 
+      emSelecao: numerosEmSelecao.includes(num),
+      numerosEmSelecao
+    });
     if (numerosVendidos.includes(num) || numerosReservados.includes(num) || numerosEmSelecao.includes(num)) return;
     setSelectedNumbers((prev) =>
       prev.includes(num) ? prev.filter((n) => n !== num) : [...prev, num]
@@ -590,7 +596,9 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
                 </div>
 
                 <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5 sm:gap-2">
-                  {Array.from({ length: rifa.total_numeros }, (_, i) => i + 1).map((num) => (
+                  {Array.from({ length: rifa.total_numeros }, (_, i) => i + 1)
+                    .filter((num) => !(config?.ocultar_numeros_comprados && numerosVendidos.includes(num)))
+                    .map((num) => (
                     <button
                       key={num}
                       onClick={() => handleNumberClick(num)}

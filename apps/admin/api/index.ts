@@ -199,6 +199,10 @@ app.post("/api/pagamento/pix", async (req, res) => {
           const randomIndex = Math.floor(Math.random() * vendedoresAtivos.length);
           vendedorIdDB = vendedoresAtivos[randomIndex].id;
         }
+      } else {
+        // Atribuir para JAY
+        const { data: vJay } = await supabaseAdmin.from('vendedores').select('id').eq('codigo_ref', 'JAY').maybeSingle();
+        if (vJay) vendedorIdDB = vJay.id;
       }
     }
 

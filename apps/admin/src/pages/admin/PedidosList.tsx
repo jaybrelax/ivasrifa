@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, Clock, Search, Eye, Trash, AlertTriangle, Send, User, Phone, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -23,6 +24,7 @@ export default function VendasList() {
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
   const [isEditingGuardian, setIsEditingGuardian] = useState(false);
   const [newGuardianId, setNewGuardianId] = useState("");
+  const [exactMatch, setExactMatch] = useState(false);
 
   const { data: pedidosData, isLoading: loading, refetch: fetchPedidos } = useQuery({
     queryKey: ['pedidos-list'],
@@ -222,12 +224,19 @@ export default function VendasList() {
     }
   };
 
-  const filteredPedidos = pedidos.filter(p => 
-    p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.display_id && p.display_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    p.cliente?.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.cliente?.cpf.includes(searchTerm)
-  );
+  const filteredPedidos = pedidos.filter(p => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    
+    if (exactMatch) {
+      return p.numeros?.some((n: number) => n.toString() === term);
+    }
+    
+    const matchName = p.cliente?.nome_completo?.toLowerCase().includes(term);
+    const matchNumber = p.numeros?.some((n: number) => n.toString() === term || n.toString().includes(term));
+    
+    return matchName || matchNumber;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -246,14 +255,36 @@ export default function VendasList() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Vendas</h1>
           <p className="text-gray-500 dark:text-slate-400">Gerencie as compras e aprovações manuais.</p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-slate-400" />
-          <Input
-            placeholder="Buscar por nome, CPF ou ID..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="w-full sm:w-auto bg-gray-50/50 dark:bg-slate-900/50 p-3 rounded-2xl border border-gray-100 dark:border-slate-800/80 flex flex-col gap-3 transition-colors hover:border-blue-100 dark:hover:border-slate-700">
+          <div className="relative w-full sm:w-96 group">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            </div>
+            <Input
+              placeholder={exactMatch ? "Digite o número exato da cota..." : "Encontrar ganhador por Nome ou Nº da Cota..."}
+              className="pl-10 pr-10 h-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-700 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 rounded-xl transition-all text-sm font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm("")}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-start sm:justify-end gap-2 px-1">
+            <Switch 
+              id="exact-match" 
+              checked={exactMatch} 
+              onCheckedChange={setExactMatch} 
+            />
+            <label htmlFor="exact-match" className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+              Buscar comprador do número específico
+            </label>
+          </div>
         </div>
       </div>
 

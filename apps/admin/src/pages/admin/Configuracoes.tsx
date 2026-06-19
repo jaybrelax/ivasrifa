@@ -41,7 +41,8 @@ export default function Configuracoes() {
     webhook_pago: "",
     distribuicao_aleatoria_guardiao: false,
     surpresinha_enabled: false,
-    notificacoes_compradores_enabled: true
+    notificacoes_compradores_enabled: true,
+    ocultar_numeros_comprados: false
   });
 
   useEffect(() => {
@@ -86,7 +87,8 @@ export default function Configuracoes() {
             webhook_pago: data.webhook_pago || "",
             distribuicao_aleatoria_guardiao: data.distribuicao_aleatoria_guardiao === true,
             surpresinha_enabled: data.surpresinha_enabled === true,
-            notificacoes_compradores_enabled: data.notificacoes_compradores_enabled !== false
+            notificacoes_compradores_enabled: data.notificacoes_compradores_enabled !== false,
+            ocultar_numeros_comprados: data.ocultar_numeros_comprados === true
           });
         }
       } catch (error) {
@@ -496,6 +498,24 @@ export default function Configuracoes() {
                     onClick={(e) => { e.stopPropagation(); if (!authError) setFormData({ ...formData, notificacoes_compradores_enabled: !formData.notificacoes_compradores_enabled }); }}
                   >
                     <span className={`pointer-events-none block h-5 w-5 rounded-full bg-white dark:bg-slate-100 shadow-md ring-0 transition-transform duration-200 ${formData.notificacoes_compradores_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                {/* Switch: Ocultar Números Comprados */}
+                <div className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/60 bg-white dark:bg-slate-900 hover:border-purple-100 dark:hover:border-purple-900/30 hover:shadow-sm transition-all cursor-pointer" onClick={() => !authError && setFormData({ ...formData, ocultar_numeros_comprados: !formData.ocultar_numeros_comprados })}>
+                  <div className="space-y-0.5 flex-1 min-w-0 mr-3">
+                    <p className="text-sm font-medium text-purple-700 dark:text-purple-400 leading-none">Ocultar Números Comprados</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold mt-1">Exibir apenas disponíveis e reservados</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.ocultar_numeros_comprados}
+                    disabled={authError}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-all duration-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${formData.ocultar_numeros_comprados ? 'bg-purple-500 dark:bg-purple-600 shadow-purple-200 dark:shadow-purple-950 shadow-inner' : 'bg-slate-200 dark:bg-slate-800'}`}
+                    onClick={(e) => { e.stopPropagation(); if (!authError) setFormData({ ...formData, ocultar_numeros_comprados: !formData.ocultar_numeros_comprados }); }}
+                  >
+                    <span className={`pointer-events-none block h-5 w-5 rounded-full bg-white dark:bg-slate-100 shadow-md ring-0 transition-transform duration-200 ${formData.ocultar_numeros_comprados ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
               </div>
