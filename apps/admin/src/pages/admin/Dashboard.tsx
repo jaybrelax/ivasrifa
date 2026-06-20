@@ -2,8 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink, Timer } from "lucide-react";
+import { DollarSign, Ticket, Users, TrendingUp, Loader2, Copy, CheckCircle2, Trophy, Target, ExternalLink, Timer, QrCode } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import QRCode from "react-qr-code";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [selectedRifaId, setSelectedRifaId] = useState<string | null>(null);
   const [endAtivado, setEndAtivado] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -326,26 +329,36 @@ export default function Dashboard() {
                   </div>
 
                   {/* Botão Copiar Link */}
-                  <button
-                    onClick={() => selectedRifa && copyLink(selectedRifa.slug)}
-                    className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-md font-bold uppercase tracking-wider text-xs transition-all duration-300 ${
-                      copiedLink === selectedRifa?.slug
-                      ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                      : "bg-[#1a6eff] text-white shadow-md shadow-blue-500/20 hover:bg-blue-600 active:scale-[0.98]"
-                    }`}
-                  >
-                    {copiedLink === selectedRifa?.slug ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        <span>Copiar link</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex-1 flex gap-2">
+                    <button
+                      onClick={() => selectedRifa && copyLink(selectedRifa.slug)}
+                      className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-md font-bold uppercase tracking-wider text-xs transition-all duration-300 ${
+                        copiedLink === selectedRifa?.slug
+                        ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                        : "bg-[#1a6eff] text-white shadow-md shadow-blue-500/20 hover:bg-blue-600 active:scale-[0.98]"
+                      }`}
+                    >
+                      {copiedLink === selectedRifa?.slug ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>Copiado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          <span>Copiar link</span>
+                        </>
+                      )}
+                    </button>
+                    {/* Botão QR Code */}
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(true)}
+                      className="flex items-center justify-center w-11 h-11 shrink-0 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
+                    >
+                      <QrCode className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -561,6 +574,54 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal do QR Code */}
+      <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-center font-bold text-xl text-slate-800 dark:text-slate-200">
+              QR Code do Link
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 space-y-6">
+            <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 inline-block">
+              {selectedRifa && (
+                <QRCode
+                  value={buildLink(selectedRifa.slug)}
+                  size={200}
+                  level="H"
+                  className="rounded-lg"
+                />
+              )}
+            </div>
+            <p className="text-sm text-center text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-[280px]">
+              Escaneie o QR code acima com a câmera do seu celular para acessar a página.
+            </p>
+          </div>
+          <div className="flex gap-3 p-6 pt-2 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              type="button"
+              className="flex-1 bg-[#1a6eff] hover:bg-blue-600 text-white font-bold tracking-wide shadow-md shadow-blue-500/20"
+              onClick={() => {
+                if (selectedRifa) {
+                  window.open(buildLink(selectedRifa.slug), '_blank');
+                  setIsQrModalOpen(false);
+                }
+              }}
+            >
+              Acessar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={() => setIsQrModalOpen(false)}
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
