@@ -48,6 +48,7 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
   const [recentBuyers, setRecentBuyers] = useState<any[]>([]);
   const [toastBuyer, setToastBuyer] = useState<any | null>(null);
   const toastCountRef = useRef(0);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const [formData, setFormData] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -418,7 +419,23 @@ export default function RifaDetailsClient({ initialRifa, initialPremios, initial
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <h2 className="text-lg sm:text-xl font-bold mb-3">Sobre a Rifa</h2>
-                <p className="text-gray-600 whitespace-pre-line text-sm sm:text-base">{rifa.descricao || "Sem descrição disponível."}</p>
+                <div className={`relative overflow-hidden transition-all duration-500 ease-in-out ${isDescriptionExpanded ? 'max-h-[5000px]' : 'max-h-[300px]'}`}>
+                  <p className="text-gray-600 whitespace-pre-line text-sm sm:text-base">{rifa.descricao || "Sem descrição disponível."}</p>
+                  {!isDescriptionExpanded && (
+                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none flex items-end justify-center pb-2" />
+                  )}
+                </div>
+                {rifa.descricao && rifa.descricao.length > 200 && (
+                  <div className="flex justify-center mt-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      className="text-[#1a6eff] hover:text-blue-700 hover:bg-blue-50 font-bold uppercase tracking-wider text-xs"
+                    >
+                      {isDescriptionExpanded ? "Ler menos" : "Ler mais"}
+                    </Button>
+                  </div>
+                )}
 
                 {premios.length > 0 && (
                   <div className="mt-5 space-y-6">
