@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Medal, Loader2, User } from "lucide-react";
+import { Trophy, Medal, Loader2, User, Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export default function RankingList() {
   const [ranking, setRanking] = useState<any[]>([]);
@@ -11,6 +16,22 @@ export default function RankingList() {
   const [selectedRifa, setSelectedRifa] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [rankingMode, setRankingMode] = useState<'valor' | 'quantidade' | 'pedidos'>('pedidos');
+  const [selectedGender, setSelectedGender] = useState<'geral' | 'masculino' | 'feminino'>('geral');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedVendedor, setSelectedVendedor] = useState<any>(null);
+  const [vendasVendedor, setVendasVendedor] = useState<any[]>([]);
+  const [loadingVendas, setLoadingVendas] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Estados locais para edição
+  const [editNome, setEditNome] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editGenero, setEditGenero] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchRifas();
@@ -28,14 +49,15 @@ export default function RankingList() {
       // Verificar Role
       const { data: vData } = await supabase
         .from('vendedores')
-        .select('id')
+        .select('id, is_admin')
         .eq('user_id', session.user.id)
         .maybeSingle();
       
       const isGuardiao = !!vData;
+      setIsAdmin(!vData || vData.is_admin === true);
 
       let query = supabase.from('rifas').select('id, titulo');
-      if (isGuardiao) {
+      if (isGuardiao && (!vData || vData.is_admin === false)) {
         query = query.neq('status', 'rascunho');
       }
 
@@ -47,6 +69,132 @@ export default function RankingList() {
       console.error(err);
     }
   }
+
+  const handleVendedorClick = async (vendedor: any) => {
+    if (!isAdmin) return;
+    
+    setSelectedVendedor(vendedor);
+    setEditNome(vendedor.nome || "");
+    setEditTelefone(vendedor.telefone || "");
+    setEditEmail(vendedor.email || "");
+    setEditGenero(vendedor.genero || "");
+    setEditAvatarUrl(vendedor.avatar_url || "");
+    setIsEditing(false);
+    setLoadingVendas(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select(`
+          id,
+          quantidade,
+          valor_total,
+          cliente:clientes (
+            nome_completo
+          )
+        `)
+        .eq('vendedor_id', vendedor.id)
+        .eq('status', 'pago')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVendasVendedor(data || []);
+    } catch (err) {
+      console.error("Erro ao buscar vendas do vendedor:", err);
+      toast.error("Erro ao carregar vendas.");
+    } finally {
+      setLoadingVendas(false);
+    }
+  };
+
+  const handleSaveVendedor = async () => {
+    if (!selectedVendedor) return;
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('vendedores')
+        .update({
+          nome: editNome,
+          telefone: editTelefone,
+          email: editEmail,
+          genero: editGenero,
+          avatar_url: editAvatarUrl
+        })
+        .eq('id', selectedVendedor.id);
+
+      if (error) throw error;
+
+      toast.success("Dados do guardião atualizados com sucesso!");
+      
+      setRanking(prev => prev.map(v => 
+        v.id === selectedVendedor.id 
+          ? { ...v, nome: editNome, telefone: editTelefone, email: editEmail, genero: editGenero, avatar_url: editAvatarUrl }
+          : v
+      ));
+
+      setSelectedVendedor(prev => ({
+        ...prev,
+        nome: editNome,
+        telefone: editTelefone,
+        email: editEmail,
+        genero: editGenero,
+        avatar_url: editAvatarUrl
+      }));
+
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Erro ao salvar dados do vendedor:", err);
+      toast.error("Erro ao atualizar dados: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatCompradorName = (fullName: string) => {
+    if (!fullName) return "Sem nome";
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedVendedor) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.warning("Selecione uma imagem válida (JPG, PNG ou WEBP).");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.warning("A imagem é muito grande. Limite: 2MB.");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${selectedVendedor.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+      setEditAvatarUrl(data.publicUrl);
+      toast.success("Foto carregada! Clique em Salvar para confirmar.");
+    } catch (err: any) {
+      console.error("Erro ao fazer upload do avatar:", err);
+      toast.error(`Erro no upload: ${err.message || "Erro desconhecido"}`);
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   async function fetchRanking() {
     setLoading(true);
@@ -111,7 +259,7 @@ export default function RankingList() {
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
         <div className="text-center md:text-left">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center md:justify-start gap-2">
-             <Trophy className="text-yellow-500" /> Ranking de Guardiões
+             <Trophy className="text-yellow-500" /> Ranking de Vendas
           </h1>
           <p className="hidden md:block text-slate-500 dark:text-slate-400 text-sm mt-1">Confira o engajamento dos maiores vendedores.</p>
         </div>
@@ -137,6 +285,9 @@ export default function RankingList() {
               Valor
             </button>
           </div>
+
+
+
           <div className="hidden md:flex items-center gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-150 dark:border-slate-850 w-full md:w-64">
             <div className="bg-white dark:bg-slate-900 p-2 text-blue-600 dark:text-blue-400 rounded-lg shadow-sm border border-slate-150 dark:border-slate-800">
               <Trophy className="h-5 w-5" />
@@ -166,8 +317,20 @@ export default function RankingList() {
         </div>
       ) : (
         <Card className="border border-slate-100 dark:border-slate-800 bg-card shadow-sm overflow-hidden">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between py-3 pl-4 !pr-0">
             <CardTitle className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Top Vendedores</CardTitle>
+            <div className="w-44">
+              <Select value={selectedGender} onValueChange={(value: any) => setSelectedGender(value)}>
+                <SelectTrigger className="h-9 text-xs font-bold uppercase tracking-wider rounded-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm">
+                  <SelectValue placeholder="GÊNERO" />
+                </SelectTrigger>
+                <SelectContent align="end" className="rounded-xl font-bold uppercase tracking-wider border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-250 text-xs">
+                  <SelectItem value="geral">👥 GERAL</SelectItem>
+                  <SelectItem value="masculino">♂️ MASCULINO</SelectItem>
+                  <SelectItem value="feminino">♀️ FEMININO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -179,12 +342,17 @@ export default function RankingList() {
                   return b.vendas - a.vendas;
                 })
                 .filter(v => {
+                  if (selectedGender !== 'geral' && v.genero !== selectedGender) return false;
                   if (rankingMode === 'valor') return v.valor > 0;
                   if (rankingMode === 'pedidos') return v.pedidos > 0;
                   return v.vendas > 0;
                 })
                 .map((vendedor, index) => (
-                  <div key={vendedor.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                  <div 
+                    key={vendedor.id} 
+                    onClick={() => handleVendedorClick(vendedor)}
+                    className={`flex items-center justify-between p-4 transition-colors ${isAdmin ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50' : ''}`}
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-8 flex justify-center shrink-0">
                         {getRankIcon(index)}
@@ -230,6 +398,195 @@ export default function RankingList() {
           </CardContent>
         </Card>
       )}
+      {/* Modal de Detalhes do Vendedor */}
+      <Dialog open={!!selectedVendedor} onOpenChange={(open) => { if (!open) setSelectedVendedor(null); }}>
+        <DialogContent className="sm:max-w-[550px] dark:bg-slate-900 dark:border-slate-800 max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <input
+                type="file"
+                ref={avatarInputRef}
+                className="hidden"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
+              <div
+                className="relative group cursor-pointer shrink-0"
+                onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                title="Clique para mudar a foto de perfil"
+              >
+                <Avatar className="h-12 w-12 border-2 border-white dark:border-slate-800 shadow-sm">
+                  <AvatarImage src={editAvatarUrl || selectedVendedor?.avatar_url} />
+                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold">
+                    {selectedVendedor?.nome?.charAt(0).toUpperCase() || <User size={20} />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className={`absolute inset-0 bg-black/50 rounded-full flex items-center justify-center transition-opacity ${uploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  {uploadingAvatar
+                    ? <Loader2 className="h-4 w-4 text-white animate-spin" />
+                    : <Camera className="h-4 w-4 text-white" />}
+                </div>
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                  {selectedVendedor?.nome}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-450">
+                  Código Ref: @{selectedVendedor?.codigo_ref}
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedVendedor && (
+            <div className="space-y-6 py-4">
+              {/* Seção de Informações / Edição */}
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-4">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Informações do Guardião</h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                    onClick={() => setIsEditing(!isEditing)}
+                  >
+                    {isEditing ? "Cancelar" : "Editar"}
+                  </Button>
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Nome</label>
+                        <Input 
+                          value={editNome} 
+                          onChange={e => setEditNome(e.target.value)} 
+                          className="h-9 text-xs" 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Telefone</label>
+                        <Input 
+                          value={editTelefone} 
+                          onChange={e => setEditTelefone(e.target.value)} 
+                          className="h-9 text-xs" 
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">E-mail</label>
+                        <Input 
+                          value={editEmail} 
+                          onChange={e => setEditEmail(e.target.value)} 
+                          className="h-9 text-xs" 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Gênero</label>
+                        <Select value={editGenero} onValueChange={editGenero => setEditGenero(editGenero)}>
+                          <SelectTrigger className="h-9 text-xs bg-white dark:bg-slate-900">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white dark:bg-slate-950 text-xs">
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Button 
+                        size="sm" 
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold" 
+                        onClick={handleSaveVendedor}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        Salvar Alterações
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Nome Completo</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{selectedVendedor.nome || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Gênero</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 capitalize">{selectedVendedor.genero || "Não definido"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">E-mail</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{selectedVendedor.email || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Telefone</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{selectedVendedor.telefone || "-"}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Seção de Vendas */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>Vendas Realizadas</span>
+                  <Badge variant="secondary" className="font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
+                    {vendasVendedor.length} {vendasVendedor.length === 1 ? "venda" : "vendas"}
+                  </Badge>
+                </h4>
+
+                {loadingVendas ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : vendasVendedor.length === 0 ? (
+                  <div className="text-center py-8 text-slate-450 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    Nenhuma venda paga realizada por este guardião.
+                  </div>
+                ) : (
+                  <div className="border border-slate-150 dark:border-slate-800/80 rounded-xl overflow-hidden divide-y divide-slate-150 dark:divide-slate-800 bg-white dark:bg-slate-950">
+                    {vendasVendedor.map((venda) => (
+                      <div key={venda.id} className="flex justify-between items-center p-3 hover:bg-slate-550/10 dark:hover:bg-slate-900/40 transition-colors">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                            {formatCompradorName(venda.cliente?.nome_completo)}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                            Comprador
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-6 text-right">
+                          <div>
+                            <p className="font-bold text-slate-700 dark:text-slate-350 text-sm">
+                              {venda.quantidade}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                              Cotas
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-green-600 dark:text-green-400 text-sm">
+                              R$ {Number(venda.valor_total).toFixed(2)}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                              Valor
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

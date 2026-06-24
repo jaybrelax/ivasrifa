@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, Loader2, PartyPopper } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Recrutamento() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function Recrutamento() {
     email: "",
     telefone: "",
     senha: "",
+    genero: "masculino",
   });
 
   const maskCPF = (value: string) => {
@@ -85,7 +87,8 @@ export default function Recrutamento() {
           comissao_padrao: 0,
           meta_numeros: 100,
           user_id: userId,
-          codigo_ref: nomeLimpo
+          codigo_ref: nomeLimpo,
+          genero: formData.genero
         });
 
       if (vendedorError) throw vendedorError;
@@ -174,6 +177,22 @@ export default function Recrutamento() {
                       onChange={e => setFormData({...formData, telefone: maskPhone(e.target.value)})} 
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 dark:text-slate-300 ml-1">Gênero</Label>
+                  <Select
+                    value={formData.genero}
+                    onValueChange={(value) => setFormData({ ...formData, genero: value })}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Selecione o gênero" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl font-medium border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-250">
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">

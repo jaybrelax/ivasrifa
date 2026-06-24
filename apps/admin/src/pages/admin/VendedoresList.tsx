@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function VendedoresList() {
   const [vendedores, setVendedores] = useState<any[]>([]);
@@ -106,6 +107,24 @@ export default function VendedoresList() {
       
     } catch (err: any) {
       toast.error("Erro ao atualizar cargo: " + err.message);
+    }
+  };
+
+  const handleUpdateGenero = async (id: string, genero: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendedores')
+        .update({ genero })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setVendedores(vendedores.map(v => 
+        v.id === id ? { ...v, genero } : v
+      ));
+      toast.success("Gênero atualizado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao atualizar gênero: " + err.message);
     }
   };
 
@@ -200,6 +219,7 @@ export default function VendedoresList() {
                   <TableHead>Cotas Vendidas</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Código Ref</TableHead>
+                  <TableHead>Gênero</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -267,6 +287,20 @@ export default function VendedoresList() {
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={vendedor.genero || ""}
+                          onValueChange={(value) => handleUpdateGenero(vendedor.id, value)}
+                        >
+                          <SelectTrigger className="w-[120px] h-8 text-xs font-semibold rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200">
+                            <SelectValue placeholder="Não definido" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl font-medium border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-250">
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         {vendedor.ativo !== false ? (
