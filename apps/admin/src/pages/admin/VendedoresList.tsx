@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Search, MoreHorizontal, Trash, Copy, Loader2, Shield, CheckCircle2, ExternalLink, Users } from "lucide-react";
+import { Search, MoreHorizontal, Trash, Copy, Loader2, Shield, CheckCircle2, ExternalLink, Users, User, Camera } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +21,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useEffect, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function VendedoresList() {
   const [vendedores, setVendedores] = useState<any[]>([]);
@@ -34,10 +35,24 @@ export default function VendedoresList() {
   const [search, setSearch] = useState("");
   const [linkCopiado, setLinkCopiado] = useState(false);
 
+  // ── Modal de detalhes ──
+  const [selectedVendedor, setSelectedVendedor] = useState<any>(null);
+  const [vendasVendedor, setVendasVendedor] = useState<any[]>([]);
+  const [loadingVendas, setLoadingVendas] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const [editNome, setEditNome] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editGenero, setEditGenero] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     fetchVendedores();
   }, []);
-  
+
   async function fetchVendedores() {
     setLoading(true);
     try {
@@ -45,7 +60,7 @@ export default function VendedoresList() {
         .from('vendedores')
         .select('*')
         .order('created_at', { ascending: false });
-        
+
       if (vError) throw vError;
 
       const { data: pData } = await supabase
@@ -68,13 +83,140 @@ export default function VendedoresList() {
     }
   }
 
+  // ── Abrir modal ao clicar na linha ──
+  const handleRowClick = async (vendedor: any, e: React.MouseEvent) => {
+    // Impedir que cliques em botões dentro da linha abram o modal
+    if ((e.target as HTMLElement).closest('button, [role="combobox"], [data-radix-collection-item]')) return;
+
+    setSelectedVendedor(vendedor);
+    setEditNome(vendedor.nome || "");
+    setEditTelefone(vendedor.telefone || "");
+    setEditEmail(vendedor.email || "");
+    setEditGenero(vendedor.genero || "");
+    setEditAvatarUrl(vendedor.avatar_url || "");
+    setIsEditing(false);
+    setLoadingVendas(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select(`
+          id,
+          quantidade,
+          valor_total,
+          cliente:clientes (
+            nome_completo
+          )
+        `)
+        .eq('vendedor_id', vendedor.id)
+        .eq('status', 'pago')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVendasVendedor(data || []);
+    } catch (err) {
+      console.error("Erro ao buscar vendas:", err);
+      toast.error("Erro ao carregar vendas.");
+    } finally {
+      setLoadingVendas(false);
+    }
+  };
+
+  // ── Salvar edição ──
+  const handleSaveVendedor = async () => {
+    if (!selectedVendedor) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('vendedores')
+        .update({
+          nome: editNome,
+          telefone: editTelefone,
+          email: editEmail,
+          genero: editGenero,
+          avatar_url: editAvatarUrl,
+        })
+        .eq('id', selectedVendedor.id);
+
+      if (error) throw error;
+
+      toast.success("Dados do guardião atualizados com sucesso!");
+
+      setVendedores(prev => prev.map(v =>
+        v.id === selectedVendedor.id
+          ? { ...v, nome: editNome, telefone: editTelefone, email: editEmail, genero: editGenero, avatar_url: editAvatarUrl }
+          : v
+      ));
+
+      setSelectedVendedor((prev: any) => ({
+        ...prev,
+        nome: editNome,
+        telefone: editTelefone,
+        email: editEmail,
+        genero: editGenero,
+        avatar_url: editAvatarUrl,
+      }));
+
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error("Erro ao atualizar dados: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Upload de avatar ──
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedVendedor) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.warning("Selecione uma imagem válida (JPG, PNG ou WEBP).");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.warning("A imagem é muito grande. Limite: 2MB.");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${selectedVendedor.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+      setEditAvatarUrl(data.publicUrl);
+      toast.success("Foto carregada! Clique em Salvar para confirmar.");
+    } catch (err: any) {
+      toast.error(`Erro no upload: ${err.message || "Erro desconhecido"}`);
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const formatCompradorName = (fullName: string) => {
+    if (!fullName) return "Sem nome";
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  };
+
   const handleDelete = async (id: string, nome: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir o guardião "${nome}"? Esta ação não pode ser desfeita.`)) return;
-
     try {
       const { error } = await supabase.from('vendedores').delete().eq('id', id);
       if (error) throw error;
       setVendedores(vendedores.filter(v => v.id !== id));
+      if (selectedVendedor?.id === id) setSelectedVendedor(null);
     } catch (err: any) {
       toast.error("Erro ao excluir: " + err.message);
     }
@@ -90,7 +232,6 @@ export default function VendedoresList() {
   const handleToggleAdmin = async (vendedor: any) => {
     const isCurrentlyAdmin = vendedor.is_admin === true;
     const action = isCurrentlyAdmin ? 'remover o acesso de Administrador de' : 'tornar Administrador o';
-    
     if (!window.confirm(`Tem certeza que deseja ${action} "${vendedor.nome}"? Ela(e) terá controle total sobre o sistema.`)) return;
 
     try {
@@ -100,11 +241,10 @@ export default function VendedoresList() {
         .eq('id', vendedor.id);
 
       if (error) throw error;
-      
-      setVendedores(vendedores.map(v => 
+
+      setVendedores(vendedores.map(v =>
         v.id === vendedor.id ? { ...v, is_admin: !isCurrentlyAdmin } : v
       ));
-      
     } catch (err: any) {
       toast.error("Erro ao atualizar cargo: " + err.message);
     }
@@ -118,8 +258,8 @@ export default function VendedoresList() {
         .eq('id', id);
 
       if (error) throw error;
-      
-      setVendedores(vendedores.map(v => 
+
+      setVendedores(vendedores.map(v =>
         v.id === id ? { ...v, genero } : v
       ));
       toast.success("Gênero atualizado com sucesso!");
@@ -164,7 +304,6 @@ export default function VendedoresList() {
           </Button>
         </div>
       </div>
-
 
       {/* Tabela de Guardiões */}
       <Card>
@@ -232,7 +371,11 @@ export default function VendedoresList() {
                   const atingiuMeta = totalCotas >= metaReal;
 
                   return (
-                    <TableRow key={vendedor.id}>
+                    <TableRow
+                      key={vendedor.id}
+                      onClick={(e) => handleRowClick(vendedor, e)}
+                      className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8 ring-2 ring-white shadow-sm">
@@ -280,7 +423,8 @@ export default function VendedoresList() {
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               navigator.clipboard.writeText(`https://rifa.virtudes.net.br?ref=${vendedor.codigo_ref}`);
                             }}
                           >
@@ -288,7 +432,7 @@ export default function VendedoresList() {
                           </Button>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
                         <Select
                           value={vendedor.genero || ""}
                           onValueChange={(value) => handleUpdateGenero(vendedor.id, value)}
@@ -309,7 +453,7 @@ export default function VendedoresList() {
                           <Badge variant="secondary">Inativo</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
                             <span className="sr-only">Abrir menu</span>
@@ -349,6 +493,178 @@ export default function VendedoresList() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Modal de Detalhes do Guardião ── */}
+      <Dialog open={!!selectedVendedor} onOpenChange={(open) => { if (!open) setSelectedVendedor(null); }}>
+        <DialogContent className="sm:max-w-[550px] dark:bg-slate-900 dark:border-slate-800 max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <input
+                type="file"
+                ref={avatarInputRef}
+                className="hidden"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
+              <div
+                className="relative group cursor-pointer shrink-0"
+                onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                title="Clique para mudar a foto de perfil"
+              >
+                <Avatar className="h-12 w-12 border-2 border-white dark:border-slate-800 shadow-sm">
+                  <AvatarImage src={editAvatarUrl || selectedVendedor?.avatar_url} />
+                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold">
+                    {selectedVendedor?.nome?.charAt(0).toUpperCase() || <User size={20} />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className={`absolute inset-0 bg-black/50 rounded-full flex items-center justify-center transition-opacity ${uploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  {uploadingAvatar
+                    ? <Loader2 className="h-4 w-4 text-white animate-spin" />
+                    : <Camera className="h-4 w-4 text-white" />}
+                </div>
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                  {selectedVendedor?.nome}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-450">
+                  Código Ref: @{selectedVendedor?.codigo_ref}
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedVendedor && (
+            <div className="space-y-6 py-4">
+              {/* Informações / Edição */}
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-4">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Informações do Guardião</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                    onClick={() => setIsEditing(!isEditing)}
+                  >
+                    {isEditing ? "Cancelar" : "Editar"}
+                  </Button>
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Nome</label>
+                        <Input value={editNome} onChange={e => setEditNome(e.target.value)} className="h-9 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Telefone</label>
+                        <Input value={editTelefone} onChange={e => setEditTelefone(e.target.value)} className="h-9 text-xs" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">E-mail</label>
+                        <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="h-9 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-650 dark:text-slate-400">Gênero</label>
+                        <Select value={editGenero} onValueChange={v => setEditGenero(v)}>
+                          <SelectTrigger className="h-9 text-xs bg-white dark:bg-slate-900">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white dark:bg-slate-950 text-xs">
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        onClick={handleSaveVendedor}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        Salvar Alterações
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Nome Completo</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{selectedVendedor.nome || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Gênero</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 capitalize">{selectedVendedor.genero || "Não definido"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">E-mail</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{selectedVendedor.email || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Telefone</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{selectedVendedor.telefone || "-"}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Vendas */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>Vendas Realizadas</span>
+                  <Badge variant="secondary" className="font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
+                    {vendasVendedor.length} {vendasVendedor.length === 1 ? "venda" : "vendas"}
+                  </Badge>
+                </h4>
+
+                {loadingVendas ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : vendasVendedor.length === 0 ? (
+                  <div className="text-center py-8 text-slate-450 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    Nenhuma venda paga realizada por este guardião.
+                  </div>
+                ) : (
+                  <div className="border border-slate-150 dark:border-slate-800/80 rounded-xl overflow-hidden divide-y divide-slate-150 dark:divide-slate-800 bg-white dark:bg-slate-950">
+                    {vendasVendedor.map((venda) => (
+                      <div key={venda.id} className="flex justify-between items-center p-3 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                            {formatCompradorName(venda.cliente?.nome_completo)}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                            Comprador
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-6 text-right">
+                          <div>
+                            <p className="font-bold text-slate-700 dark:text-slate-350 text-sm">{venda.quantidade}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Cotas</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-green-600 dark:text-green-400 text-sm">
+                              R$ {Number(venda.valor_total).toFixed(2)}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Valor</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
