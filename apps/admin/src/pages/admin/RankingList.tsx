@@ -334,10 +334,10 @@ export default function RankingList() {
             </button>
             <button
               onClick={() => setRankingMode('top10')}
-              className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all flex items-center justify-center ${
+              className={`flex-1 md:flex-none px-2 py-2 text-xs font-bold uppercase rounded-lg transition-all flex items-center justify-center ${
                 rankingMode === 'top10' 
                   ? 'bg-amber-200 dark:bg-amber-300 text-black shadow-sm' 
-                  : 'text-orange-500 dark:text-orange-400 ring-1 ring-orange-300 dark:ring-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                  : 'text-orange-500 dark:text-orange-400 bg-yellow-50 dark:bg-yellow-900/10 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
               }`}
             >
               <span className={rankingMode === 'top10' ? 'text-amber-800' : 'text-orange-500'}>⭐TOP 10</span>
