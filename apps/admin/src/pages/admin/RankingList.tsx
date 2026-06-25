@@ -15,7 +15,7 @@ export default function RankingList() {
   const [rifas, setRifas] = useState<any[]>([]);
   const [selectedRifa, setSelectedRifa] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [rankingMode, setRankingMode] = useState<'valor' | 'quantidade' | 'pedidos'>('pedidos');
+  const [rankingMode, setRankingMode] = useState<'valor' | 'quantidade' | 'pedidos' | 'top10'>('pedidos');
   const [selectedGender, setSelectedGender] = useState<'geral' | 'masculino' | 'feminino'>('geral');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedVendedor, setSelectedVendedor] = useState<any>(null);
@@ -254,6 +254,54 @@ export default function RankingList() {
     return `${parts[0]} ${parts[parts.length - 1]}`;
   };
 
+  const renderTop10List = (title: string, data: any[], mode: 'vendas' | 'pedidos') => {
+    return (
+      <Card className="border border-slate-100 dark:border-slate-800 bg-card shadow-sm overflow-hidden w-full">
+        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 py-3">
+          <CardTitle className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold text-center">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data.length > 0 ? (
+              data.map((vendedor, index) => (
+                <div 
+                  key={vendedor.id} 
+                  onClick={() => handleVendedorClick(vendedor)}
+                  className={`flex items-center justify-between p-3 transition-colors ${isAdmin ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50' : ''}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-6 flex justify-center shrink-0">
+                      {getRankIcon(index)}
+                    </div>
+                    <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
+                      <AvatarImage src={vendedor.avatar_url} />
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-xs">
+                        {vendedor.nome?.charAt(0).toUpperCase() || <User size={12} />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{formatShortName(vendedor.nome)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 ml-2">
+                    <p className="text-base font-black text-blue-600 dark:text-blue-400">
+                      {mode === 'pedidos' ? vendedor.pedidos : vendedor.vendas}
+                    </p>
+                    <p className="text-[9px] uppercase font-bold text-slate-450 dark:text-slate-500">
+                      {mode === 'pedidos' ? 'Vendas' : 'Cotas'}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+               <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-450">Nenhum vendedor</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -283,6 +331,16 @@ export default function RankingList() {
               className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all ${rankingMode === 'valor' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
             >
               Valor
+            </button>
+            <button
+              onClick={() => setRankingMode('top10')}
+              className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                rankingMode === 'top10' 
+                  ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-md' 
+                  : 'text-amber-600 dark:text-amber-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-amber-700'
+              }`}
+            >
+              ⭐ TOP 10
             </button>
           </div>
 
@@ -314,6 +372,12 @@ export default function RankingList() {
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : rankingMode === 'top10' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {renderTop10List("Feminino (Cotas)", [...ranking].filter(v => v.genero === 'feminino' && v.vendas > 0).sort((a, b) => b.vendas - a.vendas).slice(0, 10), 'vendas')}
+          {renderTop10List("Masculino (Cotas)", [...ranking].filter(v => v.genero === 'masculino' && v.vendas > 0).sort((a, b) => b.vendas - a.vendas).slice(0, 10), 'vendas')}
+          {renderTop10List("Geral (Vendas)", [...ranking].filter(v => v.pedidos > 0).sort((a, b) => b.pedidos - a.pedidos).slice(0, 10), 'pedidos')}
         </div>
       ) : (
         <Card className="border border-slate-100 dark:border-slate-800 bg-card shadow-sm overflow-hidden">
