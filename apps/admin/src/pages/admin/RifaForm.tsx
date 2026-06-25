@@ -25,6 +25,7 @@ import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { RifaPDFGenerator } from "@/components/RifaPDFGenerator";
 
 export default function RifaForm() {
   const navigate = useNavigate();
@@ -832,6 +833,13 @@ export default function RifaForm() {
                 <Button type="button" variant="outline" className="w-full" render={<Link to="/rifas" />} nativeButton={false} disabled={loading || uploadingImage}>
                   Cancelar
                 </Button>
+                {isEditing && (
+                  <RifaPDFGenerator
+                    rifaId={id!}
+                    rifaTitulo={formData.titulo}
+                    totalNumeros={Number(formData.totalNumeros)}
+                  />
+                )}
               </CardContent>
             </Card>
 
