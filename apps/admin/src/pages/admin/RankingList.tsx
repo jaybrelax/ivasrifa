@@ -340,7 +340,7 @@ export default function RankingList() {
                   : 'text-orange-500 dark:text-orange-400 bg-yellow-50 dark:bg-yellow-900/10 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
               }`}
             >
-              <span className={rankingMode === 'top10' ? 'text-amber-800' : 'text-orange-500'}>⭐TOP 10</span>
+              TOP 10
             </button>
           </div>
 
